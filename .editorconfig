@@ -1,0 +1,36 @@
+# EditorConfig: https://editorconfig.org
+# Hace que VS Code, PHPStorm, Sublime, etc. usen la misma config sin pelearse.
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+end_of_line = lf
+
+# PHP y Python usan 4 espacios por convención
+[*.{php,py}]
+indent_size = 4
+
+# Dart (Flutter) usa 2
+[*.dart]
+indent_size = 2
+
+# Markdown permite trailing spaces (para line breaks intencionales)
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+
+# Makefiles requieren tabs
+[Makefile]
+indent_style = tab
+
+# SQL formal de 2 espacios
+[*.sql]
+indent_size = 2
+
+# YAML estricto en 2 espacios
+[*.{yml,yaml}]
+indent_size = 2

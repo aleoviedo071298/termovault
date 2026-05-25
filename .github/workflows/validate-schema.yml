@@ -1,0 +1,76 @@
+name: Validate DB Schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'database/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'database/**'
+
+jobs:
+  schema-apply:
+    name: Aplicar schema + seeds contra Postgres
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: termovault_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Esperar a que Postgres esté listo
+        run: |
+          until pg_isready -h localhost -U postgres; do
+            echo "Esperando Postgres..."
+            sleep 2
+          done
+
+      - name: Aplicar schema.sql
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d termovault_test -f database/schema.sql
+
+      - name: Aplicar seeds en orden
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d termovault_test -f database/seed-roles.sql
+          psql -h localhost -U postgres -d termovault_test -f database/seed-tipos-elemento.sql
+          psql -h localhost -U postgres -d termovault_test -f database/seed-niveles-tension.sql
+          psql -h localhost -U postgres -d termovault_test -f database/seed-criticidades.sql
+          psql -h localhost -U postgres -d termovault_test -f database/seed-empresas.sql
+          psql -h localhost -U postgres -d termovault_test -f database/seed-elementos.sql
+
+      - name: Verificar conteos esperados
+        env:
+          PGPASSWORD: postgres
+        run: |
+          echo "→ Roles:"
+          psql -h localhost -U postgres -d termovault_test -c "SELECT COUNT(*) FROM roles;"
+          echo "→ Tipos de elemento:"
+          psql -h localhost -U postgres -d termovault_test -c "SELECT COUNT(*) FROM tipos_elemento;"
+          echo "→ Elementos por función:"
+          psql -h localhost -U postgres -d termovault_test -c "SELECT funcion, COUNT(*) FROM elementos GROUP BY funcion ORDER BY funcion;"
+          echo "→ Total de elementos (esperado: 65):"
+          TOTAL=$(psql -h localhost -U postgres -d termovault_test -tA -c "SELECT COUNT(*) FROM elementos;")
+          echo "Encontrados: $TOTAL"
+          if [ "$TOTAL" != "65" ]; then
+            echo "❌ Se esperaban 65 elementos, hay $TOTAL"
+            exit 1
+          fi
+          echo "✓ OK"

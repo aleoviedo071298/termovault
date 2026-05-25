@@ -1,0 +1,54 @@
+# Dependabot — abre PRs automáticos para actualizar dependencias inseguras o desactualizadas
+# Docs: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # Backend Laravel (cuando exista composer.json con deps)
+  - package-ecosystem: "composer"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(backend)"
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # Frontend Web (cuando exista package.json con deps)
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(web)"
+    labels:
+      - "dependencies"
+      - "web"
+
+  # Mobile Flutter (no soporta dependabot nativo, lo manejaremos manual)
+
+  # Terraform (cuando haya .tf con providers)
+  - package-ecosystem: "terraform"
+    directory: "/infra/terraform"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(infra)"
+    labels:
+      - "dependencies"
+      - "infra"

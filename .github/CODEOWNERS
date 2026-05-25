@@ -1,0 +1,19 @@
+# CODEOWNERS — quién debe revisar cada parte del repo
+# Sintaxis: <path> <usuario_github>
+#
+# Cuando alguien abre un PR que toca esos paths, los owners
+# son agregados como reviewers automáticamente.
+#
+# Por ahora todo es tuyo. Cuando entre alguien al equipo, se reasigna.
+
+# Default: dueño de todo
+*                       @TU_USUARIO_GITHUB
+
+# Cuando quieras dividir responsabilidades en el futuro:
+# /backend/               @backend-team
+# /web/                   @frontend-team
+# /mobile/                @mobile-team
+# /infra/                 @devops-team
+# /database/              @backend-team @dba
+# /docs/                  @TU_USUARIO_GITHUB
+# /.github/               @TU_USUARIO_GITHUB

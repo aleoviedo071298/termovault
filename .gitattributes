@@ -1,0 +1,39 @@
+# Normalización de line endings (importante porque trabajás en Windows)
+# Git guarda LF en el repo, hace checkout con LF, y los editores modernos lo respetan.
+* text=auto eol=lf
+
+# Scripts de Windows mantienen CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios — no diff, no merge
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Lockfiles — se mergean automáticos pero no se editan a mano
+package-lock.json -diff
+composer.lock -diff
+pubspec.lock -diff
+yarn.lock -diff
+
+# Lenguajes específicos
+*.php text diff=php
+*.py text diff=python
+*.dart text diff=dart
+
+# Idioma del repo para diffs amigables
+*.sql text diff=sql
+*.md text diff=markdown
