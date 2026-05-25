@@ -15,6 +15,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Configuración de Git: `.gitattributes`, `.editorconfig`, `.gitignore`.
 - Plantillas de GitHub: PR, issues, CODEOWNERS, Dependabot.
 - CI básico: validación de schema SQL contra Postgres en pipeline.
+- Hooks locales de Git: `pre-commit`, `commit-msg`, `pre-push` (suple branch protection en plan Free).
+- Entorno local con `docker-compose`: Postgres 16 + MinIO + Adminer.
+- Script de init que aplica schema + seeds automáticamente al primer arranque.
+- `Makefile` con comandos comunes (`make up`, `make psql`, `make reset`, etc.).
 
 ### Changed
 — (nada todavía)
