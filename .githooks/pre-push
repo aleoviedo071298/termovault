@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# pre-push — corre antes de pushear al remoto
+# Bloquea push directo a main (forzando el flujo via PR)
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+protected_branch="main"
+remote_name=$1   # nombre del remote (ej: origin)
+remote_url=$2
+
+# stdin trae líneas: <local_ref> <local_sha> <remote_ref> <remote_sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Si está empujando a main directamente desde una rama que NO es main → bloquear
+  if [[ "$remote_ref" == "refs/heads/$protected_branch" ]]; then
+    # Permitir si el local también es main (push normal de main → main)
+    # pero bloquear cualquier intento de empujar otra rama a main
+    if [[ "$local_ref" != "refs/heads/$protected_branch" ]]; then
+      echo -e "${RED}✗ No se puede pushear '$local_ref' directo a '$protected_branch'.${NC}"
+      echo -e "${YELLOW}  Usá el flujo de Pull Request:${NC}"
+      echo "    git push -u origin $(git rev-parse --abbrev-ref HEAD)"
+      echo "    gh pr create"
+      exit 1
+    fi
+
+    # Si SÍ es main → main, bloquear igual (no se permite push directo a main)
+    echo -e "${RED}✗ Push directo a '$protected_branch' bloqueado.${NC}"
+    echo -e "${YELLOW}  Crea una feature branch, abre un PR, mergéalo:${NC}"
+    echo "    git checkout -b feature/mi-cambio"
+    echo "    git push -u origin feature/mi-cambio"
+    echo "    gh pr create"
+    echo ""
+    echo -e "${YELLOW}  Bypass excepcional (NO recomendado):${NC} git push --no-verify"
+    exit 1
+  fi
+
+  # Detectar force push a cualquier rama (avisar pero permitir)
+  if [[ "$local_sha" != "0000000000000000000000000000000000000000" ]] && \
+     [[ "$remote_sha" != "0000000000000000000000000000000000000000" ]]; then
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      echo -e "${YELLOW}⚠  Force push detectado a '$remote_ref'. Continuando.${NC}"
+    fi
+  fi
+done
+
+echo -e "${GREEN}✓ pre-push OK${NC}"
+exit 0

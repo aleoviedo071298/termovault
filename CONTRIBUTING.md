@@ -115,6 +115,35 @@ arreglos varios                  ← describí cada cambio
 
 Ver [`README.md`](README.md) y [`docs/07-deploy-aws.md`](docs/07-deploy-aws.md).
 
+### Hooks de Git (obligatorio después de clonar)
+
+El repo trae hooks que bloquean errores comunes (commits a `main`, secretos stageados, mensajes mal formateados). **Instalalos una vez después de clonar:**
+
+```bash
+./.githooks/install.sh
+```
+
+Eso configura `core.hooksPath = .githooks`. Los hooks viajan con el repo, así que cualquier colaborador que corra el script tiene la misma protección.
+
+#### Hooks activos
+
+| Hook | Qué valida |
+|---|---|
+| `pre-commit` | No commitear a `main`, no stagear `.env` / `*.tfvars` / claves privadas, no dejar markers de merge sin resolver, no commitear secretos detectables (AWS keys, GitHub tokens, etc.) |
+| `commit-msg` | El mensaje sigue Conventional Commits (`feat`, `fix`, `docs`, etc.) |
+| `pre-push` | No pushear directo a `main` (forzar flujo PR) |
+
+#### Bypass excepcional
+
+Si necesitás saltearte un hook por una razón legítima (ej: commit de emergencia, validación falsa), usá:
+
+```bash
+git commit --no-verify
+git push --no-verify
+```
+
+⚠️ Esto debería ser **excepcional**, no rutinario. Si lo usás seguido, hay algo mal con el hook o con tu flujo.
+
 ## Versionado — SemVer
 
 `MAJOR.MINOR.PATCH`
