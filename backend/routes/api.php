@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ElementoController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,5 +26,8 @@ Route::middleware('api')->group(function () {
         ], 200);
     });
 
-    Route::get('/elementos', [ElementoController::class, 'listElements']);
+    Route::middleware('cognito.auth')->group(function () {
+        Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::get('/elementos', [ElementoController::class, 'listElements']);
+    });
 });
