@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\ElementoController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,4 +24,6 @@ Route::middleware('api')->group(function () {
             'version' => '0.1.0',
         ], 200);
     });
+
+    Route::get('/elementos', [ElementoController::class, 'listElements']);
 });

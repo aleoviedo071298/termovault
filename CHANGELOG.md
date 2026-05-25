@@ -8,6 +8,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Added
 - Estructura inicial del proyecto (backend Laravel, web React, mobile Flutter, infra Terraform).
+- Laravel 12 backend with health endpoint (`/api/health`).
+- Eloquent models with multi-tenant relationships and `forEmpresa` query scopes.
+- Laravel migrations and seeders that replicate the PostgreSQL schema and 65 seeded elements.
+- `GET /api/elementos` endpoint listing seeded elements.
+- React/Vite frontend with Elementos list view backed by the API.
 - Modelo de datos PostgreSQL v2 con multi-tenant por `empresa_id`.
 - Seeds iniciales con 65 elementos extraídos de los Words actuales del cliente.
 - Catálogos: tipos de elemento (subestación, ETR, banco capacitores, seccionador, reconectador), niveles de tensión (6.6/13.2/33/132 kV), criticidades, roles.
