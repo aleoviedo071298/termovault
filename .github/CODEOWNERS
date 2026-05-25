@@ -7,7 +7,7 @@
 # Por ahora todo es tuyo. Cuando entre alguien al equipo, se reasigna.
 
 # Default: dueño de todo
-*                       @TU_USUARIO_GITHUB
+*                       @aleoviedo071298
 
 # Cuando quieras dividir responsabilidades en el futuro:
 # /backend/               @backend-team
@@ -15,5 +15,5 @@
 # /mobile/                @mobile-team
 # /infra/                 @devops-team
 # /database/              @backend-team @dba
-# /docs/                  @TU_USUARIO_GITHUB
-# /.github/               @TU_USUARIO_GITHUB
+# /docs/                  @aleoviedo071298
+# /.github/               @aleoviedo071298
