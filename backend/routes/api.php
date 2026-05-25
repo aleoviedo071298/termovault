@@ -28,6 +28,8 @@ Route::middleware('api')->group(function () {
 
     Route::middleware('cognito.auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
-        Route::get('/elementos', [ElementoController::class, 'listElements']);
+        Route::middleware('role.claim:admin,supervisor,tecnico')->group(function () {
+            Route::get('/elementos', [ElementoController::class, 'listElements']);
+        });
     });
 });
