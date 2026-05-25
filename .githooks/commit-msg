@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# commit-msg — valida que el mensaje siga Conventional Commits
+# https://www.conventionalcommits.org/
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+commit_file=$1
+commit_msg=$(head -1 "$commit_file")
+
+# Ignorar merge commits y reverts automáticos
+if echo "$commit_msg" | grep -qE '^(Merge|Revert) '; then
+  exit 0
+fi
+
+# Regex Conventional Commits:
+#   tipo(scope opcional)!?: descripción
+pattern='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\([a-z0-9_-]+\))?!?: .{1,100}$'
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo -e "${RED}✗ Mensaje de commit no sigue Conventional Commits.${NC}"
+  echo ""
+  echo -e "${YELLOW}Tu mensaje:${NC}"
+  echo "    $commit_msg"
+  echo ""
+  echo -e "${YELLOW}Formato esperado:${NC}"
+  echo "    <tipo>(<scope opcional>): <descripción imperativa>"
+  echo ""
+  echo -e "${YELLOW}Tipos válidos:${NC}"
+  echo "    feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert"
+  echo ""
+  echo -e "${YELLOW}Ejemplos correctos:${NC}"
+  echo "    feat(elementos): agrega autocomplete por código"
+  echo "    fix(seed): corrige FK rota en seed-elementos"
+  echo "    docs(arquitectura): explica flujo presigned URLs"
+  echo "    chore(infra): inicializa terraform base"
+  echo ""
+  echo -e "${YELLOW}Si necesitás bypassear (situación excepcional):${NC}"
+  echo "    git commit --no-verify"
+  exit 1
+fi
+
+# Validar longitud máxima del subject
+subject_length=${#commit_msg}
+if [ "$subject_length" -gt 100 ]; then
+  echo -e "${RED}✗ Subject demasiado largo ($subject_length chars). Máximo 100.${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}✓ commit-msg OK${NC}"
+exit 0

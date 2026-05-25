@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# pre-commit — corre antes de crear el commit
+# Verifica:
+#   1. No estás commiteando directo a main
+#   2. No se cuelan archivos sensibles (.env, *.tfvars, claves)
+#   3. No hay markers de conflicto sin resolver
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+# ─── 1. No commitear directo a main ──────────────────────────────────────────
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "main" ]; then
+  echo -e "${RED}✗ No se puede commitear directo a 'main'.${NC}"
+  echo -e "${YELLOW}  Creá una rama feature primero:${NC}"
+  echo "    git checkout -b feature/mi-cambio"
+  exit 1
+fi
+
+# ─── 2. Detectar archivos sensibles ──────────────────────────────────────────
+forbidden_patterns=(
+  '\.env$'
+  '\.env\.[^e][^x]'      # .env.local, .env.production, etc. pero NO .env.example
+  '\.tfvars$'
+  '\.tfvars\.json$'
+  'aws-credentials'
+  'id_rsa$'
+  'id_ed25519$'
+  '\.pem$'
+  '\.key$'
+)
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+for pattern in "${forbidden_patterns[@]}"; do
+  matches=$(echo "$staged_files" | grep -E "$pattern" || true)
+  if [ -n "$matches" ]; then
+    echo -e "${RED}✗ Archivo sensible stageado:${NC}"
+    echo "$matches" | sed 's/^/    /'
+    echo -e "${YELLOW}  Si es intencional usá:${NC} git commit --no-verify"
+    exit 1
+  fi
+done
+
+# ─── 3. Detectar markers de conflicto sin resolver ───────────────────────────
+if [ -n "$staged_files" ]; then
+  conflicts=$(echo "$staged_files" | xargs -I{} grep -l "^<<<<<<< \|^=======$\|^>>>>>>> " {} 2>/dev/null || true)
+  if [ -n "$conflicts" ]; then
+    echo -e "${RED}✗ Marcadores de conflicto de merge sin resolver en:${NC}"
+    echo "$conflicts" | sed 's/^/    /'
+    exit 1
+  fi
+fi
+
+# ─── 4. Detectar tokens / strings comunes de secretos ────────────────────────
+# Excluye .githooks/ y docs/ que documentan los patrones (falsos positivos).
+if [ -n "$staged_files" ]; then
+  files_to_scan=$(echo "$staged_files" | grep -vE '^(\.githooks/|docs/.*\.md$|CONTRIBUTING\.md$)' || true)
+  if [ -n "$files_to_scan" ]; then
+    # Construimos el regex en partes para que el hook mismo no contenga el match.
+    p1='AKIA[0-9A-Z]'
+    p2='ghp_[A-Za-z0-9]'
+    p3='gho_[A-Za-z0-9]'
+    p4='sk-[A-Za-z0-9]'
+    secret_pattern="(${p1}{16}|${p2}{36}|${p3}{36}|${p4}{32,})"
+    found=$(echo "$files_to_scan" | xargs -I{} grep -l -E "$secret_pattern" {} 2>/dev/null || true)
+    if [ -n "$found" ]; then
+      echo -e "${RED}✗ Posible secreto detectado en:${NC}"
+      echo "$found" | sed 's/^/    /'
+      echo -e "${YELLOW}  Revisá. Si es falso positivo:${NC} git commit --no-verify"
+      exit 1
+    fi
+  fi
+fi
+
+echo -e "${GREEN}✓ pre-commit OK${NC}"
+exit 0

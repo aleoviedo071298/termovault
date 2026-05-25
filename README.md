@@ -32,6 +32,16 @@ termovault/
 - `supervisor` → Ve todo, aprueba inspecciones, cierra novedades
 - `tecnico`    → Carga inspecciones y archivos
 
+## Setup local
+
+```bash
+git clone git@github.com:aleoviedo071298/termovault.git
+cd termovault
+./.githooks/install.sh   # instala hooks de Git (obligatorio)
+```
+
+Ver [`CONTRIBUTING.md`](CONTRIBUTING.md) para el flujo completo.
+
 ## Estado
 
 🚧 En desarrollo — estructura inicial.
