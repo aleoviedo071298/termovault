@@ -34,13 +34,49 @@ termovault/
 
 ## Setup local
 
+### Requisitos
+- Git
+- Docker Desktop (para Postgres + MinIO + Adminer locales)
+- (Opcional) `make` para comandos cortos
+
+### Bootstrap
+
 ```bash
+# 1. Clonar
 git clone git@github.com:aleoviedo071298/termovault.git
 cd termovault
-./.githooks/install.sh   # instala hooks de Git (obligatorio)
+
+# 2. Instalar hooks de Git
+./.githooks/install.sh
+
+# 3. Variables de entorno
+cp .env.example .env
+
+# 4. Levantar servicios
+make up
+# o sin make:
+docker compose up -d
 ```
 
-Ver [`CONTRIBUTING.md`](CONTRIBUTING.md) para el flujo completo.
+Eso te deja:
+
+| Servicio | URL / Conexión | Credenciales |
+|---|---|---|
+| Postgres | `localhost:5432` | user `termovault` / pass `devsecret_cambiar_en_prod` |
+| Adminer (DB UI) | http://localhost:8080 | autocompleto desde Adminer |
+| MinIO API (S3) | http://localhost:9000 | `minioadmin` / `minioadmin_cambiar` |
+| MinIO Console | http://localhost:9001 | mismas que API |
+
+La DB arranca con **schema + 65 elementos seedados automáticamente**. Verificá con:
+
+```bash
+make status
+# o
+docker compose exec postgres psql -U termovault -d termovault \
+  -c "SELECT funcion, COUNT(*) FROM elementos GROUP BY funcion ORDER BY funcion;"
+```
+
+Ver [`CONTRIBUTING.md`](CONTRIBUTING.md) para el flujo de trabajo completo.
 
 ## Estado
 
