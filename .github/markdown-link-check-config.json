@@ -1,7 +1,7 @@
 {
   "ignorePatterns": [
     { "pattern": "^http://localhost" },
-    { "pattern": "^https://github.com/USUARIO" }
+    { "pattern": "^https://github.com/aleoviedo071298" }
   ],
   "timeout": "20s",
   "retryOn429": true,
