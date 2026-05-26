@@ -1,9 +1,13 @@
-import { AlertCircle, RefreshCw, Search, ThermometerSun } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, LogOut, RefreshCw, Search, ThermometerSun } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { listElementos } from "./api/elementos";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { useAuth } from "./auth/useAuth";
+import { Login } from "./pages/Login";
 import type { Elemento } from "./types/elemento";
 
-function App() {
+function Dashboard() {
+  const { logout } = useAuth();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,15 +66,25 @@ function App() {
             value={query}
           />
         </div>
-        <button
-          className="icon-button"
-          disabled={loading}
-          onClick={() => void loadElementos()}
-          title="Recargar elementos"
-          type="button"
-        >
-          <RefreshCw size={18} aria-hidden="true" />
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            className="icon-button"
+            disabled={loading}
+            onClick={() => void loadElementos()}
+            title="Recargar elementos"
+            type="button"
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+          </button>
+          <button
+            className="icon-button"
+            onClick={logout}
+            title="Cerrar sesión"
+            type="button"
+          >
+            <LogOut size={18} aria-hidden="true" />
+          </button>
+        </div>
       </section>
 
       {error ? (
@@ -131,6 +145,20 @@ function App() {
         </table>
       </section>
     </main>
+  );
+}
+
+function App() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return (
+    <ProtectedRoute allowedGroups={["admin", "supervisor", "tecnico"]} fallback={<Login />}>
+      <Dashboard />
+    </ProtectedRoute>
   );
 }
 

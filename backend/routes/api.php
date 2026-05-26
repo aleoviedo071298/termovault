@@ -26,6 +26,8 @@ Route::middleware('api')->group(function () {
         ], 200);
     });
 
+    Route::post('/auth/login', [AuthController::class, 'login']);
+
     Route::middleware('cognito.auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::middleware('role.claim:admin,supervisor,tecnico')->group(function () {
