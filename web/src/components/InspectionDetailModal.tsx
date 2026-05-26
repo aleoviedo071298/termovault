@@ -1,5 +1,5 @@
 import { Download, FileText, FolderArchive, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado } from "../api/inspecciones";
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   userGroups?: string[];
+  canReviewOverride?: boolean;
   onStatusChanged?: () => void;
 }
 
@@ -22,13 +23,15 @@ function fmtBytes(bytes?: number | null): string {
   return `${value.toFixed(1)} ${units[idx]}`;
 }
 
-export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroups = [], onStatusChanged }: Props) {
+export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroups = [], canReviewOverride, onStatusChanged }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<InspeccionDetalle | null>(null);
   const [observaciones, setObservaciones] = useState("");
   const [updating, setUpdating] = useState(false);
-  const canReview = userGroups.includes("admin") || userGroups.includes("supervisor");
+  const canReview = typeof canReviewOverride === "boolean"
+    ? canReviewOverride
+    : (userGroups.includes("admin") || userGroups.includes("supervisor"));
 
   useEffect(() => {
     if (!isOpen || !inspeccionId) return;
@@ -77,24 +80,27 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
               <div className="form-grid">
                 <div><strong>Fecha:</strong> {new Date(data.fecha_inspeccion).toLocaleString("es-AR")}</div>
                 <div><strong>Estado:</strong> {data.estado}</div>
-                <div><strong>Técnico:</strong> {data.tecnico?.nombre ?? "-"}</div>
+                <div><strong>Tecnico:</strong> {data.tecnico?.nombre ?? "-"}</div>
                 <div><strong>Empresa:</strong> {data.empresa_contratista ?? "-"}</div>
                 <div><strong>Yacimiento:</strong> {data.elemento?.yacimiento ?? "-"}</div>
-                <div><strong>Subestación/Elemento:</strong> {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "-"}</div>
+                <div><strong>Subestacion/Elemento:</strong> {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "-"}</div>
               </div>
+
               <div>
-                <strong>Descripción / Resumen</strong>
-                <p className="field-paragraph">{data.resumen ?? "Sin descripción."}</p>
+                <strong>Descripcion / Resumen</strong>
+                <p className="field-paragraph">{data.resumen ?? "Sin descripcion."}</p>
               </div>
+
               {data.observaciones_revisor ? (
                 <div>
                   <strong>Observaciones del supervisor</strong>
                   <p className="field-paragraph">{data.observaciones_revisor}</p>
                 </div>
               ) : null}
+
               {canReview && (data.estado === "enviada" || data.estado === "revisada") ? (
                 <div style={{ display: "grid", gap: 10 }}>
-                  <strong>Revisión</strong>
+                  <strong>Revision</strong>
                   <textarea
                     rows={3}
                     placeholder="Observaciones del revisor (opcional)"
@@ -115,6 +121,31 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
                   </div>
                 </div>
               ) : null}
+
+              <div className="findings-section">
+                <h4>Hallazgos</h4>
+                {data.novedades.length === 0 ? (
+                  <p>Sin hallazgos cargados.</p>
+                ) : (
+                  <div className="findings-list">
+                    {data.novedades.map((novedad) => (
+                      <article key={novedad.id} className={`finding-card ${novedad.criticidad === "normal" ? "normal" : ""}`}>
+                        <div className="finding-header">
+                          <h5>{novedad.titulo}</h5>
+                          <span className="badge" style={{ "--badge-color": novedad.criticidad_color ?? "#4a7a5e" } as React.CSSProperties}>
+                            {novedad.criticidad ?? "normal"}
+                          </span>
+                        </div>
+                        {novedad.descripcion ? <p className="finding-desc">{novedad.descripcion}</p> : null}
+                        <p><strong>Estado:</strong> {novedad.estado}</p>
+                        {novedad.ubicacion ? <p><strong>Ubicacion:</strong> {novedad.ubicacion}</p> : null}
+                        {novedad.temperatura !== null ? <p><strong>Temperatura:</strong> {novedad.temperatura}°C</p> : null}
+                        {novedad.accion_recomendada ? <p className="recommendation"><strong>Accion recomendada:</strong> {novedad.accion_recomendada}</p> : null}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <strong>Archivos y fotos</strong>

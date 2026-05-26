@@ -38,11 +38,21 @@ class InspeccionController extends Controller
             // no extra filter
         } elseif ($scope['is_tecnico']) {
             $query->where('inspecciones.tecnico_id', $scope['user_id']);
+            if ($scope['assigned_yacimiento_ids'] !== []) {
+                $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+            } else {
+                $query->whereRaw('1=0');
+            }
         } elseif ($scope['is_supervisor']) {
             if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
                 $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
             } else {
                 $query->where('u.empresa_id', $scope['empresa_id']);
+                if ($scope['assigned_yacimiento_ids'] !== []) {
+                    $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+                } else {
+                    $query->whereRaw('1=0');
+                }
             }
         } else {
             $query->whereRaw('1=0');
@@ -105,7 +115,8 @@ class InspeccionController extends Controller
     {
         $scope = $this->scopeResolver->resolve($request);
 
-        if (! $scope['is_admin'] && ! $scope['is_supervisor']) {
+        // Solo admin o supervisor PAE pueden revisar/cerrar.
+        if (! $scope['is_admin'] && ! $scope['is_pae_supervisor']) {
             return response()->json(['message' => 'No tenes permisos para revisar o cerrar informes'], 403);
         }
 
@@ -127,6 +138,11 @@ class InspeccionController extends Controller
                 $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
             } else {
                 $query->where('u.empresa_id', $scope['empresa_id']);
+                if ($scope['assigned_yacimiento_ids'] !== []) {
+                    $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+                } else {
+                    $query->whereRaw('1=0');
+                }
             }
         }
 

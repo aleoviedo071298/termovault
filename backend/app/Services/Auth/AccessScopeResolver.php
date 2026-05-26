@@ -18,7 +18,7 @@ class AccessScopeResolver
 
         $dbUser = null;
         if ($userId) {
-            $dbUser = Usuario::query()->with('yacimientos:id,codigo')->find($userId);
+            $dbUser = Usuario::query()->with('yacimientos:id,codigo', 'empresa:id,nombre')->find($userId);
         }
 
         if ($dbUser && ! $empresaId) {
@@ -41,6 +41,12 @@ class AccessScopeResolver
                 ->all();
         }
 
+        $isPaeCompany = false;
+        if ($dbUser?->empresa?->nombre) {
+            $companyName = mb_strtoupper(trim((string) $dbUser->empresa->nombre));
+            $isPaeCompany = $companyName === 'PAE' || str_contains($companyName, 'PAE');
+        }
+
         return [
             'user_id' => $dbUser?->id ? (int) $dbUser->id : null,
             'empresa_id' => $empresaId ? (int) $empresaId : null,
@@ -48,7 +54,7 @@ class AccessScopeResolver
             'is_admin' => $isAdmin,
             'is_supervisor' => $isSupervisor,
             'is_tecnico' => $isTecnico,
-            'is_pae_supervisor' => $isSupervisor && in_array('YAC-PAE', $assignedYacimientoCodes, true),
+            'is_pae_supervisor' => $isSupervisor && $isPaeCompany && in_array('YAC-PAE', $assignedYacimientoCodes, true),
             'assigned_yacimiento_ids' => $assignedYacimientoIds,
         ];
     }
@@ -59,22 +65,8 @@ class AccessScopeResolver
             return $query;
         }
 
-        if ($scope['is_tecnico']) {
-            return $query->whereHas('inspecciones', function (Builder $inspectionQuery) use ($scope): void {
-                $inspectionQuery->where('tecnico_id', $scope['user_id']);
-            });
-        }
-
-        if ($scope['is_supervisor']) {
-            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
-                return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
-            }
-
-            if ($scope['empresa_id']) {
-                return $query->whereHas('yacimiento', function (Builder $yardQuery) use ($scope): void {
-                    $yardQuery->where('empresa_id', $scope['empresa_id']);
-                });
-            }
+        if (($scope['is_tecnico'] || $scope['is_supervisor']) && $scope['assigned_yacimiento_ids'] !== []) {
+            return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
         }
 
         return $query->whereRaw('1 = 0');
@@ -107,11 +99,11 @@ class AccessScopeResolver
         }
 
         if ($scope['is_tecnico']) {
-            return true;
+            return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
         }
 
         if ($scope['is_supervisor']) {
-            return $this->canMutateElement($scope, (int) $element->yacimiento_id);
+            return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
         }
 
         return false;

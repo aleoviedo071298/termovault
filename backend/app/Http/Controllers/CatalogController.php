@@ -17,15 +17,27 @@ class CatalogController extends Controller
     public function index(Request $request): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);
+        $userId = $request->attributes->get('auth.user_id');
 
-        $yacimientos = Yacimiento::query()
-            ->when($scope['empresa_id'], fn ($query) => $query->where('empresa_id', $scope['empresa_id']))
-            ->when(
-                $scope['is_supervisor'] && $scope['is_pae_supervisor'],
-                fn ($query) => $query->whereIn('id', $scope['assigned_yacimiento_ids'])
-            )
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo']);
+        if ($scope['is_admin']) {
+            $yacimientos = Yacimiento::query()
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'codigo']);
+        } else {
+            $assignedIds = [];
+            if ($userId) {
+                $assignedIds = \Illuminate\Support\Facades\DB::table('usuario_yacimientos')
+                    ->where('usuario_id', (int) $userId)
+                    ->pluck('yacimiento_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+            }
+
+            $yacimientos = Yacimiento::query()
+                ->whereIn('id', $assignedIds !== [] ? $assignedIds : [-1])
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'codigo']);
+        }
 
         $tipos = TipoElemento::query()
             ->where('activo', true)

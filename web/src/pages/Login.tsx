@@ -6,6 +6,8 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [challengeSession, setChallengeSession] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -15,12 +17,25 @@ export const Login: React.FC = () => {
       setError("Por favor ingresa tu email y contraseña.");
       return;
     }
+    if (challengeSession && newPassword.trim().length < 8) {
+      setError("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
 
     setError(null);
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
+      const challenge = await login(
+        email,
+        password,
+        challengeSession ? { session: challengeSession, newPassword } : undefined
+      );
+
+      if (challenge?.challenge === "NEW_PASSWORD_REQUIRED") {
+        setChallengeSession(challenge.session ?? null);
+        setError("Debes definir una nueva contraseña para completar el primer ingreso.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
     } finally {
@@ -61,7 +76,7 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
+            <label htmlFor="password">Contraseña temporal/actual</label>
             <input
               id="password"
               type="password"
@@ -73,12 +88,27 @@ export const Login: React.FC = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            className="login-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Ingresando..." : "Ingresar"}
+          {challengeSession ? (
+            <div className="form-group">
+              <label htmlFor="newPassword">Nueva contraseña</label>
+              <input
+                id="newPassword"
+                type="password"
+                placeholder="Nueva contraseña"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+          ) : null}
+
+          <button type="submit" className="login-button" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Ingresando..."
+              : challengeSession
+                ? "Actualizar contraseña e ingresar"
+                : "Ingresar"}
           </button>
         </form>
       </div>
@@ -87,3 +117,4 @@ export const Login: React.FC = () => {
 };
 
 export default Login;
+

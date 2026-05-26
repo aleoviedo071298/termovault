@@ -19,8 +19,11 @@ class EnsureRoleFromClaims
 
         $roles = $this->extractRoles($claims);
         if ($roles === []) {
+            $roles = $this->extractRolesFromLocalUser($request);
+        }
+        if ($roles === []) {
             return response()->json([
-                'message' => 'Role claim is missing',
+                'message' => 'Role claim is missing and local role could not be resolved',
             ], 403);
         }
 
@@ -57,5 +60,24 @@ class EnsureRoleFromClaims
         }
 
         return [];
+    }
+
+    private function extractRolesFromLocalUser(Request $request): array
+    {
+        $userId = $request->attributes->get('auth.user_id');
+        if (! $userId) {
+            return [];
+        }
+
+        $roleCode = \Illuminate\Support\Facades\DB::table('usuarios')
+            ->join('roles', 'roles.id', '=', 'usuarios.rol_id')
+            ->where('usuarios.id', (int) $userId)
+            ->value('roles.codigo');
+
+        if (! is_string($roleCode) || trim($roleCode) === '') {
+            return [];
+        }
+
+        return [trim($roleCode)];
     }
 }

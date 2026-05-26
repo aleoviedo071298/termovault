@@ -4,6 +4,7 @@ import { useAuth } from "./auth/useAuth";
 import { Login } from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ElementosGestion from "./pages/ElementosGestion";
+import AdminUsuariosPage from "./pages/AdminUsuariosPage";
 
 function App() {
   const { user } = useAuth();
@@ -34,10 +35,16 @@ function App() {
         (isAdmin || isSupervisor) ? (
           <ElementosGestion onBack={() => navigate("/")} />
         ) : (
-          <Dashboard onOpenElementosGestion={() => navigate("/elementos/gestion")} />
+          <Dashboard onOpenElementosGestion={() => navigate("/elementos/gestion")} onOpenAdminUsuarios={() => navigate("/admin/usuarios")} />
+        )
+      ) : currentPath === "/admin/usuarios" ? (
+        isAdmin ? (
+          <AdminUsuariosPage onBack={() => navigate("/")} />
+        ) : (
+          <Dashboard onOpenElementosGestion={() => navigate("/elementos/gestion")} onOpenAdminUsuarios={() => navigate("/admin/usuarios")} />
         )
       ) : (
-        <Dashboard onOpenElementosGestion={() => navigate("/elementos/gestion")} />
+        <Dashboard onOpenElementosGestion={() => navigate("/elementos/gestion")} onOpenAdminUsuarios={() => navigate("/admin/usuarios")} />
       )}
     </ProtectedRoute>
   );

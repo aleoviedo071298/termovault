@@ -26,6 +26,11 @@ input {
   font: inherit;
 }
 
+select,
+textarea {
+  font: inherit;
+}
+
 .app-shell {
   width: min(1180px, calc(100vw - 32px));
   margin: 0 auto;
@@ -34,7 +39,7 @@ input {
 
 .toolbar {
   display: grid;
-  grid-template-columns: auto minmax(220px, 1fr) auto minmax(260px, 420px) auto;
+  grid-template-columns: auto minmax(220px, 1fr) auto;
   gap: 16px;
   align-items: center;
   padding: 18px;
@@ -113,6 +118,30 @@ input {
   outline: 0;
   background: transparent;
   color: #17201a;
+}
+
+input[type="date"],
+select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #bfcabe;
+  border-radius: 8px;
+  background: #fffdf4;
+  color: #17201a;
+  outline: 0;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+input[type="date"]:focus,
+select:focus {
+  border-color: #1d5c46;
+  box-shadow: 0 0 0 3px rgba(29, 92, 70, 0.15);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: saturate(0.6);
 }
 
 .icon-button {
@@ -220,6 +249,22 @@ tbody tr:hover {
 
   .search-box {
     grid-column: 1 / -1;
+  }
+
+  .toolbar-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding-top: 10px;
+  }
+
+  .toolbar-filters {
+    grid-template-columns: auto 1fr;
+  }
+
+  .filters-grid {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
   }
 }
 
@@ -968,20 +1013,72 @@ tbody tr:hover {
 .add-element-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  min-height: 44px;
+  padding: 10px 14px;
   background: #1d5c46;
   border: 0;
   border-radius: 8px;
   color: #f4f0df;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .add-element-btn:hover {
   background: #154534;
+}
+
+.toolbar-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid #d7dfd4;
+}
+
+.secondary-action {
+  background: #2a6d55;
+  border: 1px solid #1f5e48;
+}
+
+.secondary-action:hover {
+  background: #205741;
+}
+
+.toolbar-icon-group {
+  display: inline-flex;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid #cbd5c4;
+}
+
+.toolbar-filters {
+  grid-template-columns: auto minmax(250px, 1fr) minmax(360px, 1.3fr);
+  align-items: end;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #59645e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .cursor-pointer {
@@ -1035,5 +1132,3 @@ tbody tr:hover {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
-
-
