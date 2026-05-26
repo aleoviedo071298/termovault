@@ -3,29 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\Elemento;
+use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ElementoController extends Controller
 {
+    public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+
     public function listElements(Request $request): JsonResponse
     {
-        $empresaId = $request->header('X-Empresa-Id', $request->query('empresa_id'));
-        $userId = $request->attributes->get('auth.user_id');
+        $scope = $this->scopeResolver->resolve($request);
 
         $query = Elemento::query()
             ->with([
-                'tipoElemento:id,nombre,codigo', 
-                'criticidad:id,nombre,nivel,color', 
+                'tipoElemento:id,nombre,codigo',
+                'criticidad:id,nombre,nivel,color',
                 'yacimiento:id,empresa_id,nombre',
-                'nivelTension:id,kv,etiqueta'
-            ])
-            ->forEmpresa($empresaId);
+                'nivelTension:id,kv,etiqueta',
+            ]);
 
-        if ($request->boolean('my_inspections_only', false) && $userId) {
-            $query->whereHas('inspecciones', function ($q) use ($userId) {
-                $q->where('tecnico_id', $userId);
+        $query = $this->scopeResolver->applyElementScope($query, $scope);
+
+        if ($request->boolean('my_inspections_only', false) && $scope['user_id']) {
+            $query->whereHas('inspecciones', function ($q) use ($scope): void {
+                $q->where('tecnico_id', $scope['user_id']);
             });
         }
 
@@ -52,17 +55,17 @@ class ElementoController extends Controller
 
     public function show(Request $request, $id): JsonResponse
     {
-        $empresaId = $request->attributes->get('auth.empresa_id');
+        $scope = $this->scopeResolver->resolve($request);
 
-        $elemento = Elemento::query()
+        $elementoQuery = Elemento::query()
             ->with([
                 'tipoElemento:id,nombre,codigo',
                 'criticidad:id,nombre,nivel,color',
                 'yacimiento:id,empresa_id,nombre',
-                'nivelTension:id,kv,etiqueta'
-            ])
-            ->forEmpresa($empresaId)
-            ->find($id);
+                'nivelTension:id,kv,etiqueta',
+            ]);
+
+        $elemento = $this->scopeResolver->applyElementScope($elementoQuery, $scope)->find($id);
 
         if (! $elemento) {
             return response()->json(['message' => 'Elemento no encontrado'], 404);
@@ -72,7 +75,7 @@ class ElementoController extends Controller
             ->with([
                 'tecnico:id,nombre,apellido',
                 'archivos:id,inspeccion_id,tipo,nombre_original,s3_bucket,s3_key,tamano_bytes,mime_type',
-                'novedades' => fn ($query) => $query->with('criticidad:id,nombre,nivel,color')
+                'novedades' => fn ($query) => $query->with('criticidad:id,nombre,nivel,color'),
             ])
             ->orderBy('fecha_inspeccion', 'desc')
             ->get()
@@ -107,7 +110,7 @@ class ElementoController extends Controller
                     'criticidad' => $novedad->criticidad?->nombre,
                     'criticidad_color' => $novedad->criticidad?->color,
                     'estado' => $novedad->estado,
-                ])
+                ]),
             ]);
 
         return response()->json([
@@ -131,13 +134,13 @@ class ElementoController extends Controller
                 'estado_operativo' => $elemento->estado_operativo,
                 'observaciones' => $elemento->observaciones_generales,
             ],
-            'inspecciones' => $inspecciones
+            'inspecciones' => $inspecciones,
         ]);
     }
 
     public function store(Request $request): JsonResponse
     {
-        $empresaId = $request->attributes->get('auth.empresa_id');
+        $scope = $this->scopeResolver->resolve($request);
 
         $data = $request->validate([
             'yacimiento_id' => 'required|exists:yacimientos,id',
@@ -155,14 +158,8 @@ class ElementoController extends Controller
             'activo' => 'nullable|boolean',
         ]);
 
-        if ($empresaId) {
-            $yacimientoExists = DB::table('yacimientos')
-                ->where('id', $data['yacimiento_id'])
-                ->where('empresa_id', $empresaId)
-                ->exists();
-            if (! $yacimientoExists) {
-                return response()->json(['message' => 'El yacimiento seleccionado no es válido para tu empresa'], 422);
-            }
+        if (! $this->scopeResolver->canMutateElement($scope, (int) $data['yacimiento_id'])) {
+            return response()->json(['message' => 'No tenes permisos para crear elementos en este yacimiento'], 403);
         }
 
         $elemento = Elemento::create($data);
@@ -172,9 +169,9 @@ class ElementoController extends Controller
 
     public function update(Request $request, $id): JsonResponse
     {
-        $empresaId = $request->attributes->get('auth.empresa_id');
+        $scope = $this->scopeResolver->resolve($request);
 
-        $elemento = Elemento::query()->forEmpresa($empresaId)->find($id);
+        $elemento = $this->scopeResolver->applyElementScope(Elemento::query(), $scope)->find($id);
         if (! $elemento) {
             return response()->json(['message' => 'Elemento no encontrado'], 404);
         }
@@ -195,14 +192,8 @@ class ElementoController extends Controller
             'activo' => 'nullable|boolean',
         ]);
 
-        if ($empresaId) {
-            $yacimientoExists = DB::table('yacimientos')
-                ->where('id', $data['yacimiento_id'])
-                ->where('empresa_id', $empresaId)
-                ->exists();
-            if (! $yacimientoExists) {
-                return response()->json(['message' => 'El yacimiento seleccionado no es válido para tu empresa'], 422);
-            }
+        if (! $this->scopeResolver->canMutateElement($scope, (int) $data['yacimiento_id'])) {
+            return response()->json(['message' => 'No tenes permisos para editar elementos en este yacimiento'], 403);
         }
 
         $elemento->update($data);
@@ -212,20 +203,19 @@ class ElementoController extends Controller
 
     public function destroy(Request $request, $id): JsonResponse
     {
-        $empresaId = $request->attributes->get('auth.empresa_id');
+        $scope = $this->scopeResolver->resolve($request);
 
-        $elemento = Elemento::query()->forEmpresa($empresaId)->find($id);
+        $elemento = $this->scopeResolver->applyElementScope(Elemento::query(), $scope)->find($id);
         if (! $elemento) {
             return response()->json(['message' => 'Elemento no encontrado'], 404);
         }
 
-        DB::transaction(function () use ($elemento) {
-            // Delete inspections first (cascades to files, findings, comments)
+        DB::transaction(function () use ($elemento): void {
             $elemento->inspecciones()->delete();
-            // Delete the element itself
             $elemento->delete();
         });
 
         return response()->json(['message' => 'Elemento eliminado correctamente']);
     }
 }
+

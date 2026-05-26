@@ -41,12 +41,27 @@ class EnsureCognitoJwt
             ?? null;
 
         $dbUser = null;
-        $email = $claims['email'] ?? $claims['cognito:username'] ?? null;
-        if ($email) {
-            $dbUser = \Illuminate\Support\Facades\DB::table('usuarios')->where('email', $email)->first();
-            if ($dbUser && !$empresaId) {
-                $empresaId = $dbUser->empresa_id;
+        $identityCandidates = array_values(array_unique(array_filter([
+            $claims['email'] ?? null,
+            $claims['cognito:username'] ?? null,
+            $claims['username'] ?? null,
+            $claims['preferred_username'] ?? null,
+        ], fn ($value): bool => is_string($value) && trim($value) !== '')));
+
+        foreach ($identityCandidates as $identity) {
+            $normalized = mb_strtolower(trim($identity));
+            $dbUser = \Illuminate\Support\Facades\DB::table('usuarios')
+                ->whereRaw('LOWER(email) = ?', [$normalized])
+                ->orWhereRaw("split_part(LOWER(email), '@', 1) = ?", [$normalized])
+                ->first();
+
+            if ($dbUser) {
+                break;
             }
+        }
+
+        if ($dbUser && ! $empresaId) {
+            $empresaId = $dbUser->empresa_id;
         }
 
         $request->attributes->set('auth.claims', $claims);
