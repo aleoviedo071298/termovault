@@ -1,85 +1,195 @@
 # TermoVault
 
-Sistema multi-tenant de gestión de inspecciones termográficas para instalaciones eléctricas en el sector Oil & Gas / energía.
+Plataforma interna multi-tenant para gestión de informes termográficos (Oil & Gas / energía).
 
-## ¿Qué hace?
+## Estado actual (2026-05-26)
 
-Permite a técnicos cargar inspecciones termográficas (informe Word + ZIP de imágenes + novedades) sobre elementos eléctricos (subestaciones, seccionadores 33/13.2 kV, bancos de capacitores, reconectadores), y a supervisores consultar todo el historial, novedades y estadísticas por elemento, yacimiento o empresa.
+- Backend Laravel 12 funcional con JWT Cognito.
+- Frontend React + Vite funcional con dashboard por rol.
+- Roles activos: `admin`, `supervisor`, `tecnico`.
+- Flujo operativo implementado:
+  - Técnico carga informe (`enviada`).
+  - Supervisor/Admin revisa (`revisada`).
+  - Supervisor/Admin cierra (`cerrada`).
 
-## Stack
+## Stack real del repo
 
-- **Backend:** Laravel 11 + PostgreSQL 16
-- **Frontend Web:** React + Vite + TailwindCSS
-- **App móvil:** Flutter (Android primero)
-- **Cloud:** AWS (EC2, RDS, S3, Cognito, CloudFront, Lambda)
-- **Infra:** Terraform
+- Backend: Laravel 12 + PostgreSQL 16
+- Frontend: React 19 + Vite 7 + TypeScript
+- Infra local: Docker Compose (Postgres, MinIO, Adminer)
+- Auth: AWS Cognito (JWT)
 
 ## Estructura
 
-```
+```txt
 termovault/
-├── backend/       API Laravel
-├── web/           Frontend React
-├── mobile/        App Flutter
-├── database/      SQL schema, migrations, seeds
-├── infra/         Terraform + scripts AWS
-└── docs/          Documentación técnica
+├── backend/                  # API Laravel
+├── web/                      # Frontend React/Vite
+├── database/                 # schema.sql + seeds
+├── docker-compose.yml
+├── .githooks/
+└── README.md
 ```
 
-## Roles
+## Setup local rápido
 
-- `admin`      → Gestión total (empresas, usuarios, catálogos)
-- `supervisor` → Ve todo, aprueba inspecciones, cierra novedades
-- `tecnico`    → Carga inspecciones y archivos
-
-## Setup local
-
-### Requisitos
-- Git
-- Docker Desktop (para Postgres + MinIO + Adminer locales)
-- (Opcional) `make` para comandos cortos
-
-### Bootstrap
+### 1) Levantar servicios
 
 ```bash
-# 1. Clonar
-git clone git@github.com:aleoviedo071298/termovault.git
-cd termovault
-
-# 2. Instalar hooks de Git
-./.githooks/install.sh
-
-# 3. Variables de entorno
-cp .env.example .env
-
-# 4. Levantar servicios
-make up
-# o sin make:
 docker compose up -d
 ```
 
-Eso te deja:
+Servicios:
+- Postgres: `localhost:5433` (interno contenedor: 5432)
+- Adminer: `http://localhost:8080`
+- MinIO API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
 
-| Servicio | URL / Conexión | Credenciales |
-|---|---|---|
-| Postgres | `localhost:5432` | user `termovault` / pass `devsecret_cambiar_en_prod` |
-| Adminer (DB UI) | http://localhost:8080 | autocompleto desde Adminer |
-| MinIO API (S3) | http://localhost:9000 | `minioadmin` / `minioadmin_cambiar` |
-| MinIO Console | http://localhost:9001 | mismas que API |
-
-La DB arranca con **schema + 65 elementos seedados automáticamente**. Verificá con:
+### 2) Backend
 
 ```bash
-make status
-# o
-docker compose exec postgres psql -U termovault -d termovault \
-  -c "SELECT funcion, COUNT(*) FROM elementos GROUP BY funcion ORDER BY funcion;"
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan storage:link
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-Ver [`CONTRIBUTING.md`](CONTRIBUTING.md) para el flujo de trabajo completo.
+### 3) Frontend
 
-## Estado
+```bash
+cd web
+npm install
+npm run dev
+```
 
-🚧 En desarrollo — estructura inicial.
+Frontend: `http://localhost:5173`  
+API base: `http://localhost:8000/api`
 
-Ver [`docs/05-roadmap.md`](docs/05-roadmap.md) para el plan por fases.
+## Modelo de datos (núcleo)
+
+Tablas principales:
+- `roles`
+- `usuarios`
+- `empresas`
+- `yacimientos`
+- `usuario_yacimientos`
+- `elementos`
+- `inspecciones`
+- `archivos`
+- `novedades`
+
+Relación clave:
+- Una `inspeccion` pertenece a un `elemento`.
+- Un `elemento` pertenece a un `yacimiento`.
+- Un `usuario` técnico crea inspecciones.
+- Los archivos de informe/fotos viven en `archivos` asociados a `inspecciones`.
+
+## Seguridad y alcance por rol
+
+Se aplica en backend (no depende del frontend):
+
+- **Admin**
+  - Ve y edita todo.
+- **Técnico**
+  - Ve solo sus informes.
+  - Puede cargar nuevas inspecciones.
+- **Supervisor contratista**
+  - Ve informes de técnicos de su empresa.
+  - Revisa/cierra dentro de su alcance.
+  - No administra elementos.
+- **Supervisor PAE**
+  - Ve por yacimientos asignados (`usuario_yacimientos`, ej. `YAC-PAE`).
+  - Puede administrar elementos solo dentro de esos yacimientos.
+
+## Endpoints importantes
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/dashboard/overview`
+- `GET /api/elementos`
+- `GET /api/elementos/{id}`
+- `POST /api/elementos` *(admin/supervisor PAE con alcance)*
+- `PUT /api/elementos/{id}` *(admin/supervisor PAE con alcance)*
+- `DELETE /api/elementos/{id}` *(admin/supervisor PAE con alcance)*
+- `POST /api/inspecciones`
+- `GET /api/inspecciones/{id}`
+- `PATCH /api/inspecciones/{id}/estado` *(admin/supervisor)*
+
+Estados de inspección en uso:
+- `enviada`
+- `revisada`
+- `cerrada`
+
+## UX implementada
+
+### Dashboard por rol
+- Cards de métricas.
+- Tabla “Últimos informes”.
+- Filtros por texto/estado/rango de fechas.
+- Acción principal visible: “Registrar nueva termografía”.
+
+### Detalle de informe
+- Fecha, técnico, empresa, yacimiento, subestación/elemento, estado.
+- Resumen y observaciones.
+- Archivos/fotos con descarga.
+- Botones de revisión/cierre solo si corresponde por estado y rol.
+
+### Gestión de elementos
+- Pantalla separada: `/elementos/gestion`
+- No queda enterrada en el homepage.
+- Admin y Supervisor PAE pueden gestionar.
+
+## Archivos clave agregados/actualizados recientemente
+
+Backend:
+- `backend/app/Services/Auth/AccessScopeResolver.php`
+- `backend/app/Http/Controllers/DashboardController.php`
+- `backend/app/Http/Controllers/InspeccionController.php`
+- `backend/app/Http/Controllers/ElementoController.php`
+- `backend/app/Http/Middleware/EnsureCognitoJwt.php`
+- `backend/app/Http/Controllers/CatalogController.php`
+- `backend/routes/api.php`
+
+Frontend:
+- `web/src/pages/Dashboard.tsx`
+- `web/src/pages/ElementosGestion.tsx`
+- `web/src/components/InspectionDetailModal.tsx`
+- `web/src/api/dashboard.ts`
+- `web/src/api/inspecciones.ts`
+- `web/src/api/client.ts`
+- `web/src/App.tsx`
+
+## Datos de prueba actuales
+
+Se limpiaron inspecciones históricas y se cargaron 3 informes demo `enviada` para:
+- `marijo006@gmail.com`
+
+Esto permite testear flujo técnico/supervisor/admin de punta a punta.
+
+## Guía para continuar con otra IA
+
+Si retomás con otro agente, pasale:
+1. Este `README.md`.
+2. Rama actual + `git status`.
+3. Objetivo puntual (ej. “mejorar módulo de revisión”).
+
+Prompt sugerido corto:
+
+```txt
+Leé README.md completo y sincronizate con el estado real del repo.
+No inventes estructura ni permisos. Mantener seguridad por rol en backend.
+Primero analizá, luego implementá y validá build/test.
+```
+
+## Checklist antes de merge
+
+- `php -l` en controladores/middleware tocados.
+- `npm run build` en `web/`.
+- Probar flujo:
+  - Técnico crea informe.
+  - Supervisor revisa.
+  - Supervisor/Admin cierra.
+  - Descargas de archivos desde detalle.
+

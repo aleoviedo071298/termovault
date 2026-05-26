@@ -6,17 +6,154 @@ use App\Models\Archivo;
 use App\Models\Elemento;
 use App\Models\Inspeccion;
 use App\Models\Novedad;
+use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class InspeccionController extends Controller
 {
+    public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $scope = $this->scopeResolver->resolve($request);
+
+        $query = Inspeccion::query()
+            ->with([
+                'tecnico:id,nombre,apellido,email',
+                'elemento:id,nombre,codigo,yacimiento_id,tipo_elemento_id',
+                'elemento.yacimiento:id,nombre,codigo,empresa_id',
+                'elemento.tipoElemento:id,nombre',
+                'archivos:id,inspeccion_id,tipo,nombre_original,s3_bucket,s3_key,tamano_bytes,mime_type',
+                'novedades:id,inspeccion_id,criticidad_id,titulo,descripcion,ubicacion_dentro_elemento,temperatura_detectada,accion_recomendada,estado',
+                'novedades.criticidad:id,nombre,nivel,color',
+            ])
+            ->join('elementos as e', 'e.id', '=', 'inspecciones.elemento_id')
+            ->join('yacimientos as y', 'y.id', '=', 'e.yacimiento_id')
+            ->join('usuarios as u', 'u.id', '=', 'inspecciones.tecnico_id')
+            ->select('inspecciones.*');
+
+        if ($scope['is_admin']) {
+            // no extra filter
+        } elseif ($scope['is_tecnico']) {
+            $query->where('inspecciones.tecnico_id', $scope['user_id']);
+        } elseif ($scope['is_supervisor']) {
+            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+                $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+            } else {
+                $query->where('u.empresa_id', $scope['empresa_id']);
+            }
+        } else {
+            $query->whereRaw('1=0');
+        }
+
+        $inspeccion = $query->find($id);
+        if (! $inspeccion) {
+            return response()->json(['message' => 'Inspección no encontrada'], 404);
+        }
+
+        return response()->json([
+            'id' => $inspeccion->id,
+            'fecha_inspeccion' => $inspeccion->fecha_inspeccion,
+            'estado' => $inspeccion->estado,
+            'cuadrilla' => $inspeccion->cuadrilla,
+            'integrantes' => $inspeccion->integrantes,
+            'empresa_contratista' => $inspeccion->empresa_contratista,
+            'condiciones_clima' => $inspeccion->condiciones_clima,
+            'temperatura_ambiente' => $inspeccion->temperatura_ambiente,
+            'humedad_relativa' => $inspeccion->humedad_relativa,
+            'carga_pct' => $inspeccion->carga_pct,
+            'resumen' => $inspeccion->resumen,
+            'observaciones_revisor' => $inspeccion->observaciones_revisor,
+            'tecnico' => $inspeccion->tecnico ? [
+                'id' => $inspeccion->tecnico->id,
+                'nombre' => trim($inspeccion->tecnico->nombre . ' ' . $inspeccion->tecnico->apellido),
+                'email' => $inspeccion->tecnico->email,
+            ] : null,
+            'elemento' => $inspeccion->elemento ? [
+                'id' => $inspeccion->elemento->id,
+                'nombre' => $inspeccion->elemento->nombre,
+                'codigo' => $inspeccion->elemento->codigo,
+                'tipo' => $inspeccion->elemento->tipoElemento?->nombre,
+                'yacimiento' => $inspeccion->elemento->yacimiento?->nombre,
+            ] : null,
+            'archivos' => $inspeccion->archivos->map(fn ($archivo) => [
+                'id' => $archivo->id,
+                'tipo' => $archivo->tipo,
+                'nombre' => $archivo->nombre_original,
+                'bucket' => $archivo->s3_bucket,
+                'key' => $archivo->s3_key,
+                'tamano' => $archivo->tamano_bytes,
+                'mime' => $archivo->mime_type,
+            ])->values(),
+            'novedades' => $inspeccion->novedades->map(fn ($n) => [
+                'id' => $n->id,
+                'titulo' => $n->titulo,
+                'descripcion' => $n->descripcion,
+                'ubicacion' => $n->ubicacion_dentro_elemento,
+                'temperatura' => $n->temperatura_detectada,
+                'criticidad' => $n->criticidad?->nombre,
+                'criticidad_color' => $n->criticidad?->color,
+                'estado' => $n->estado,
+                'accion_recomendada' => $n->accion_recomendada,
+            ])->values(),
+        ]);
+    }
+
+    public function updateEstado(Request $request, int $id): JsonResponse
+    {
+        $scope = $this->scopeResolver->resolve($request);
+
+        if (! $scope['is_admin'] && ! $scope['is_supervisor']) {
+            return response()->json(['message' => 'No tenes permisos para revisar o cerrar informes'], 403);
+        }
+
+        $data = $request->validate([
+            'estado' => 'required|in:enviada,revisada,cerrada',
+            'observaciones_revisor' => 'nullable|string',
+        ]);
+
+        $query = Inspeccion::query()
+            ->join('elementos as e', 'e.id', '=', 'inspecciones.elemento_id')
+            ->join('yacimientos as y', 'y.id', '=', 'e.yacimiento_id')
+            ->join('usuarios as u', 'u.id', '=', 'inspecciones.tecnico_id')
+            ->select('inspecciones.*');
+
+        if ($scope['is_admin']) {
+            // full access
+        } elseif ($scope['is_supervisor']) {
+            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+                $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+            } else {
+                $query->where('u.empresa_id', $scope['empresa_id']);
+            }
+        }
+
+        $inspeccion = $query->find($id);
+        if (! $inspeccion) {
+            return response()->json(['message' => 'Inspección no encontrada'], 404);
+        }
+
+        $inspeccion->estado = $data['estado'];
+        if (array_key_exists('observaciones_revisor', $data)) {
+            $inspeccion->observaciones_revisor = $data['observaciones_revisor'];
+        }
+        $inspeccion->revisada_por = $scope['user_id'];
+        $inspeccion->fecha_revision = now();
+        $inspeccion->save();
+
+        return response()->json([
+            'message' => 'Estado actualizado correctamente',
+            'id' => $inspeccion->id,
+            'estado' => $inspeccion->estado,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
-        $empresaId = $request->attributes->get('auth.empresa_id');
-        $userId = $request->attributes->get('auth.user_id');
+        $scope = $this->scopeResolver->resolve($request);
+        $userId = $scope['user_id'];
 
         $data = $request->validate([
             'elemento_id' => 'required|exists:elementos,id',
@@ -35,11 +172,11 @@ class InspeccionController extends Controller
             'novedades' => 'nullable|string', // JSON string containing array of findings
         ]);
 
-        // Enforce multi-tenant check
-        $elemento = Elemento::query()->forEmpresa($empresaId)->find($data['elemento_id']);
-        if (!$elemento) {
-            return response()->json(['message' => 'Elemento no encontrado o no pertenece a tu empresa'], 422);
+        if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
+            return response()->json(['message' => 'No tenes permisos para cargar inspecciones en este elemento'], 403);
         }
+
+        $elemento = Elemento::query()->find($data['elemento_id']);
 
         return DB::transaction(function () use ($request, $data, $userId, $elemento) {
             // 1. Create Inspeccion
@@ -55,7 +192,7 @@ class InspeccionController extends Controller
                 'carga_pct' => $data['carga_pct'] ?? null,
                 'condiciones_clima' => $data['condiciones_clima'] ?? null,
                 'resumen' => $data['resumen'] ?? null,
-                'estado' => $data['estado'] ?? 'revisada', // Defaults to reviewed/published
+                'estado' => $data['estado'] ?? 'enviada',
             ]);
 
             // 2. Handle Reporte File

@@ -83,6 +83,7 @@ class AuthController extends Controller
             'id' => $userId,
             'sub' => $claims['sub'] ?? null,
             'email' => $claims['email'] ?? null,
+            'username' => $claims['username'] ?? ($claims['cognito:username'] ?? null),
             'token_use' => $claims['token_use'] ?? null,
             'empresa_id' => $empresaId,
             'claims' => $claims,

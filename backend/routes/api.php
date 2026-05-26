@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ElementoController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,8 +34,10 @@ Route::middleware('api')->group(function () {
         Route::get('/catalogos', [\App\Http\Controllers\CatalogController::class, 'index']);
 
         Route::middleware('role.claim:admin,supervisor,tecnico')->group(function () {
+            Route::get('/dashboard/overview', [DashboardController::class, 'overview']);
             Route::get('/elementos', [ElementoController::class, 'listElements']);
             Route::get('/elementos/{id}', [ElementoController::class, 'show']);
+            Route::get('/inspecciones/{id}', [\App\Http\Controllers\InspeccionController::class, 'show']);
             Route::post('/inspecciones', [\App\Http\Controllers\InspeccionController::class, 'store']);
         });
 
@@ -42,6 +45,7 @@ Route::middleware('api')->group(function () {
             Route::post('/elementos', [ElementoController::class, 'store']);
             Route::put('/elementos/{id}', [ElementoController::class, 'update']);
             Route::delete('/elementos/{id}', [ElementoController::class, 'destroy']);
+            Route::patch('/inspecciones/{id}/estado', [\App\Http\Controllers\InspeccionController::class, 'updateEstado']);
         });
     });
 });
