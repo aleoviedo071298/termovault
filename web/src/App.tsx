@@ -34,12 +34,13 @@ function Dashboard() {
   const userGroups = user?.groups ?? [];
   const canWrite = userGroups.includes("admin") || userGroups.includes("supervisor");
   const canInspect = userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
+  const isTecnico = userGroups.includes("tecnico") && !userGroups.includes("admin") && !userGroups.includes("supervisor");
 
   async function loadElementos() {
     try {
       setLoading(true);
       setError(null);
-      setElementos(await listElementos());
+      setElementos(await listElementos({ my_inspections_only: isTecnico }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar la lista.");
     } finally {
@@ -49,7 +50,7 @@ function Dashboard() {
 
   useEffect(() => {
     void loadElementos();
-  }, []);
+  }, [isTecnico]);
 
   const filtered = useMemo(() => {
     let result = elementos;
@@ -104,7 +105,7 @@ function Dashboard() {
         </div>
         <div className="title-stack">
           <p>TermoVault</p>
-          <h1>Elementos inspeccionables</h1>
+          <h1>{isTecnico ? "Historial de elementos analizados" : "Elementos inspeccionables"}</h1>
         </div>
         <div className="metric">
           <span>{loading ? "--" : filtered.length}</span>
