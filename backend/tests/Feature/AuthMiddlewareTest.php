@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Services\CognitoJwtVerifier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
 
 class AuthMiddlewareTest extends TestCase
 {
+    use RefreshDatabase;
     public function test_it_returns_401_when_token_is_required_and_missing(): void
     {
         config()->set('cognito.required', true);
