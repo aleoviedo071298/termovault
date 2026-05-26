@@ -1,15 +1,27 @@
--- Empresa default (el primer cliente / el yacimiento propio)
--- Reemplazar nombre y CUIT por los reales antes de correr en producción
-
+-- Empresa real
 INSERT INTO empresas (nombre, cuit, plan) VALUES
-  ('Empresa Demo', '30-00000000-0', 'basico');
+  ('PECOM', '30-00000000-0', 'basico');
 
--- Yacimiento default asociado a la empresa anterior
--- Reemplazar nombre y código por los reales
-
+-- Yacimiento real asociado a PECOM
 INSERT INTO yacimientos (empresa_id, nombre, codigo, zona, descripcion) VALUES
-  ((SELECT id FROM empresas WHERE cuit = '30-00000000-0'),
-   'Yacimiento Demo',
-   'YAC-DEMO',
+  ((SELECT id FROM empresas WHERE nombre = 'PECOM'),
+   'PAE',
+   'YAC-PAE',
    'Cuenca Neuquina',
-   'Yacimiento inicial para carga de inspecciones termográficas');
+   'Yacimiento principal para carga de inspecciones termográficas');
+
+-- Usuario administrador principal (para linkeo de Cognito JWT)
+INSERT INTO usuarios (empresa_id, rol_id, nombre, apellido, email, password_hash, created_at, updated_at) VALUES
+  ((SELECT id FROM empresas WHERE nombre = 'PECOM'),
+   (SELECT id FROM roles WHERE codigo = 'admin'),
+   'Alejandro',
+   'Oviedo',
+   'aleoviedo071298@gmail.com',
+   '$2y$12$DummyBcryptHashForLocalAuthWhichIsNotUsedSinceWeUseCognito',
+   NOW(),
+   NOW());
+
+-- Vincular usuario al yacimiento PAE
+INSERT INTO usuario_yacimientos (usuario_id, yacimiento_id) VALUES
+  ((SELECT id FROM usuarios WHERE email = 'aleoviedo071298@gmail.com'),
+   (SELECT id FROM yacimientos WHERE codigo = 'YAC-PAE'));

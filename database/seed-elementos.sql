@@ -16,7 +16,7 @@
 
 WITH ctx AS (
   SELECT
-    (SELECT id FROM yacimientos WHERE codigo = 'YAC-DEMO')              AS yac_id,
+    (SELECT id FROM yacimientos WHERE codigo = 'YAC-PAE')              AS yac_id,
     (SELECT id FROM tipos_elemento WHERE codigo = 'subestacion')        AS tipo_sub,
     (SELECT id FROM tipos_elemento WHERE codigo = 'estacion_transformadora') AS tipo_etr,
     (SELECT id FROM tipos_elemento WHERE codigo = 'banco_capacitores')  AS tipo_bco

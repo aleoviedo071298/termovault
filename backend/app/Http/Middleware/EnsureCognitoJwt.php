@@ -40,8 +40,18 @@ class EnsureCognitoJwt
             ?? $claims['empresa_id']
             ?? null;
 
+        $dbUser = null;
+        $email = $claims['email'] ?? $claims['cognito:username'] ?? null;
+        if ($email) {
+            $dbUser = \Illuminate\Support\Facades\DB::table('usuarios')->where('email', $email)->first();
+            if ($dbUser && !$empresaId) {
+                $empresaId = $dbUser->empresa_id;
+            }
+        }
+
         $request->attributes->set('auth.claims', $claims);
         $request->attributes->set('auth.empresa_id', $empresaId ? (int) $empresaId : null);
+        $request->attributes->set('auth.user_id', $dbUser ? $dbUser->id : null);
 
         if ($empresaId && ! $request->headers->has('X-Empresa-Id')) {
             $request->headers->set('X-Empresa-Id', (string) $empresaId);

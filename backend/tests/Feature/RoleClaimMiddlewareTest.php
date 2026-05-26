@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Services\CognitoJwtVerifier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Mockery;
 use Tests\TestCase;
 
 class RoleClaimMiddlewareTest extends TestCase
 {
+    use RefreshDatabase;
     protected function setUp(): void
     {
         parent::setUp();

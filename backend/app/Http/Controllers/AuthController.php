@@ -77,8 +77,10 @@ class AuthController extends Controller
     {
         $claims = $request->attributes->get('auth.claims', []);
         $empresaId = $request->attributes->get('auth.empresa_id');
+        $userId = $request->attributes->get('auth.user_id');
 
         return response()->json([
+            'id' => $userId,
             'sub' => $claims['sub'] ?? null,
             'email' => $claims['email'] ?? null,
             'token_use' => $claims['token_use'] ?? null,
