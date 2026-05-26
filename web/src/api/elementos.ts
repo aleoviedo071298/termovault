@@ -5,16 +5,12 @@ export interface ElementoDetail extends Elemento {
   nivel_tension_id: number | null;
   tension: string | null;
   yacimiento_id: number;
-  lat: number | null;
-  lng: number | null;
   marca: string | null;
   modelo: string | null;
   n_serie: string | null;
-  fecha_instalacion: string | null;
   criticidad_id: number | null;
   estado_operativo: string | null;
   observaciones: string | null;
-  ubicacion_descripcion?: string | null;
   observaciones_generales?: string | null;
 }
 

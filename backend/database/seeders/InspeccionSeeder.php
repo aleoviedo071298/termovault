@@ -51,8 +51,6 @@ class InspeccionSeeder extends Seeder
                     'humedad_relativa' => 35 + ($index % 40) - ($i * 5),
                     'carga_pct' => 60.0 + ($index % 30) + ($i * 5),
                     'condiciones_clima' => $climas[$index % count($climas)],
-                    'lat_gps' => $elemento->lat ?? -45.8641 + ($index * 0.0001),
-                    'lng_gps' => $elemento->lng ?? -67.4983 - ($index * 0.0001),
                     'resumen' => "Inspección termográfica preventiva de rutina en {$elemento->nombre}. Se relevaron todos los componentes críticos bajo carga normal.",
                     'estado' => $i === 0 ? 'revisada' : 'cerrada',
                     'revisada_por' => $tecnico->id,
