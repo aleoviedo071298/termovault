@@ -15,6 +15,7 @@ export interface DashboardStats {
   informes_con_archivos: number;
   ultimo_informe: string | null;
   contratistas_activas: number;
+  elementos_termografiados: number;
 }
 
 export interface DashboardReportRow {

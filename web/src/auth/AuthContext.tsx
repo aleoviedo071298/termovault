@@ -10,11 +10,12 @@ export interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, options?: { session?: string | null; newPassword?: string }) => Promise<{ challenge?: string; session?: string | null } | null>;
   logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 function parseJwt(token: string) {
   try {
@@ -41,36 +42,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedAccessToken = localStorage.getItem("access_token");
     const storedIdToken = localStorage.getItem("id_token");
 
-    if (storedAccessToken && storedIdToken) {
+    async function bootstrap() {
+      if (!storedAccessToken || !storedIdToken) {
+        setLoading(false);
+        return;
+      }
+
       const claims = parseJwt(storedIdToken);
       if (claims && claims.exp * 1000 > Date.now()) {
+        let groups: string[] = claims["cognito:groups"] ?? [];
+        if ((!Array.isArray(groups) || groups.length === 0) && storedAccessToken) {
+          try {
+            const res = await fetch(`${API_URL}/auth/me`, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${storedAccessToken}`
+              }
+            });
+            if (res.ok) {
+              const me = await res.json() as { local_role?: string | null };
+              if (me.local_role) {
+                groups = [me.local_role];
+              }
+            }
+          } catch {}
+        }
+
         setToken(storedAccessToken);
         setUser({
           email: claims.email ?? claims["cognito:username"] ?? "",
-          groups: claims["cognito:groups"] ?? []
+          groups
         });
       } else {
         // Token expired
         localStorage.removeItem("access_token");
         localStorage.removeItem("id_token");
       }
+      setLoading(false);
     }
-    setLoading(false);
+
+    void bootstrap();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    options?: { session?: string | null; newPassword?: string }
+  ) => {
     setLoading(true);
     try {
-      const response = await loginCognito(email, password);
+      const result = await loginCognito(email, password, options);
+      if (result.kind === "challenge") {
+        return {
+          challenge: result.data.challenge,
+          session: result.data.session
+        };
+      }
+
+      const response = result.data;
       localStorage.setItem("access_token", response.access_token);
       localStorage.setItem("id_token", response.id_token);
 
       const claims = parseJwt(response.id_token);
+      let groups: string[] = claims?.["cognito:groups"] ?? [];
+      if ((!Array.isArray(groups) || groups.length === 0)) {
+        try {
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${response.access_token}`
+            }
+          });
+          if (res.ok) {
+            const me = await res.json() as { local_role?: string | null };
+            if (me.local_role) {
+              groups = [me.local_role];
+            }
+          }
+        } catch {}
+      }
+
       setToken(response.access_token);
       setUser({
         email: claims?.email ?? claims?.["cognito:username"] ?? email,
-        groups: claims?.["cognito:groups"] ?? []
+        groups
       });
+      return null;
     } catch (error) {
       logout();
       throw error;

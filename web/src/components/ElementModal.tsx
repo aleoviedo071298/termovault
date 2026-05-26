@@ -8,6 +8,7 @@ import {
   type Catalogos,
   type ElementoDetail
 } from "../api/elementos";
+import { useAuth } from "../auth/useAuth";
 
 interface ElementModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   elementId,
   onSuccess
 }) => {
+  const { user } = useAuth();
+  const isAdmin = (user?.groups ?? []).some((g) => g.toLowerCase() === "admin");
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,6 +90,9 @@ export const ElementModal: React.FC<ElementModalProps> = ({
           setNSerie("");
           setEstadoOperativo("operativo");
           setObservacionesGenerales("");
+          if (!isAdmin && cats.yacimientos.length === 1) {
+            setYacimientoId(cats.yacimientos[0].id);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al cargar datos del formulario");
@@ -204,6 +210,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                   id="form-yacimiento"
                   value={yacimientoId}
                   onChange={(e) => setYacimientoId(e.target.value ? Number(e.target.value) : "")}
+                  disabled={!isAdmin && (catalogos?.yacimientos.length ?? 0) <= 1}
                   required
                 >
                   <option value="">Seleccione yacimiento</option>

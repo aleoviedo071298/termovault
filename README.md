@@ -1,46 +1,48 @@
 # TermoVault
 
-Plataforma interna multi-tenant para gestión de informes termográficos (Oil & Gas / energía).
+Plataforma interna multi-tenant para gestion de informes de termografia (Oil and Gas).
 
 ## Estado actual (2026-05-26)
 
-- Backend Laravel 12 funcional con JWT Cognito.
-- Frontend React + Vite funcional con dashboard por rol.
+- Backend Laravel 12 con autenticacion Cognito JWT.
+- Frontend React + Vite con dashboards por rol.
 - Roles activos: `admin`, `supervisor`, `tecnico`.
-- Flujo operativo implementado:
-  - Técnico carga informe (`enviada`).
-  - Supervisor/Admin revisa (`revisada`).
-  - Supervisor/Admin cierra (`cerrada`).
+- Flujo operativo:
+  1. Tecnico crea informe (`enviada`).
+  2. Supervisor PAE o Admin revisa (`revisada`).
+  3. Supervisor PAE o Admin cierra (`cerrada`).
 
-## Stack real del repo
+## Stack
 
-- Backend: Laravel 12 + PostgreSQL 16
+- Backend: Laravel 12
 - Frontend: React 19 + Vite 7 + TypeScript
+- DB: PostgreSQL 16
 - Infra local: Docker Compose (Postgres, MinIO, Adminer)
-- Auth: AWS Cognito (JWT)
+- Auth: AWS Cognito
 
-## Estructura
+## Estructura del repo
 
 ```txt
 termovault/
-├── backend/                  # API Laravel
-├── web/                      # Frontend React/Vite
-├── database/                 # schema.sql + seeds
-├── docker-compose.yml
-├── .githooks/
-└── README.md
+|-- backend/                 # API Laravel
+|-- web/                     # Frontend React/Vite
+|-- database/                # SQL base + seeds de referencia
+|-- docker-compose.yml
+|-- .githooks/
+|-- README.md
+`-- NEXT_SESSION.md
 ```
 
-## Setup local rápido
+## Setup rapido
 
-### 1) Levantar servicios
+### 1) Infra
 
 ```bash
 docker compose up -d
 ```
 
 Servicios:
-- Postgres: `localhost:5433` (interno contenedor: 5432)
+- Postgres: `localhost:5433`
 - Adminer: `http://localhost:8080`
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
@@ -65,131 +67,100 @@ npm run dev
 ```
 
 Frontend: `http://localhost:5173`  
-API base: `http://localhost:8000/api`
+API: `http://localhost:8000/api`
 
-## Modelo de datos (núcleo)
-
-Tablas principales:
-- `roles`
-- `usuarios`
-- `empresas`
-- `yacimientos`
-- `usuario_yacimientos`
-- `elementos`
-- `inspecciones`
-- `archivos`
-- `novedades`
-
-Relación clave:
-- Una `inspeccion` pertenece a un `elemento`.
-- Un `elemento` pertenece a un `yacimiento`.
-- Un `usuario` técnico crea inspecciones.
-- Los archivos de informe/fotos viven en `archivos` asociados a `inspecciones`.
-
-## Seguridad y alcance por rol
-
-Se aplica en backend (no depende del frontend):
+## Reglas de seguridad por rol (backend)
 
 - **Admin**
   - Ve y edita todo.
-- **Técnico**
+  - Gestiona usuarios, empresas, yacimientos, elementos.
+- **Tecnico**
   - Ve solo sus informes.
-  - Puede cargar nuevas inspecciones.
+  - Carga nuevos informes para elementos habilitados en su alcance.
 - **Supervisor contratista**
-  - Ve informes de técnicos de su empresa.
-  - Revisa/cierra dentro de su alcance.
-  - No administra elementos.
-- **Supervisor PAE**
-  - Ve por yacimientos asignados (`usuario_yacimientos`, ej. `YAC-PAE`).
-  - Puede administrar elementos solo dentro de esos yacimientos.
+  - Ve informes de tecnicos de su empresa.
+  - No puede cerrar/revisar informes fuera de su alcance.
+  - No administra elementos de yacimiento.
+- **Supervisor PAE (dueno de yacimiento)**
+  - Ve informes del yacimiento asignado (por `usuario_yacimientos`).
+  - Puede revisar/cerrar.
+  - Puede administrar elementos del yacimiento asignado.
 
-## Endpoints importantes
+Todas las restricciones criticas se validan en backend. El frontend solo refleja permisos.
+
+## Endpoints principales
 
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET /api/dashboard/overview`
 - `GET /api/elementos`
-- `GET /api/elementos/{id}`
-- `POST /api/elementos` *(admin/supervisor PAE con alcance)*
-- `PUT /api/elementos/{id}` *(admin/supervisor PAE con alcance)*
-- `DELETE /api/elementos/{id}` *(admin/supervisor PAE con alcance)*
+- `POST /api/elementos`
+- `PUT /api/elementos/{id}`
+- `DELETE /api/elementos/{id}`
 - `POST /api/inspecciones`
 - `GET /api/inspecciones/{id}`
-- `PATCH /api/inspecciones/{id}/estado` *(admin/supervisor)*
+- `PATCH /api/inspecciones/{id}/estado`
+- `GET /api/admin/usuarios`
+- `POST /api/admin/usuarios`
+- `PATCH /api/admin/usuarios/{id}`
+- `POST /api/admin/empresas`
+- `POST /api/admin/yacimientos`
 
-Estados de inspección en uso:
-- `enviada`
-- `revisada`
-- `cerrada`
+## Frontend UX actual
 
-## UX implementada
+- Dashboard por rol con:
+  - KPIs relevantes
+  - tabla de ultimos informes
+  - filtros por texto/estado/fechas
+  - acciones rapidas por permisos
+- Vista de detalle de informe:
+  - metadata operativa
+  - hallazgos (novedades)
+  - archivos y fotos con descarga
+  - acciones de revision/cierre segun rol y estado
+- Gestion de elementos en pagina separada (no embebida en dashboard).
 
-### Dashboard por rol
-- Cards de métricas.
-- Tabla “Últimos informes”.
-- Filtros por texto/estado/rango de fechas.
-- Acción principal visible: “Registrar nueva termografía”.
-
-### Detalle de informe
-- Fecha, técnico, empresa, yacimiento, subestación/elemento, estado.
-- Resumen y observaciones.
-- Archivos/fotos con descarga.
-- Botones de revisión/cierre solo si corresponde por estado y rol.
-
-### Gestión de elementos
-- Pantalla separada: `/elementos/gestion`
-- No queda enterrada en el homepage.
-- Admin y Supervisor PAE pueden gestionar.
-
-## Archivos clave agregados/actualizados recientemente
+## Archivos clave tocados en esta etapa
 
 Backend:
-- `backend/app/Services/Auth/AccessScopeResolver.php`
+- `backend/app/Http/Controllers/AuthController.php`
+- `backend/app/Http/Controllers/CatalogController.php`
 - `backend/app/Http/Controllers/DashboardController.php`
 - `backend/app/Http/Controllers/InspeccionController.php`
-- `backend/app/Http/Controllers/ElementoController.php`
+- `backend/app/Http/Controllers/AdminUserController.php`
+- `backend/app/Http/Controllers/AdminOrganizationController.php`
 - `backend/app/Http/Middleware/EnsureCognitoJwt.php`
-- `backend/app/Http/Controllers/CatalogController.php`
+- `backend/app/Http/Middleware/EnsureRoleFromClaims.php`
+- `backend/app/Services/Auth/AccessScopeResolver.php`
 - `backend/routes/api.php`
 
 Frontend:
+- `web/src/App.tsx`
 - `web/src/pages/Dashboard.tsx`
-- `web/src/pages/ElementosGestion.tsx`
+- `web/src/pages/AdminUsuariosPage.tsx`
+- `web/src/pages/Login.tsx`
+- `web/src/components/ElementModal.tsx`
 - `web/src/components/InspectionDetailModal.tsx`
 - `web/src/api/dashboard.ts`
-- `web/src/api/inspecciones.ts`
-- `web/src/api/client.ts`
-- `web/src/App.tsx`
+- `web/src/api/adminUsuarios.ts`
+- `web/src/auth/AuthContext.tsx`
+- `web/src/auth/cognito.ts`
+- `web/src/index.css`
 
-## Datos de prueba actuales
+## Validaciones recomendadas antes de merge/publish
 
-Se limpiaron inspecciones históricas y se cargaron 3 informes demo `enviada` para:
-- `marijo006@gmail.com`
-
-Esto permite testear flujo técnico/supervisor/admin de punta a punta.
-
-## Guía para continuar con otra IA
-
-Si retomás con otro agente, pasale:
-1. Este `README.md`.
-2. Rama actual + `git status`.
-3. Objetivo puntual (ej. “mejorar módulo de revisión”).
-
-Prompt sugerido corto:
-
-```txt
-Leé README.md completo y sincronizate con el estado real del repo.
-No inventes estructura ni permisos. Mantener seguridad por rol en backend.
-Primero analizá, luego implementá y validá build/test.
+```bash
+cd web && npm run build
+cd backend && php artisan test
 ```
 
-## Checklist antes de merge
+Pruebas funcionales minimas:
+- Login Cognito con usuario nuevo + rol activo.
+- Tecnico crea informe.
+- Supervisor PAE revisa y cierra.
+- Supervisor contratista solo ve su empresa.
+- Admin ve todo y gestiona usuarios/organizacion.
 
-- `php -l` en controladores/middleware tocados.
-- `npm run build` en `web/`.
-- Probar flujo:
-  - Técnico crea informe.
-  - Supervisor revisa.
-  - Supervisor/Admin cierra.
-  - Descargas de archivos desde detalle.
+## Continuidad con otra IA
 
+Usar `NEXT_SESSION.md` como prompt base.

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminOrganizationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ElementoController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +48,15 @@ Route::middleware('api')->group(function () {
             Route::put('/elementos/{id}', [ElementoController::class, 'update']);
             Route::delete('/elementos/{id}', [ElementoController::class, 'destroy']);
             Route::patch('/inspecciones/{id}/estado', [\App\Http\Controllers\InspeccionController::class, 'updateEstado']);
+        });
+
+        Route::middleware('role.claim:admin')->group(function () {
+            Route::get('/admin/usuarios', [AdminUserController::class, 'index']);
+            Route::get('/admin/usuarios/meta', [AdminUserController::class, 'meta']);
+            Route::post('/admin/usuarios', [AdminUserController::class, 'store']);
+            Route::put('/admin/usuarios/{id}', [AdminUserController::class, 'update']);
+            Route::post('/admin/empresas', [AdminOrganizationController::class, 'createEmpresa']);
+            Route::post('/admin/yacimientos', [AdminOrganizationController::class, 'createYacimiento']);
         });
     });
 });

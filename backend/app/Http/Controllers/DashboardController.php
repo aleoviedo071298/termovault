@@ -140,6 +140,9 @@ class DashboardController extends Controller
         $activeContractors = (clone $allReportsScoped)
             ->distinct('u.empresa_id')
             ->count('u.empresa_id');
+        $thermographedElements = (clone $allReportsScoped)
+            ->distinct('e.id')
+            ->count('e.id');
 
         $criticalRecent = $reports
             ->filter(fn ($r) => in_array($r['criticidad'], ['critico', 'urgente'], true))
@@ -187,6 +190,7 @@ class DashboardController extends Controller
             'informes_con_archivos' => $withFiles,
             'ultimo_informe' => $lastReport,
             'contratistas_activas' => $activeContractors,
+            'elementos_termografiados' => $thermographedElements,
         ];
 
         return response()->json([
@@ -211,7 +215,13 @@ class DashboardController extends Controller
         }
 
         if ($scope['is_tecnico']) {
-            return $query->where('i.tecnico_id', $scope['user_id']);
+            $query->where('i.tecnico_id', $scope['user_id']);
+            if ($scope['assigned_yacimiento_ids'] !== []) {
+                $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+            return $query;
         }
 
         if ($scope['is_supervisor']) {
@@ -220,7 +230,13 @@ class DashboardController extends Controller
             }
 
             if ($scope['empresa_id']) {
-                return $query->where('u.empresa_id', $scope['empresa_id']);
+                $query->where('u.empresa_id', $scope['empresa_id']);
+                if ($scope['assigned_yacimiento_ids'] !== []) {
+                    $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+                return $query;
             }
         }
 
