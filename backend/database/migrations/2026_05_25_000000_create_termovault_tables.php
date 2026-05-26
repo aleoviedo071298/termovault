@@ -96,13 +96,9 @@ return new class extends Migration
             $table->foreignId('nivel_tension_id')->nullable()->constrained('niveles_tension');
             $table->string('nombre', 150);
             $table->string('codigo', 50);
-            $table->text('ubicacion_descripcion')->nullable();
-            $table->decimal('lat', 10, 7)->nullable();
-            $table->decimal('lng', 10, 7)->nullable();
             $table->string('marca', 100)->nullable();
             $table->string('modelo', 100)->nullable();
             $table->string('n_serie', 100)->nullable();
-            $table->date('fecha_instalacion')->nullable();
             $table->foreignId('criticidad_id')->nullable()->constrained('criticidades');
             $table->string('estado_operativo', 30)->default('operativo');
             $table->text('observaciones_generales')->nullable();
@@ -128,8 +124,6 @@ return new class extends Migration
             $table->decimal('humedad_relativa', 4, 1)->nullable();
             $table->decimal('carga_pct', 4, 1)->nullable();
             $table->string('condiciones_clima', 50)->nullable();
-            $table->decimal('lat_gps', 10, 7)->nullable();
-            $table->decimal('lng_gps', 10, 7)->nullable();
             $table->text('resumen')->nullable();
             $table->string('estado', 20)->default('borrador');
             $table->foreignId('revisada_por')->nullable()->constrained('usuarios');

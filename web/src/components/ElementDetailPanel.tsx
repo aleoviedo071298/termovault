@@ -260,29 +260,6 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                     <span className="field-label">N° de Serie</span>
                     <span className="field-val">{data.elemento.n_serie ?? "-"}</span>
                   </div>
-                  <div className="field-group">
-                    <span className="field-label">Fecha de Instalación</span>
-                    <span className="field-val">
-                      {data.elemento.fecha_instalacion
-                        ? new Date(data.elemento.fecha_instalacion + "T00:00:00").toLocaleDateString()
-                        : "-"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="field-group" style={{ marginTop: "12px" }}>
-                  <span className="field-label">Coordenadas GPS</span>
-                  <span className="field-val" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <MapPin size={16} className="text-sage" />
-                    {data.elemento.lat && data.elemento.lng
-                      ? `${data.elemento.lat}, ${data.elemento.lng}`
-                      : "Sin geo-localización"}
-                  </span>
-                </div>
-
-                <div className="field-group" style={{ marginTop: "12px" }}>
-                  <span className="field-label">Ubicación Descripción</span>
-                  <p className="field-paragraph">{data.elemento.ubicacion ?? "Sin descripción"}</p>
                 </div>
 
                 <div className="field-group" style={{ marginTop: "12px" }}>
