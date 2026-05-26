@@ -12,6 +12,8 @@ class Inspeccion extends Model
 {
     use HasFactory;
 
+    protected $table = 'inspecciones';
+
     protected $fillable = [
         'elemento_id',
         'tecnico_id',

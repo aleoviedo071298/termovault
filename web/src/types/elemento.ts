@@ -11,4 +11,6 @@ export interface Elemento {
   criticidad: string | null;
   criticidad_nivel: number | null;
   criticidad_color: string | null;
+  nivel_tension_id?: number | null;
+  tension?: string | null;
 }

@@ -14,6 +14,8 @@ class Yacimiento extends Model
     use BelongsToEmpresa;
     use HasFactory;
 
+    const UPDATED_AT = null;
+
     protected $fillable = [
         'empresa_id',
         'nombre',
