@@ -35,6 +35,7 @@ Route::middleware('api')->group(function () {
         Route::middleware('role.claim:admin,supervisor,tecnico')->group(function () {
             Route::get('/elementos', [ElementoController::class, 'listElements']);
             Route::get('/elementos/{id}', [ElementoController::class, 'show']);
+            Route::post('/inspecciones', [\App\Http\Controllers\InspeccionController::class, 'store']);
         });
 
         Route::middleware('role.claim:admin,supervisor')->group(function () {

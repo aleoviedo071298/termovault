@@ -9,6 +9,7 @@ import type { Elemento } from "./types/elemento";
 // Import components
 import { ElementModal } from "./components/ElementModal";
 import { ElementDetailPanel } from "./components/ElementDetailPanel";
+import { InspectionModal } from "./components/InspectionModal";
 
 function Dashboard() {
   const { logout, user } = useAuth();
@@ -26,8 +27,13 @@ function Dashboard() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedElementId, setSelectedElementId] = useState<number | null>(null);
 
+  // Inspection upload state
+  const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
+  const [inspectionElementId, setInspectionElementId] = useState<number | null>(null);
+
   const userGroups = user?.groups ?? [];
   const canWrite = userGroups.includes("admin") || userGroups.includes("supervisor");
+  const canInspect = userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
 
   async function loadElementos() {
     try {
@@ -114,6 +120,25 @@ function Dashboard() {
           />
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
+          {canInspect && (
+            <button
+              className="add-element-btn"
+              onClick={() => {
+                setInspectionElementId(null);
+                setInspectionModalOpen(true);
+              }}
+              title="Registrar Inspección"
+              type="button"
+              style={{
+                background: "#fffdf4",
+                color: "#1d5c46",
+                border: "1px solid #bfcabe"
+              }}
+            >
+              <Plus size={18} aria-hidden="true" />
+              <span>Registrar Inspección</span>
+            </button>
+          )}
           {canWrite && (
             <button
               className="add-element-btn"
@@ -281,9 +306,13 @@ function Dashboard() {
         }}
         userGroups={userGroups}
         onDeleteSuccess={() => void loadElementos()}
+        onNewInspectionClick={(id) => {
+          setInspectionElementId(id);
+          setInspectionModalOpen(true);
+        }}
       />
 
-      {/* Modal for Create/Edit */}
+      {/* Modal for Create/Edit Element */}
       <ElementModal
         isOpen={modalOpen}
         onClose={() => {
@@ -295,6 +324,25 @@ function Dashboard() {
           void loadElementos();
           // Force refresh of details panel if it's editing the currently opened item
           if (editElementId === selectedElementId) {
+            const currentId = selectedElementId;
+            setSelectedElementId(null);
+            setTimeout(() => setSelectedElementId(currentId), 50);
+          }
+        }}
+      />
+
+      {/* Modal for Uploading Inspection */}
+      <InspectionModal
+        isOpen={inspectionModalOpen}
+        onClose={() => {
+          setInspectionModalOpen(false);
+          setInspectionElementId(null);
+        }}
+        preSelectedElementId={inspectionElementId}
+        onSuccess={() => {
+          void loadElementos();
+          // Force refresh of details panel if it is open
+          if (selectedElementId) {
             const currentId = selectedElementId;
             setSelectedElementId(null);
             setTimeout(() => setSelectedElementId(currentId), 50);
