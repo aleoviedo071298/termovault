@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             NivelTensionSeeder::class,
             CriticidadSeeder::class,
             ElementoSeeder::class,
+            InspeccionSeeder::class,
         ]);
     }
 }
