@@ -95,7 +95,12 @@ SELECT yac_id, tipo_etr, NULL,     'ETR OR2', 'ETR-OR2' FROM ctx UNION ALL
 SELECT yac_id, tipo_etr, NULL,     'ETR RE2', 'ETR-RE2' FROM ctx UNION ALL
 SELECT yac_id, tipo_etr, NULL,     'ETR VH2', 'ETR-VH2' FROM ctx UNION ALL
 SELECT yac_id, tipo_etr, NULL,     'ETR ZR1', 'ETR-ZR1' FROM ctx UNION ALL
-SELECT yac_id, tipo_etr, NULL,     'ETR ZR2', 'ETR-ZR2' FROM ctx;
+SELECT yac_id, tipo_etr, NULL,     'ETR ZR2', 'ETR-ZR2' FROM ctx UNION ALL
+
+-- Bancos de Capacitores (3 detectados en los archivos)
+SELECT yac_id, tipo_bco, NULL, 'Bco Cap PIAS ZR2', 'BCAP-PIAS-ZR2' FROM ctx UNION ALL
+SELECT yac_id, tipo_bco, NULL, 'Bco Cap 33 kV PIAS CG8', 'BCAP-PIAS-CG8' FROM ctx UNION ALL
+SELECT yac_id, tipo_bco, NULL, 'Bco Cap 33 kV SET ZR4 H21C1', 'BCAP-SET-ZR4-H21C1' FROM ctx;
 
 -- ============================================================
 -- Actualizaciones post-carga solicitadas por el usuario:
