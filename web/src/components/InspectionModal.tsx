@@ -3,6 +3,7 @@ import { X, AlertCircle, Plus, Trash2, Upload, FileCheck, CheckCircle } from "lu
 import { getCatalogos, listElementos, type Catalogos } from "../api/elementos";
 import type { Elemento } from "../types/elemento";
 import { createInspeccion } from "../api/inspecciones";
+import { useAuth } from "../auth/useAuth";
 
 interface FindingTemp {
   id: string; // client-side temporary ID
@@ -29,6 +30,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   preSelectedElementId,
   onSuccess
 }) => {
+  const { user } = useAuth();
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [elementosList, setElementosList] = useState<Elemento[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,9 +93,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         }
 
         // Reset other states
-        setCuadrilla("");
+        const isTestUser = user?.email === "marijo006@gmail.com";
+        setCuadrilla(isTestUser ? "625" : "625");
+        setEmpresaContratista("PECOM");
         setIntegrantes("");
-        setEmpresaContratista("PECOM S.A.");
         setTemperaturaAmbiente("");
         setHumedadRelativa("");
         setCargaPct("");
@@ -259,30 +262,8 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 />
               </div>
 
-              {/* Cuadrilla & Contratista */}
+              {/* Integrantes & Clima */}
               <div className="form-group">
-                <label htmlFor="form-ins-cuadrilla">Cuadrilla Responsable</label>
-                <input
-                  id="form-ins-cuadrilla"
-                  type="text"
-                  value={cuadrilla}
-                  onChange={(e) => setCuadrilla(e.target.value)}
-                  placeholder="Ej: Cuadrilla Sur Termografía"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-ins-contratista">Empresa Contratista</label>
-                <input
-                  id="form-ins-contratista"
-                  type="text"
-                  value={empresaContratista}
-                  onChange={(e) => setEmpresaContratista(e.target.value)}
-                  placeholder="Ej: PECOM S.A."
-                />
-              </div>
-
-              <div className="form-group col-span-2">
                 <label htmlFor="form-ins-integrantes">Integrantes de Cuadrilla</label>
                 <input
                   id="form-ins-integrantes"
@@ -290,43 +271,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   value={integrantes}
                   onChange={(e) => setIntegrantes(e.target.value)}
                   placeholder="Ej: A. Oviedo, J. Perez, M. Lopez"
-                />
-              </div>
-
-              {/* Condiciones Operativas */}
-              <div className="form-group">
-                <label htmlFor="form-ins-temp">Temperatura Ambiente (°C)</label>
-                <input
-                  id="form-ins-temp"
-                  type="number"
-                  step="0.1"
-                  value={temperaturaAmbiente}
-                  onChange={(e) => setTemperaturaAmbiente(e.target.value !== "" ? Number(e.target.value) : "")}
-                  placeholder="Ej: 18.5"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-ins-hum">Humedad Relativa (%)</label>
-                <input
-                  id="form-ins-hum"
-                  type="number"
-                  step="0.1"
-                  value={humedadRelativa}
-                  onChange={(e) => setHumedadRelativa(e.target.value !== "" ? Number(e.target.value) : "")}
-                  placeholder="Ej: 60"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-ins-carga">Carga del Elemento (%)</label>
-                <input
-                  id="form-ins-carga"
-                  type="number"
-                  step="0.1"
-                  value={cargaPct}
-                  onChange={(e) => setCargaPct(e.target.value !== "" ? Number(e.target.value) : "")}
-                  placeholder="Ej: 80"
                 />
               </div>
 

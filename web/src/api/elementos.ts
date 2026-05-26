@@ -95,8 +95,9 @@ export interface Catalogos {
   criticidades: CatalogCriticidad[];
 }
 
-export function listElementos(): Promise<Elemento[]> {
-  return apiGet<Elemento[]>("/elementos");
+export function listElementos(params?: { my_inspections_only?: boolean }): Promise<Elemento[]> {
+  const query = params?.my_inspections_only ? "?my_inspections_only=true" : "";
+  return apiGet<Elemento[]>(`/elementos${query}`);
 }
 
 export function getElemento(id: number): Promise<ElementoDetailResponse> {

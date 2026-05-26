@@ -12,16 +12,24 @@ class ElementoController extends Controller
     public function listElements(Request $request): JsonResponse
     {
         $empresaId = $request->header('X-Empresa-Id', $request->query('empresa_id'));
+        $userId = $request->attributes->get('auth.user_id');
 
-        $elementos = Elemento::query()
+        $query = Elemento::query()
             ->with([
                 'tipoElemento:id,nombre,codigo', 
                 'criticidad:id,nombre,nivel,color', 
                 'yacimiento:id,empresa_id,nombre',
                 'nivelTension:id,kv,etiqueta'
             ])
-            ->forEmpresa($empresaId)
-            ->orderBy('nombre')
+            ->forEmpresa($empresaId);
+
+        if ($request->boolean('my_inspections_only', false) && $userId) {
+            $query->whereHas('inspecciones', function ($q) use ($userId) {
+                $q->where('tecnico_id', $userId);
+            });
+        }
+
+        $elementos = $query->orderBy('nombre')
             ->get()
             ->map(fn (Elemento $elemento): array => [
                 'id' => $elemento->id,
