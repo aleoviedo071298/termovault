@@ -5,16 +5,12 @@ export interface ElementoDetail extends Elemento {
   nivel_tension_id: number | null;
   tension: string | null;
   yacimiento_id: number;
-  lat: number | null;
-  lng: number | null;
   marca: string | null;
   modelo: string | null;
   n_serie: string | null;
-  fecha_instalacion: string | null;
   criticidad_id: number | null;
   estado_operativo: string | null;
   observaciones: string | null;
-  ubicacion_descripcion?: string | null;
   observaciones_generales?: string | null;
 }
 
@@ -95,8 +91,9 @@ export interface Catalogos {
   criticidades: CatalogCriticidad[];
 }
 
-export function listElementos(): Promise<Elemento[]> {
-  return apiGet<Elemento[]>("/elementos");
+export function listElementos(params?: { my_inspections_only?: boolean }): Promise<Elemento[]> {
+  const query = params?.my_inspections_only ? "?my_inspections_only=true" : "";
+  return apiGet<Elemento[]>(`/elementos${query}`);
 }
 
 export function getElemento(id: number): Promise<ElementoDetailResponse> {

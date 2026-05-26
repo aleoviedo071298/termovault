@@ -7,7 +7,6 @@ export interface Elemento {
   funcion: string | null;
   empresa_id: number | null;
   yacimiento: string | null;
-  ubicacion: string | null;
   criticidad: string | null;
   criticidad_nivel: number | null;
   criticidad_color: string | null;

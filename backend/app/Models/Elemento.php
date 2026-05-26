@@ -19,13 +19,9 @@ class Elemento extends Model
         'nivel_tension_id',
         'nombre',
         'codigo',
-        'ubicacion_descripcion',
-        'lat',
-        'lng',
         'marca',
         'modelo',
         'n_serie',
-        'fecha_instalacion',
         'criticidad_id',
         'estado_operativo',
         'observaciones_generales',
@@ -35,9 +31,6 @@ class Elemento extends Model
     protected function casts(): array
     {
         return [
-            'lat' => 'decimal:7',
-            'lng' => 'decimal:7',
-            'fecha_instalacion' => 'date',
             'activo' => 'boolean',
         ];
     }

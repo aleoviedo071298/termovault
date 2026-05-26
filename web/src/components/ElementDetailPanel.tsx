@@ -9,6 +9,7 @@ interface ElementDetailPanelProps {
   onEditClick: (id: number) => void;
   userGroups: string[];
   onDeleteSuccess?: () => void;
+  onNewInspectionClick?: (id: number) => void;
 }
 
 export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
@@ -17,7 +18,8 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   elementId,
   onEditClick,
   userGroups,
-  onDeleteSuccess
+  onDeleteSuccess,
+  onNewInspectionClick
 }) => {
   const [data, setData] = useState<ElementoDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,18 +71,30 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
 
   if (!isOpen) return null;
 
-  // Helper to trigger a mock browser download with matching file name
-  function handleDownload(fileName: string, mimeType: string) {
-    const fileContent = `=== TermoVault - Descarga Simulada ===\nArchivo: ${fileName}\nFecha de descarga: ${new Date().toLocaleString()}\nContenido del reporte termografico simulado.`;
-    const blob = new Blob([fileContent], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const canInspect = userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
+
+  // Helper to trigger a browser download (real download from backend or simulated mock blob)
+  function handleDownload(file: any) {
+    if (file.bucket === "local") {
+      const backendUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace("/api", "");
+      window.open(`${backendUrl}/storage/${file.key}`, "_blank");
+    } else {
+      const fileContent = `=== TermoVault - Descarga Simulada ===\nArchivo: ${file.nombre}\nFecha de descarga: ${new Date().toLocaleString()}\nContenido del reporte termografico simulado.`;
+      const mimeType = file.tipo === "informe_word"
+        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        : file.tipo === "informe_excel"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/zip";
+      const blob = new Blob([fileContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.nombre;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   }
 
   // Format bytes into human readable format
@@ -118,7 +132,22 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
           </div>
         ) : data ? (
           <div className="detail-panel-body">
-            <div className="action-bar" style={{ display: "flex", gap: "8px" }}>
+            <div className="action-bar" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {canInspect && onNewInspectionClick && (
+                <button
+                  className="edit-button-quick"
+                  onClick={() => onNewInspectionClick(data.elemento.id)}
+                  type="button"
+                  style={{
+                    background: "#1d5c46",
+                    color: "#f4f0df",
+                    borderColor: "#1d5c46"
+                  }}
+                >
+                  <FileText size={16} />
+                  Cargar inspección
+                </button>
+              )}
               {canEdit && (
                 <>
                   <button
@@ -231,29 +260,6 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                     <span className="field-label">N° de Serie</span>
                     <span className="field-val">{data.elemento.n_serie ?? "-"}</span>
                   </div>
-                  <div className="field-group">
-                    <span className="field-label">Fecha de Instalación</span>
-                    <span className="field-val">
-                      {data.elemento.fecha_instalacion
-                        ? new Date(data.elemento.fecha_instalacion + "T00:00:00").toLocaleDateString()
-                        : "-"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="field-group" style={{ marginTop: "12px" }}>
-                  <span className="field-label">Coordenadas GPS</span>
-                  <span className="field-val" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <MapPin size={16} className="text-sage" />
-                    {data.elemento.lat && data.elemento.lng
-                      ? `${data.elemento.lat}, ${data.elemento.lng}`
-                      : "Sin geo-localización"}
-                  </span>
-                </div>
-
-                <div className="field-group" style={{ marginTop: "12px" }}>
-                  <span className="field-label">Ubicación Descripción</span>
-                  <p className="field-paragraph">{data.elemento.ubicacion ?? "Sin descripción"}</p>
                 </div>
 
                 <div className="field-group" style={{ marginTop: "12px" }}>
@@ -304,7 +310,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                                 <button
                                   key={file.id}
                                   className="file-download-btn"
-                                  onClick={() => handleDownload(file.nombre, file.tipo === "informe_word" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/zip")}
+                                  onClick={() => handleDownload(file)}
                                   type="button"
                                 >
                                   {isWord ? (

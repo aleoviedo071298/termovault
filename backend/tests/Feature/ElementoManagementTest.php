@@ -183,4 +183,48 @@ class ElementoManagementTest extends TestCase
         $response->assertStatus(403);
         $this->assertDatabaseHas('elementos', ['id' => $elemento->id]);
     }
+
+    public function test_can_filter_elements_inspected_by_technician(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento1 = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'SET Inspected',
+            'codigo' => 'SET-INSP',
+        ]);
+
+        $elemento2 = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'SET Clean',
+            'codigo' => 'SET-CLEAN',
+        ]);
+
+        // Add inspection to elemento1 authored by technician
+        $techUser = \App\Models\Usuario::where('email', 'tech@example.com')->first();
+        \App\Models\Inspeccion::create([
+            'elemento_id' => $elemento1->id,
+            'tecnico_id' => $techUser->id,
+            'fecha_inspeccion' => now(),
+            'cuadrilla' => '625',
+            'empresa_contratista' => 'PECOM'
+        ]);
+
+        // Fetch elements listing without filter
+        $responseAll = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/elementos');
+        $responseAll->assertOk();
+        $this->assertCount(2, $responseAll->json());
+
+        // Fetch elements listing with filter
+        $responseFiltered = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/elementos?my_inspections_only=true');
+        $responseFiltered->assertOk();
+        $responseFiltered->assertJsonCount(1);
+        $responseFiltered->assertJsonFragment(['codigo' => 'SET-INSP']);
+        $responseFiltered->assertJsonMissing(['codigo' => 'SET-CLEAN']);
+    }
 }

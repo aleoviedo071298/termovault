@@ -12,16 +12,24 @@ class ElementoController extends Controller
     public function listElements(Request $request): JsonResponse
     {
         $empresaId = $request->header('X-Empresa-Id', $request->query('empresa_id'));
+        $userId = $request->attributes->get('auth.user_id');
 
-        $elementos = Elemento::query()
+        $query = Elemento::query()
             ->with([
                 'tipoElemento:id,nombre,codigo', 
                 'criticidad:id,nombre,nivel,color', 
                 'yacimiento:id,empresa_id,nombre',
                 'nivelTension:id,kv,etiqueta'
             ])
-            ->forEmpresa($empresaId)
-            ->orderBy('nombre')
+            ->forEmpresa($empresaId);
+
+        if ($request->boolean('my_inspections_only', false) && $userId) {
+            $query->whereHas('inspecciones', function ($q) use ($userId) {
+                $q->where('tecnico_id', $userId);
+            });
+        }
+
+        $elementos = $query->orderBy('nombre')
             ->get()
             ->map(fn (Elemento $elemento): array => [
                 'id' => $elemento->id,
@@ -32,7 +40,6 @@ class ElementoController extends Controller
                 'funcion' => $elemento->funcion,
                 'empresa_id' => $elemento->yacimiento?->empresa_id,
                 'yacimiento' => $elemento->yacimiento?->nombre,
-                'ubicacion' => $elemento->ubicacion_descripcion,
                 'criticidad' => $elemento->criticidad?->nombre,
                 'criticidad_nivel' => $elemento->criticidad?->nivel,
                 'criticidad_color' => $elemento->criticidad?->color,
@@ -115,13 +122,9 @@ class ElementoController extends Controller
                 'tension' => $elemento->nivelTension?->kv ? $elemento->nivelTension->kv . ' kV' : null,
                 'yacimiento_id' => $elemento->yacimiento_id,
                 'yacimiento' => $elemento->yacimiento?->nombre,
-                'ubicacion' => $elemento->ubicacion_descripcion,
-                'lat' => $elemento->lat,
-                'lng' => $elemento->lng,
                 'marca' => $elemento->marca,
                 'modelo' => $elemento->modelo,
                 'n_serie' => $elemento->n_serie,
-                'fecha_instalacion' => $elemento->fecha_instalacion?->toDateString(),
                 'criticidad_id' => $elemento->criticidad_id,
                 'criticidad' => $elemento->criticidad?->nombre,
                 'criticidad_color' => $elemento->criticidad?->color,
@@ -143,13 +146,9 @@ class ElementoController extends Controller
             'nivel_tension_id' => 'nullable|exists:niveles_tension,id',
             'nombre' => 'required|string|max:150',
             'codigo' => 'required|string|max:50',
-            'ubicacion_descripcion' => 'nullable|string',
-            'lat' => 'nullable|numeric',
-            'lng' => 'nullable|numeric',
             'marca' => 'nullable|string|max:100',
             'modelo' => 'nullable|string|max:100',
             'n_serie' => 'nullable|string|max:100',
-            'fecha_instalacion' => 'nullable|date',
             'criticidad_id' => 'nullable|exists:criticidades,id',
             'estado_operativo' => 'nullable|string|max:30',
             'observaciones_generales' => 'nullable|string',
@@ -187,13 +186,9 @@ class ElementoController extends Controller
             'nivel_tension_id' => 'nullable|exists:niveles_tension,id',
             'nombre' => 'required|string|max:150',
             'codigo' => 'required|string|max:50',
-            'ubicacion_descripcion' => 'nullable|string',
-            'lat' => 'nullable|numeric',
-            'lng' => 'nullable|numeric',
             'marca' => 'nullable|string|max:100',
             'modelo' => 'nullable|string|max:100',
             'n_serie' => 'nullable|string|max:100',
-            'fecha_instalacion' => 'nullable|date',
             'criticidad_id' => 'nullable|exists:criticidades,id',
             'estado_operativo' => 'nullable|string|max:30',
             'observaciones_generales' => 'nullable|string',

@@ -1,0 +1,192 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Elemento;
+use App\Models\Empresa;
+use App\Models\Role;
+use App\Models\TipoElemento;
+use App\Models\Yacimiento;
+use App\Services\CognitoJwtVerifier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Mockery;
+use Tests\TestCase;
+
+class InspeccionManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private $empresa;
+    private $yacimiento;
+    private $tipo;
+    private $adminClaims;
+    private $techClaims;
+    private $otherEmpresaClaims;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('public');
+
+        $this->empresa = Empresa::create(['nombre' => 'PECOM', 'cuit' => '30-12345678-0']);
+        $this->yacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE',
+            'codigo' => 'YAC-PAE'
+        ]);
+        $this->tipo = TipoElemento::create([
+            'codigo' => 'subestacion',
+            'nombre' => 'Subestación'
+        ]);
+
+        $adminRole = Role::create(['codigo' => 'admin', 'nombre' => 'Administrador']);
+        $techRole = Role::create(['codigo' => 'tecnico', 'nombre' => 'Técnico']);
+
+        \DB::table('criticidades')->insert(['id' => 3, 'nivel' => 3, 'nombre' => 'Alta', 'color' => '#E53E3E']);
+
+        // Insert database users
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $adminRole->id,
+            'nombre' => 'Admin',
+            'apellido' => 'User',
+            'email' => 'admin@example.com',
+            'password_hash' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $techRole->id,
+            'nombre' => 'Tech',
+            'apellido' => 'User',
+            'email' => 'tech@example.com',
+            'password_hash' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->adminClaims = [
+            'sub' => 'admin-123',
+            'email' => 'admin@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['admin'],
+        ];
+
+        $this->techClaims = [
+            'sub' => 'tech-123',
+            'email' => 'tech@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['tecnico'],
+        ];
+
+        // Another company user for multi-tenancy verification
+        $otherEmpresa = Empresa::create(['nombre' => 'YPF', 'cuit' => '30-99999999-0']);
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $otherEmpresa->id,
+            'rol_id' => $techRole->id,
+            'nombre' => 'Other',
+            'apellido' => 'User',
+            'email' => 'other@example.com',
+            'password_hash' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->otherEmpresaClaims = [
+            'sub' => 'other-123',
+            'email' => 'other@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['tecnico'],
+        ];
+    }
+
+    private function mockVerifier($claims, $token = 'valid-token')
+    {
+        $mockVerifier = Mockery::mock(CognitoJwtVerifier::class);
+        $mockVerifier->shouldReceive('verify')
+            ->andReturn($claims);
+        $this->app->instance(CognitoJwtVerifier::class, $mockVerifier);
+    }
+
+    public function test_technician_can_upload_inspection(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Test Tech',
+            'codigo' => 'SET-TECH-TEST',
+        ]);
+
+        $reporte = UploadedFile::fake()->create('reporte.docx', 100);
+        $imagenes = UploadedFile::fake()->create('imagenes.zip', 500);
+
+        $novedades = [
+            [
+                'criticidad_id' => 3,
+                'titulo' => 'Bushing sobrecalentado',
+                'descripcion' => 'Se observa punto caliente',
+                'ubicacion_dentro_elemento' => 'Fase S',
+                'temperatura_detectada' => 65.5,
+                'accion_recomendada' => 'Ajustar bornas',
+            ]
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'cuadrilla' => 'Cuadrilla 1',
+                'integrantes' => 'A. Perez',
+                'reporte' => $reporte,
+                'imagenes' => $imagenes,
+                'novedades' => json_encode($novedades),
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('inspecciones', [
+            'elemento_id' => $elemento->id,
+            'cuadrilla' => 'Cuadrilla 1',
+        ]);
+
+        $this->assertDatabaseHas('novedades', [
+            'titulo' => 'Bushing sobrecalentado',
+            'temperatura_detectada' => 65.5,
+        ]);
+
+        // Check file storage fakes
+        Storage::disk('public')->assertExists('reports/' . $reporte->hashName());
+        Storage::disk('public')->assertExists('images/' . $imagenes->hashName());
+    }
+
+    public function test_cannot_upload_inspection_for_other_company_element(): void
+    {
+        config()->set('cognito.required', true);
+        // Login as other company user
+        $this->mockVerifier($this->otherEmpresaClaims);
+
+        // This element belongs to PECOM (Alejandro's company)
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion PECOM',
+            'codigo' => 'SET-PECOM-SEC',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+            ]);
+
+        // Should fail due to multi-tenant scoping check in InspeccionController
+        $response->assertStatus(422);
+    }
+}

@@ -992,3 +992,48 @@ tbody tr:hover {
   background: #f6f8ee !important;
 }
 
+/* File Upload Styles */
+.file-upload-box {
+  border: 2px dashed #bfcabe;
+  border-radius: 8px;
+  background: #fffdf4;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px;
+}
+
+.file-upload-box:hover,
+.file-upload-box.has-file {
+  border-color: #1d5c46;
+  background: #f6f8ee;
+}
+
+.file-label-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #1f5e48;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+

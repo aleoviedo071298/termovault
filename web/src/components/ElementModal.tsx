@@ -35,13 +35,9 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const [funcion, setFuncion] = useState("");
   const [nivelTensionId, setNivelTensionId] = useState<number | "">("");
   const [criticidadId, setCriticidadId] = useState<number | "">("");
-  const [ubicacionDescripcion, setUbicacionDescripcion] = useState("");
-  const [lat, setLat] = useState<number | "">("");
-  const [lng, setLng] = useState<number | "">("");
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [nSerie, setNSerie] = useState("");
-  const [fechaInstalacion, setFechaInstalacion] = useState("");
   const [estadoOperativo, setEstadoOperativo] = useState("operativo");
   const [observacionesGenerales, setObservacionesGenerales] = useState("");
 
@@ -72,13 +68,9 @@ export const ElementModal: React.FC<ElementModalProps> = ({
           setFuncion(elemento.funcion ?? "");
           setNivelTensionId(elemento.nivel_tension_id ?? "");
           setCriticidadId(elemento.criticidad_id ?? "");
-          setUbicacionDescripcion(elemento.ubicacion ?? "");
-          setLat(elemento.lat ?? "");
-          setLng(elemento.lng ?? "");
           setMarca(elemento.marca ?? "");
           setModelo(elemento.modelo ?? "");
           setNSerie(elemento.n_serie ?? "");
-          setFechaInstalacion(elemento.fecha_instalacion ?? "");
           setEstadoOperativo(elemento.estado_operativo ?? "operativo");
           setObservacionesGenerales(elemento.observaciones ?? "");
         } else {
@@ -90,13 +82,9 @@ export const ElementModal: React.FC<ElementModalProps> = ({
           setFuncion("");
           setNivelTensionId("");
           setCriticidadId("");
-          setUbicacionDescripcion("");
-          setLat("");
-          setLng("");
           setMarca("");
           setModelo("");
           setNSerie("");
-          setFechaInstalacion("");
           setEstadoOperativo("operativo");
           setObservacionesGenerales("");
         }
@@ -138,13 +126,9 @@ export const ElementModal: React.FC<ElementModalProps> = ({
         funcion: funcion.trim() || null,
         nivel_tension_id: requiresTension && nivelTensionId ? Number(nivelTensionId) : null,
         criticidad_id: criticidadId ? Number(criticidadId) : null,
-        ubicacion_descripcion: ubicacionDescripcion.trim() || null,
-        lat: lat !== "" ? Number(lat) : null,
-        lng: lng !== "" ? Number(lng) : null,
         marca: marca.trim() || null,
         modelo: modelo.trim() || null,
         n_serie: nSerie.trim() || null,
-        fecha_instalacion: fechaInstalacion || null,
         estado_operativo: estadoOperativo,
         observaciones_generales: observacionesGenerales.trim() || null,
       };
@@ -324,41 +308,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="form-fecha-instalacion">Fecha Instalación</label>
-                <input
-                  id="form-fecha-instalacion"
-                  type="date"
-                  value={fechaInstalacion}
-                  onChange={(e) => setFechaInstalacion(e.target.value)}
-                />
-              </div>
-
-              {/* Coordenadas */}
-              <div className="form-group">
-                <label htmlFor="form-lat">Latitud</label>
-                <input
-                  id="form-lat"
-                  type="number"
-                  step="0.0000001"
-                  value={lat}
-                  onChange={(e) => setLat(e.target.value !== "" ? Number(e.target.value) : "")}
-                  placeholder="-45.8641"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-lng">Longitud</label>
-                <input
-                  id="form-lng"
-                  type="number"
-                  step="0.0000001"
-                  value={lng}
-                  onChange={(e) => setLng(e.target.value !== "" ? Number(e.target.value) : "")}
-                  placeholder="-67.4983"
-                />
-              </div>
-
               <div className="form-group col-span-2">
                 <label htmlFor="form-estado-operativo">Estado Operativo</label>
                 <select
@@ -370,17 +319,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                   <option value="mantenimiento">En Mantenimiento</option>
                   <option value="fuera_de_servicio">Fuera de Servicio</option>
                 </select>
-              </div>
-
-              <div className="form-group col-span-2">
-                <label htmlFor="form-ubicacion">Ubicación (Descripción)</label>
-                <textarea
-                  id="form-ubicacion"
-                  rows={2}
-                  value={ubicacionDescripcion}
-                  onChange={(e) => setUbicacionDescripcion(e.target.value)}
-                  placeholder="Instrucciones detalladas de ubicación en el yacimiento..."
-                />
               </div>
 
               <div className="form-group col-span-2">
