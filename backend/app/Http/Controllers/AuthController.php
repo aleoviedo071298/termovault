@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Auth\LocalUserProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly LocalUserProvisioner $provisioner) {}
+
     public function login(Request $request): JsonResponse
     {
         $payload = $request->validate([
@@ -73,7 +74,10 @@ class AuthController extends Controller
 
             $authResult = $challengeData['AuthenticationResult'] ?? [];
             if (($authResult['AccessToken'] ?? null) && ($authResult['IdToken'] ?? null)) {
-                $this->syncLocalUserFromIdToken((string) $authResult['IdToken']);
+                $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
+                if ($claims !== null) {
+                    $this->provisioner->findOrProvisionFromClaims($claims);
+                }
                 return response()->json([
                     'access_token' => $authResult['AccessToken'] ?? null,
                     'id_token' => $authResult['IdToken'] ?? null,
@@ -132,7 +136,10 @@ class AuthController extends Controller
 
         $authResult = $data['AuthenticationResult'] ?? [];
         if (($authResult['IdToken'] ?? null)) {
-            $this->syncLocalUserFromIdToken((string) $authResult['IdToken']);
+            $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
+            if ($claims !== null) {
+                $this->provisioner->findOrProvisionFromClaims($claims);
+            }
         }
 
         return response()->json([
@@ -168,11 +175,11 @@ class AuthController extends Controller
         ]);
     }
 
-    private function syncLocalUserFromIdToken(string $idToken): void
+    private function decodeIdTokenClaims(string $idToken): ?array
     {
         $parts = explode('.', $idToken);
         if (count($parts) < 2) {
-            return;
+            return null;
         }
 
         $payloadB64 = strtr($parts[1], '-_', '+/');
@@ -183,80 +190,10 @@ class AuthController extends Controller
 
         $json = base64_decode($payloadB64, true);
         if (! is_string($json)) {
-            return;
+            return null;
         }
 
         $claims = json_decode($json, true);
-        if (! is_array($claims)) {
-            return;
-        }
-
-        $email = $claims['email'] ?? null;
-        if (! is_string($email) || trim($email) === '') {
-            $candidate = $claims['cognito:username'] ?? $claims['username'] ?? null;
-            if (is_string($candidate) && str_contains($candidate, '@')) {
-                $email = $candidate;
-            }
-        }
-        if (! is_string($email) || trim($email) === '') {
-            return;
-        }
-
-        $email = mb_strtolower(trim($email));
-        $exists = DB::table('usuarios')->whereRaw('LOWER(email)=?', [$email])->exists();
-        if ($exists) {
-            return;
-        }
-
-        $roleCode = null;
-        $groups = $claims['cognito:groups'] ?? null;
-        if (is_array($groups) && count($groups) > 0 && is_string($groups[0])) {
-            $roleCode = mb_strtolower(trim($groups[0]));
-        } elseif (is_string($groups) && trim($groups) !== '') {
-            $roleCode = mb_strtolower(trim(explode(',', $groups)[0]));
-        } elseif (is_string($claims['custom:role'] ?? null)) {
-            $roleCode = mb_strtolower(trim((string) $claims['custom:role']));
-        }
-
-        $roleId = $roleCode
-            ? DB::table('roles')->whereRaw('LOWER(codigo)=?', [$roleCode])->value('id')
-            : null;
-        if (! $roleId) {
-            $roleId = DB::table('roles')->where('codigo', 'tecnico')->value('id');
-        }
-        if (! $roleId) {
-            return;
-        }
-
-        $empresaId = $claims['custom:empresa_id'] ?? $claims['empresa_id'] ?? null;
-        if ($empresaId) {
-            $empresaExists = DB::table('empresas')->where('id', (int) $empresaId)->exists();
-            if (! $empresaExists) {
-                $empresaId = null;
-            }
-        }
-        if (! $empresaId) {
-            $empresaId = DB::table('empresas')->orderBy('id')->value('id');
-        }
-        if (! $empresaId) {
-            return;
-        }
-
-        $nombre = trim((string) ($claims['given_name'] ?? 'Usuario'));
-        $apellido = trim((string) ($claims['family_name'] ?? 'Cognito'));
-        if ($nombre === '') $nombre = Str::title(Str::before($email, '@'));
-        if ($apellido === '') $apellido = 'Cognito';
-
-        DB::table('usuarios')->insert([
-            'empresa_id' => (int) $empresaId,
-            'rol_id' => (int) $roleId,
-            'nombre' => $nombre,
-            'apellido' => $apellido,
-            'email' => $email,
-            'password_hash' => password_hash(Str::random(32), PASSWORD_BCRYPT),
-            'activo' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        return is_array($claims) ? $claims : null;
     }
 }

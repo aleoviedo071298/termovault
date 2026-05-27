@@ -12,8 +12,6 @@ class Empresa extends Model
 
     protected $fillable = [
         'nombre',
-        'cuit',
-        'logo_url',
         'plan',
         'activo',
     ];

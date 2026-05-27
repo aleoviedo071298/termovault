@@ -25,6 +25,8 @@ class Elemento extends Model
         'criticidad_id',
         'estado_operativo',
         'observaciones_generales',
+        'created_by',
+        'updated_by',
         'activo',
     ];
 
@@ -67,5 +69,15 @@ class Elemento extends Model
     public function inspecciones(): HasMany
     {
         return $this->hasMany(Inspeccion::class);
+    }
+
+    public function creador(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'created_by');
+    }
+
+    public function actualizador(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'updated_by');
     }
 }

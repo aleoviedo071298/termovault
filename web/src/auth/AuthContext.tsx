@@ -105,21 +105,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const claims = parseJwt(response.id_token);
       let groups: string[] = claims?.["cognito:groups"] ?? [];
-      if ((!Array.isArray(groups) || groups.length === 0)) {
-        try {
-          const res = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${response.access_token}`
-            }
-          });
-          if (res.ok) {
-            const me = await res.json() as { local_role?: string | null };
-            if (me.local_role) {
-              groups = [me.local_role];
-            }
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${response.access_token}`
           }
-        } catch {}
+        });
+
+        if (!res.ok) {
+          let msg = `No se pudo validar la sesión (${res.status})`;
+          try {
+            const err = await res.json() as { message?: string };
+            if (err?.message) msg = err.message;
+          } catch {}
+          throw new Error(msg);
+        }
+
+        const me = await res.json() as { local_role?: string | null };
+        if ((!Array.isArray(groups) || groups.length === 0) && me.local_role) {
+          groups = [me.local_role];
+        }
+      } catch (err) {
+        throw err instanceof Error ? err : new Error("No se pudo validar la sesión");
       }
 
       setToken(response.access_token);

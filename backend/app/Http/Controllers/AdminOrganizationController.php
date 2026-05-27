@@ -12,18 +12,16 @@ class AdminOrganizationController extends Controller
     {
         $data = $request->validate([
             'nombre' => 'required|string|max:150',
-            'cuit' => 'nullable|string|max:20',
         ]);
 
         $id = DB::table('empresas')->insertGetId([
             'nombre' => trim($data['nombre']),
-            'cuit' => $data['cuit'] ?? null,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $empresa = DB::table('empresas')->where('id', $id)->first(['id', 'nombre', 'cuit']);
+        $empresa = DB::table('empresas')->where('id', $id)->first(['id', 'nombre']);
         return response()->json($empresa, 201);
     }
 
@@ -33,7 +31,6 @@ class AdminOrganizationController extends Controller
             'empresa_id' => 'required|exists:empresas,id',
             'nombre' => 'required|string|max:150',
             'codigo' => 'required|string|max:50',
-            'zona' => 'nullable|string|max:100',
         ]);
 
         $exists = DB::table('yacimientos')
@@ -48,13 +45,11 @@ class AdminOrganizationController extends Controller
             'empresa_id' => (int) $data['empresa_id'],
             'nombre' => trim($data['nombre']),
             'codigo' => trim($data['codigo']),
-            'zona' => $data['zona'] ?? null,
             'activo' => true,
             'created_at' => now(),
         ]);
 
-        $yac = DB::table('yacimientos')->where('id', $id)->first(['id', 'nombre', 'codigo', 'empresa_id', 'zona']);
+        $yac = DB::table('yacimientos')->where('id', $id)->first(['id', 'nombre', 'codigo', 'empresa_id']);
         return response()->json($yac, 201);
     }
 }
-

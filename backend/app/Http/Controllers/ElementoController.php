@@ -85,9 +85,6 @@ class ElementoController extends Controller
                 'cuadrilla' => $inspeccion->cuadrilla,
                 'integrantes' => $inspeccion->integrantes,
                 'empresa_contratista' => $inspeccion->empresa_contratista,
-                'temperatura_ambiente' => $inspeccion->temperatura_ambiente,
-                'humedad_relativa' => $inspeccion->humedad_relativa,
-                'carga_pct' => $inspeccion->carga_pct,
                 'condiciones_clima' => $inspeccion->condiciones_clima,
                 'resumen' => $inspeccion->resumen,
                 'estado' => $inspeccion->estado,
@@ -141,6 +138,7 @@ class ElementoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);
+        $actorId = $scope['user_id'];
 
         $data = $request->validate([
             'yacimiento_id' => 'required|exists:yacimientos,id',
@@ -162,7 +160,11 @@ class ElementoController extends Controller
             return response()->json(['message' => 'No tenes permisos para crear elementos en este yacimiento'], 403);
         }
 
-        $elemento = Elemento::create($data);
+        $elemento = Elemento::create([
+            ...$data,
+            'created_by' => $actorId,
+            'updated_by' => $actorId,
+        ]);
 
         return response()->json($elemento, 201);
     }
@@ -170,6 +172,7 @@ class ElementoController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);
+        $actorId = $scope['user_id'];
 
         $elemento = $this->scopeResolver->applyElementScope(Elemento::query(), $scope)->find($id);
         if (! $elemento) {
@@ -196,7 +199,10 @@ class ElementoController extends Controller
             return response()->json(['message' => 'No tenes permisos para editar elementos en este yacimiento'], 403);
         }
 
-        $elemento->update($data);
+        $elemento->update([
+            ...$data,
+            'updated_by' => $actorId,
+        ]);
 
         return response()->json($elemento);
     }
@@ -218,4 +224,3 @@ class ElementoController extends Controller
         return response()->json(['message' => 'Elemento eliminado correctamente']);
     }
 }
-

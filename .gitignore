@@ -65,3 +65,6 @@ aws-credentials*
 # Coverage
 coverage/
 .nyc_output/
+
+# Local backups/audits generated during cleanup
+/backups/

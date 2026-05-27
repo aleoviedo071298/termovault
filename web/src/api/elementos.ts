@@ -41,9 +41,6 @@ export interface InspeccionDetail {
   cuadrilla: string | null;
   integrantes: string | null;
   empresa_contratista: string | null;
-  temperatura_ambiente: number | null;
-  humedad_relativa: number | null;
-  carga_pct: number | null;
   condiciones_clima: string | null;
   resumen: string | null;
   estado: string;

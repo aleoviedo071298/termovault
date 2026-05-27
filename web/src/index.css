@@ -220,6 +220,8 @@ tbody tr:hover {
 
 .badge {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
   margin: 0;
   padding: 5px 10px;
@@ -229,6 +231,18 @@ tbody tr:hover {
   background: color-mix(in srgb, var(--badge-color) 18%, #fff 82%);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.badge-criticidad {
+  min-width: 88px;
+  padding: 6px 12px;
+  border-color: color-mix(in srgb, var(--badge-color) 75%, #101910 25%);
+  background: color-mix(in srgb, var(--badge-color) 14%, #ffffff 86%);
+  color: #18211b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: none;
 }
 
 .empty-cell {

@@ -13,11 +13,12 @@ export interface InspeccionDetalle {
   integrantes: string | null;
   empresa_contratista: string | null;
   condiciones_clima: string | null;
-  temperatura_ambiente: number | null;
-  humedad_relativa: number | null;
-  carga_pct: number | null;
   resumen: string | null;
   observaciones_revisor: string | null;
+  fecha_revision: string | null;
+  fecha_cierre: string | null;
+  revisada_por: { id: number; nombre: string; email: string } | null;
+  cerrada_por: { id: number; nombre: string; email: string } | null;
   tecnico: { id: number; nombre: string; email: string } | null;
   elemento: { id: number; nombre: string; codigo: string; tipo: string | null; yacimiento: string | null } | null;
   archivos: Array<{ id: number; tipo: string; nombre: string; bucket: string | null; key: string; tamano: number | null; mime: string | null }>;

@@ -65,8 +65,18 @@ class AccessScopeResolver
             return $query;
         }
 
-        if (($scope['is_tecnico'] || $scope['is_supervisor']) && $scope['assigned_yacimiento_ids'] !== []) {
-            return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
+        if ($scope['is_tecnico'] || $scope['is_supervisor']) {
+            if ($scope['assigned_yacimiento_ids'] !== []) {
+                return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
+            }
+
+            if ($scope['empresa_id']) {
+                return $query->whereIn('yacimiento_id', function ($sub) use ($scope): void {
+                    $sub->select('id')
+                        ->from('yacimientos')
+                        ->where('empresa_id', (int) $scope['empresa_id']);
+                });
+            }
         }
 
         return $query->whereRaw('1 = 0');
@@ -89,7 +99,11 @@ class AccessScopeResolver
 
     public function canCreateInspectionForElement(array $scope, int $elementId): bool
     {
-        $element = DB::table('elementos')->select('id', 'yacimiento_id')->where('id', $elementId)->first();
+        $element = DB::table('elementos as e')
+            ->join('yacimientos as y', 'y.id', '=', 'e.yacimiento_id')
+            ->select('e.id', 'e.yacimiento_id', 'y.empresa_id')
+            ->where('e.id', $elementId)
+            ->first();
         if (! $element) {
             return false;
         }
@@ -99,10 +113,16 @@ class AccessScopeResolver
         }
 
         if ($scope['is_tecnico']) {
+            if ($scope['assigned_yacimiento_ids'] === []) {
+                return (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+            }
             return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
         }
 
         if ($scope['is_supervisor']) {
+            if ($scope['assigned_yacimiento_ids'] === []) {
+                return (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+            }
             return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
         }
 

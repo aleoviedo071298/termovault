@@ -2,7 +2,7 @@
 
 Plataforma interna multi-tenant para gestion de informes de termografia (Oil and Gas).
 
-## Estado actual (2026-05-26)
+## Estado actual (2026-05-27)
 
 - Backend Laravel 12 con autenticacion Cognito JWT.
 - Frontend React + Vite con dashboards por rol.
@@ -11,6 +11,10 @@ Plataforma interna multi-tenant para gestion de informes de termografia (Oil and
   1. Tecnico crea informe (`enviada`).
   2. Supervisor PAE o Admin revisa (`revisada`).
   3. Supervisor PAE o Admin cierra (`cerrada`).
+- Trazabilidad de revision/cierre:
+  - `revisada_por` + `fecha_revision`
+  - `cerrada_por` + `fecha_cierre`
+- Bloqueo de acceso por usuario inactivo (`usuarios.activo = false`).
 
 ## Stack
 
@@ -164,3 +168,27 @@ Pruebas funcionales minimas:
 ## Continuidad con otra IA
 
 Usar `NEXT_SESSION.md` como prompt base.
+
+## Limpieza y hardening (2026-05-27)
+
+- Se eliminaron migraciones SQL legacy vacias en `database/migrations/`.
+- Se movio helper sensible de Cognito a `backend/scripts/internal/auth_login.php` (fuera de `public/`).
+- Se eliminaron tablas legacy no usadas:
+  - `comentarios`
+  - `historial_cambios`
+  - `sesiones`
+- Se eliminaron columnas no usadas:
+  - `inspecciones`: `temperatura_ambiente`, `humedad_relativa`, `carga_pct`
+  - `empresas`: `cuit`, `logo_url`
+  - `yacimientos`: `zona`, `descripcion`
+  - `usuarios`: `legajo`, `telefono`, `ultimo_login`
+  - `novedades`: `fecha_resolucion`, `resuelta_en_inspeccion_id`
+- Se unifico la autoprovision de usuario Cognito en un unico servicio:
+  - `App\Services\Auth\LocalUserProvisioner`
+- Se agregaron indices y constraints de integridad para mejorar performance/consistencia.
+- Se realizo backfill de auditoria historica en `inspecciones`:
+  - `created_by`, `updated_by`, `cerrada_por`, `fecha_cierre`
+- Se guardaron respaldos de auditoria en:
+  - `backups/termovault_2026-05-27.dump`
+  - `backups/termovault_schema_2026-05-27.sql`
+  - `backups/audit/*`
