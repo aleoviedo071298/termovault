@@ -21,16 +21,15 @@ class Inspeccion extends Model
         'cuadrilla',
         'integrantes',
         'empresa_contratista',
-        'temperatura_ambiente',
-        'humedad_relativa',
-        'carga_pct',
         'condiciones_clima',
-        'lat_gps',
-        'lng_gps',
         'resumen',
         'estado',
+        'created_by',
+        'updated_by',
         'revisada_por',
+        'cerrada_por',
         'fecha_revision',
+        'fecha_cierre',
         'observaciones_revisor',
     ];
 
@@ -39,11 +38,7 @@ class Inspeccion extends Model
         return [
             'fecha_inspeccion' => 'datetime',
             'fecha_revision' => 'datetime',
-            'temperatura_ambiente' => 'decimal:1',
-            'humedad_relativa' => 'decimal:1',
-            'carga_pct' => 'decimal:1',
-            'lat_gps' => 'decimal:7',
-            'lng_gps' => 'decimal:7',
+            'fecha_cierre' => 'datetime',
         ];
     }
 
@@ -67,6 +62,21 @@ class Inspeccion extends Model
         return $this->belongsTo(Usuario::class, 'revisada_por');
     }
 
+    public function cerrador(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'cerrada_por');
+    }
+
+    public function creador(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'created_by');
+    }
+
+    public function actualizador(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'updated_by');
+    }
+
     public function archivos(): HasMany
     {
         return $this->hasMany(Archivo::class);
@@ -75,10 +85,5 @@ class Inspeccion extends Model
     public function novedades(): HasMany
     {
         return $this->hasMany(Novedad::class);
-    }
-
-    public function comentarios(): HasMany
-    {
-        return $this->hasMany(Comentario::class);
     }
 }

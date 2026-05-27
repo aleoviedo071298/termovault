@@ -60,10 +60,12 @@ class DashboardController extends Controller
             ])
             ->map(function ($row): array {
                 $severity = match ((int) $row->criticidad_max_nivel) {
-                    4 => 'urgente',
-                    3 => 'critico',
-                    2 => 'observado',
-                    default => 'normal',
+                    0 => 'Normal',
+                    1 => 'Baja',
+                    4 => 'Crítica',
+                    3 => 'Alta',
+                    2 => 'Media',
+                    default => 'Normal',
                 };
                 return [
                     'id' => (int) $row->id,
@@ -145,7 +147,7 @@ class DashboardController extends Controller
             ->count('e.id');
 
         $criticalRecent = $reports
-            ->filter(fn ($r) => in_array($r['criticidad'], ['critico', 'urgente'], true))
+            ->filter(fn ($r) => in_array($r['criticidad'], ['Alta', 'Crítica'], true))
             ->take(5)
             ->values();
 

@@ -1,50 +1,47 @@
-# TermoVault - Prompt de continuidad
+# TermoVault - Next Session (2026-05-27)
 
-Lee primero `README.md` completo y sincronizate con el estado real del repo.
+Lee primero:
+1. `README.md`
+2. `backend/routes/api.php`
+3. `web/src/pages/Dashboard.tsx`
 
-## Objetivo general
+## Estado operativo actual
 
-Continuar evolucionando la plataforma sin romper seguridad por rol ni flujo actual operativo.
+- Auth Cognito JWT + provision local de usuario (`LocalUserProvisioner`).
+- Seguridad por rol validada en backend (`AccessScopeResolver`).
+- Dashboards por rol: `admin`, `supervisor`, `tecnico`.
+- Flujo de informe: `enviada -> revisada -> cerrada`.
+- Cierre de informe resuelve novedades abiertas (`abierta -> resuelta`).
+- Trazabilidad de auditoria en inspecciones:
+  - `created_by`, `updated_by`
+  - `revisada_por`, `fecha_revision`
+  - `cerrada_por`, `fecha_cierre`
+- Usuario inactivo queda bloqueado al ingresar (403 controlado).
 
-## Estado funcional ya implementado
+## Reglas funcionales clave
 
-- Auth Cognito JWT + mapeo usuario local.
-- Dashboards por rol (`admin`, `supervisor`, `tecnico`).
-- Flujo de informe:
-  - `enviada` -> `revisada` -> `cerrada`
-- Alcance por rol en backend:
-  - Admin: global.
-  - Tecnico: propio.
-  - Supervisor contratista: su empresa.
-  - Supervisor PAE: yacimiento asignado + gestion de elementos.
+- Admin: alcance global.
+- Tecnico: solo sus informes/alcance.
+- Supervisor contratista: solo informes de su empresa en yacimientos asignados.
+- Supervisor PAE: alcance por yacimiento asignado (ej. `YAC-PAE`), puede revisar/cerrar y gestionar elementos de ese yacimiento.
 
-## Reglas no negociables
+## Convenciones de criticidad
 
-1. No inventar estructura nueva si ya existe.
-2. Seguridad y filtros siempre en backend.
-3. No exponer por URL datos fuera de alcance.
-4. UI limpia: acciones principales visibles, listados largos fuera del dashboard.
+- DB: `Baja`, `Media`, `Alta`, `Crítica`.
+- Dashboard:
+  - sin hallazgos: `Normal`
+  - con hallazgos: según máximo nivel detectado.
 
-## Checklist de arranque
+## Validaciones rápidas al retomar
 
-1. `git status`
-2. `git log --oneline -n 15`
-3. `cd web && npm run build`
-4. `cd backend && php artisan test`
-5. Revisar rutas:
-   - `backend/routes/api.php`
-   - `web/src/App.tsx`
+```bash
+git status
+cd backend && php artisan test
+cd ../web && npm run build
+```
 
-## Si hay que tocar permisos
+## Nota de mantenimiento
 
-- Revisar primero:
-  - `backend/app/Services/Auth/AccessScopeResolver.php`
-  - `backend/app/Http/Middleware/EnsureRoleFromClaims.php`
-  - controladores de dashboard/inspecciones/elementos/admin.
+- Las migraciones nuevas de 2026-05-27 forman parte del estado final actual.
+- No borrar migraciones sin consolidar esquema primero, o se rompe `migrate:fresh`/CI.
 
-## Entrega esperada en cada iteracion
-
-- Resumen corto de analisis.
-- Cambios implementados.
-- Validacion (`build/tests`).
-- Lista de archivos modificados y por que.

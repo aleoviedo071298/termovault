@@ -47,9 +47,6 @@ class InspeccionSeeder extends Seeder
                     'cuadrilla' => $cuadrillas[$index % count($cuadrillas)],
                     'integrantes' => $integrantes[$index % count($integrantes)],
                     'empresa_contratista' => 'PECOM S.A.',
-                    'temperatura_ambiente' => 12.5 + ($index % 15) + ($i * 2),
-                    'humedad_relativa' => 35 + ($index % 40) - ($i * 5),
-                    'carga_pct' => 60.0 + ($index % 30) + ($i * 5),
                     'condiciones_clima' => $climas[$index % count($climas)],
                     'resumen' => "Inspección termográfica preventiva de rutina en {$elemento->nombre}. Se relevaron todos los componentes críticos bajo carga normal.",
                     'estado' => $i === 0 ? 'revisada' : 'cerrada',
@@ -95,8 +92,6 @@ class InspeccionSeeder extends Seeder
                         'temperatura_detectada' => 45.0 + ($index % 40),
                         'accion_recomendada' => "Realizar limpieza de contactos, reapriete y aplicar grasa conductora en la próxima parada programada.",
                         'estado' => $i === 0 ? 'abierta' : 'resuelta',
-                        'fecha_resolucion' => $i === 0 ? null : $fecha->copy()->addDays(15),
-                        'resuelta_en_inspeccion_id' => null,
                     ]);
                 }
             }

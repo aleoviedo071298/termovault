@@ -20,8 +20,6 @@ class Yacimiento extends Model
         'empresa_id',
         'nombre',
         'codigo',
-        'zona',
-        'descripcion',
         'activo',
     ];
 

@@ -16,7 +16,12 @@ export async function apiGet<T>(path: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed with ${response.status}`);
+    let errorMsg = `API request failed with ${response.status}`;
+    try {
+      const errData = await response.json() as { message?: string };
+      if (errData?.message) errorMsg = errData.message;
+    } catch {}
+    throw new Error(errorMsg);
   }
 
   return response.json() as Promise<T>;
@@ -166,5 +171,4 @@ export async function apiPostMultipart<T>(path: string, formData: FormData): Pro
 
   return response.json() as Promise<T>;
 }
-
 

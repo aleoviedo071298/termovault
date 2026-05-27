@@ -290,8 +290,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                         <div className="inspeccion-details">
                           <p><strong>Técnico:</strong> {inspeccion.tecnico ?? "S/D"}</p>
                           <p><strong>Cuadrilla:</strong> {inspeccion.cuadrilla ?? "S/D"}</p>
-                          <p><strong>Clima:</strong> {inspeccion.condiciones_clima ?? "-"}, {inspeccion.temperatura_ambiente}°C</p>
-                          <p><strong>Carga %:</strong> {inspeccion.carga_pct ? `${inspeccion.carga_pct}%` : "-"}</p>
+                          <p><strong>Clima:</strong> {inspeccion.condiciones_clima ?? "-"}</p>
                           
                           {inspeccion.resumen && (
                             <p className="resumen-text">

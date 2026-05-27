@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Services\CognitoJwtVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 use Tests\TestCase;
 
@@ -65,6 +66,61 @@ class AuthMiddlewareTest extends TestCase
                 'email' => 'tech@example.com',
                 'token_use' => 'access',
                 'empresa_id' => 1,
+            ]);
+    }
+
+    public function test_it_returns_403_when_local_user_is_inactive(): void
+    {
+        config()->set('cognito.required', true);
+
+        $empresaId = DB::table('empresas')->insertGetId([
+            'nombre' => 'Empresa Test',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $rolId = DB::table('roles')->where('codigo', 'tecnico')->value('id');
+        if (! $rolId) {
+            $rolId = DB::table('roles')->insertGetId([
+                'codigo' => 'tecnico',
+                'nombre' => 'Técnico',
+            ]);
+        }
+
+        DB::table('usuarios')->insert([
+            'empresa_id' => $empresaId,
+            'rol_id' => $rolId,
+            'nombre' => 'User',
+            'apellido' => 'Inactive',
+            'email' => 'inactive@example.com',
+            'password_hash' => bcrypt('secret123'),
+            'activo' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $claims = [
+            'sub' => 'user-inactive',
+            'email' => 'inactive@example.com',
+            'token_use' => 'access',
+            'custom:empresa_id' => (string) $empresaId,
+        ];
+
+        $mockVerifier = Mockery::mock(CognitoJwtVerifier::class);
+        $mockVerifier->shouldReceive('verify')
+            ->once()
+            ->with('valid-token')
+            ->andReturn($claims);
+        $this->app->instance(CognitoJwtVerifier::class, $mockVerifier);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/auth/me');
+
+        $response
+            ->assertStatus(403)
+            ->assertJson([
+                'message' => 'Usuario inactivo. Contacta a un administrador.',
             ]);
     }
 }

@@ -63,8 +63,6 @@ class AdminUserController extends Controller
                 'apellido' => trim($data['apellido']),
                 'email' => $email,
                 'password_hash' => password_hash(Str::random(32), PASSWORD_BCRYPT),
-                'legajo' => $data['legajo'] ?? null,
-                'telefono' => $data['telefono'] ?? null,
                 'activo' => true,
             ]);
 
@@ -109,8 +107,6 @@ class AdminUserController extends Controller
                 'nombre' => trim($data['nombre']),
                 'apellido' => trim($data['apellido']),
                 'email' => $email,
-                'legajo' => $data['legajo'] ?? null,
-                'telefono' => $data['telefono'] ?? null,
                 'activo' => (bool) ($data['activo'] ?? true),
             ]);
 
@@ -142,8 +138,6 @@ class AdminUserController extends Controller
             'rol_codigo' => 'required|in:admin,supervisor,tecnico',
             'yacimientos' => 'nullable|array',
             'yacimientos.*' => 'integer|exists:yacimientos,id',
-            'legajo' => 'nullable|string|max:50',
-            'telefono' => 'nullable|string|max:30',
             'activo' => 'nullable|boolean',
         ]);
 
@@ -159,4 +153,3 @@ class AdminUserController extends Controller
         return $data;
     }
 }
-

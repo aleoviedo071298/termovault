@@ -27,7 +27,7 @@ export interface DashboardReportRow {
   tecnico: string;
   empresa: string;
   yacimiento: string;
-  criticidad: "normal" | "observado" | "critico" | "urgente";
+  criticidad: "Normal" | "Baja" | "Media" | "Alta" | "Crítica";
   hallazgos: number;
 }
 

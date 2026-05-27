@@ -33,8 +33,6 @@ export function createAdminUsuario(payload: {
   empresa_id: number;
   rol_codigo: "admin" | "supervisor" | "tecnico";
   yacimientos?: number[];
-  legajo?: string;
-  telefono?: string;
 }): Promise<AdminUsuario> {
   return apiPost<AdminUsuario>("/admin/usuarios", payload);
 }
@@ -51,10 +49,10 @@ export function updateAdminUsuario(id: number, payload: {
   return apiPut<AdminUsuario>(`/admin/usuarios/${id}`, payload);
 }
 
-export function createEmpresa(payload: { nombre: string; cuit?: string }): Promise<{ id: number; nombre: string; cuit: string | null }> {
-  return apiPost<{ id: number; nombre: string; cuit: string | null }>("/admin/empresas", payload);
+export function createEmpresa(payload: { nombre: string }): Promise<{ id: number; nombre: string }> {
+  return apiPost<{ id: number; nombre: string }>("/admin/empresas", payload);
 }
 
-export function createYacimiento(payload: { empresa_id: number; nombre: string; codigo: string; zona?: string }): Promise<{ id: number; nombre: string; codigo: string; empresa_id: number; zona: string | null }> {
-  return apiPost<{ id: number; nombre: string; codigo: string; empresa_id: number; zona: string | null }>("/admin/yacimientos", payload);
+export function createYacimiento(payload: { empresa_id: number; nombre: string; codigo: string }): Promise<{ id: number; nombre: string; codigo: string; empresa_id: number }> {
+  return apiPost<{ id: number; nombre: string; codigo: string; empresa_id: number }>("/admin/yacimientos", payload);
 }

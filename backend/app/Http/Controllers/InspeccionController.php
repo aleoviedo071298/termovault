@@ -21,7 +21,9 @@ class InspeccionController extends Controller
 
         $query = Inspeccion::query()
             ->with([
-                'tecnico:id,nombre,apellido,email',
+            'tecnico:id,nombre,apellido,email',
+                'revisor:id,nombre,apellido,email',
+                'cerrador:id,nombre,apellido,email',
                 'elemento:id,nombre,codigo,yacimiento_id,tipo_elemento_id',
                 'elemento.yacimiento:id,nombre,codigo,empresa_id',
                 'elemento.tipoElemento:id,nombre',
@@ -71,11 +73,20 @@ class InspeccionController extends Controller
             'integrantes' => $inspeccion->integrantes,
             'empresa_contratista' => $inspeccion->empresa_contratista,
             'condiciones_clima' => $inspeccion->condiciones_clima,
-            'temperatura_ambiente' => $inspeccion->temperatura_ambiente,
-            'humedad_relativa' => $inspeccion->humedad_relativa,
-            'carga_pct' => $inspeccion->carga_pct,
             'resumen' => $inspeccion->resumen,
             'observaciones_revisor' => $inspeccion->observaciones_revisor,
+            'revisada_por' => $inspeccion->revisor ? [
+                'id' => $inspeccion->revisor->id,
+                'nombre' => trim($inspeccion->revisor->nombre . ' ' . $inspeccion->revisor->apellido),
+                'email' => $inspeccion->revisor->email,
+            ] : null,
+            'fecha_revision' => $inspeccion->fecha_revision,
+            'cerrada_por' => $inspeccion->cerrador ? [
+                'id' => $inspeccion->cerrador->id,
+                'nombre' => trim($inspeccion->cerrador->nombre . ' ' . $inspeccion->cerrador->apellido),
+                'email' => $inspeccion->cerrador->email,
+            ] : null,
+            'fecha_cierre' => $inspeccion->fecha_cierre,
             'tecnico' => $inspeccion->tecnico ? [
                 'id' => $inspeccion->tecnico->id,
                 'nombre' => trim($inspeccion->tecnico->nombre . ' ' . $inspeccion->tecnico->apellido),
@@ -155,9 +166,33 @@ class InspeccionController extends Controller
         if (array_key_exists('observaciones_revisor', $data)) {
             $inspeccion->observaciones_revisor = $data['observaciones_revisor'];
         }
-        $inspeccion->revisada_por = $scope['user_id'];
-        $inspeccion->fecha_revision = now();
+        $inspeccion->updated_by = $scope['user_id'];
+
+        if ($data['estado'] === 'revisada') {
+            $inspeccion->revisada_por = $scope['user_id'];
+            $inspeccion->fecha_revision = now();
+            $inspeccion->cerrada_por = null;
+            $inspeccion->fecha_cierre = null;
+        }
+
+        if ($data['estado'] === 'cerrada') {
+            // Si se cierra directamente sin paso previo por "revisada", dejamos trazabilidad mínima.
+            if (! $inspeccion->revisada_por) {
+                $inspeccion->revisada_por = $scope['user_id'];
+                $inspeccion->fecha_revision = now();
+            }
+            $inspeccion->cerrada_por = $scope['user_id'];
+            $inspeccion->fecha_cierre = now();
+        }
+
         $inspeccion->save();
+
+        if ($data['estado'] === 'cerrada') {
+            Novedad::query()
+                ->where('inspeccion_id', $inspeccion->id)
+                ->where('estado', 'abierta')
+                ->update(['estado' => 'resuelta']);
+        }
 
         return response()->json([
             'message' => 'Estado actualizado correctamente',
@@ -170,6 +205,9 @@ class InspeccionController extends Controller
     {
         $scope = $this->scopeResolver->resolve($request);
         $userId = $scope['user_id'];
+        if (! $userId) {
+            return response()->json(['message' => 'Usuario autenticado no resuelto'], 401);
+        }
 
         $data = $request->validate([
             'elemento_id' => 'required|exists:elementos,id',
@@ -177,9 +215,6 @@ class InspeccionController extends Controller
             'cuadrilla' => 'nullable|string|max:100',
             'integrantes' => 'nullable|string',
             'empresa_contratista' => 'nullable|string|max:150',
-            'temperatura_ambiente' => 'nullable|numeric',
-            'humedad_relativa' => 'nullable|numeric',
-            'carga_pct' => 'nullable|numeric',
             'condiciones_clima' => 'nullable|string|max:50',
             'resumen' => 'nullable|string',
             'estado' => 'nullable|string|max:20',
@@ -189,26 +224,36 @@ class InspeccionController extends Controller
         ]);
 
         if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
-            return response()->json(['message' => 'No tenes permisos para cargar inspecciones en este elemento'], 403);
+            return response()->json(['message' => 'Elemento fuera de alcance para tu perfil'], 422);
         }
 
         $elemento = Elemento::query()->find($data['elemento_id']);
 
         return DB::transaction(function () use ($request, $data, $userId, $elemento) {
+            $empresaSnapshot = trim((string) ($data['empresa_contratista'] ?? ''));
+            if ($empresaSnapshot === '') {
+                $empresaSnapshot = (string) (DB::table('usuarios as u')
+                    ->join('empresas as e', 'e.id', '=', 'u.empresa_id')
+                    ->where('u.id', (int) $userId)
+                    ->value('e.nombre') ?? '');
+            }
+            if ($empresaSnapshot === '') {
+                $empresaSnapshot = null;
+            }
+
             // 1. Create Inspeccion
             $inspeccion = Inspeccion::create([
                 'elemento_id' => $elemento->id,
-                'tecnico_id' => $userId ?? 1, // Fallback to 1 if no user_id (testing)
+                'tecnico_id' => $userId,
                 'fecha_inspeccion' => $data['fecha_inspeccion'],
                 'cuadrilla' => $data['cuadrilla'] ?? null,
                 'integrantes' => $data['integrantes'] ?? null,
-                'empresa_contratista' => $data['empresa_contratista'] ?? 'PECOM S.A.',
-                'temperatura_ambiente' => $data['temperatura_ambiente'] ?? null,
-                'humedad_relativa' => $data['humedad_relativa'] ?? null,
-                'carga_pct' => $data['carga_pct'] ?? null,
+                'empresa_contratista' => $empresaSnapshot,
                 'condiciones_clima' => $data['condiciones_clima'] ?? null,
                 'resumen' => $data['resumen'] ?? null,
                 'estado' => $data['estado'] ?? 'enviada',
+                'created_by' => $userId,
+                'updated_by' => $userId,
             ]);
 
             // 2. Handle Reporte File
@@ -227,7 +272,7 @@ class InspeccionController extends Controller
                     's3_key' => $path,
                     'tamano_bytes' => $reportFile->getSize(),
                     'mime_type' => $reportFile->getMimeType(),
-                    'subido_por' => $userId ?? 1,
+                    'subido_por' => $userId,
                 ]);
             }
 
@@ -244,7 +289,7 @@ class InspeccionController extends Controller
                     's3_key' => $path,
                     'tamano_bytes' => $imgFile->getSize(),
                     'mime_type' => $imgFile->getMimeType(),
-                    'subido_por' => $userId ?? 1,
+                    'subido_por' => $userId,
                 ]);
             }
 

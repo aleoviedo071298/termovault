@@ -27,17 +27,13 @@ class Usuario extends Model
         'apellido',
         'email',
         'password_hash',
-        'legajo',
-        'telefono',
         'activo',
-        'ultimo_login',
     ];
 
     protected function casts(): array
     {
         return [
             'activo' => 'boolean',
-            'ultimo_login' => 'datetime',
         ];
     }
 
@@ -64,5 +60,10 @@ class Usuario extends Model
     public function revisiones(): HasMany
     {
         return $this->hasMany(Inspeccion::class, 'revisada_por');
+    }
+
+    public function cierres(): HasMany
+    {
+        return $this->hasMany(Inspeccion::class, 'cerrada_por');
     }
 }

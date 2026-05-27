@@ -6,10 +6,11 @@ import { InspectionDetailModal } from "../components/InspectionDetailModal";
 import { InspectionModal } from "../components/InspectionModal";
 
 const CRITICIDAD_COLOR: Record<string, string> = {
-  normal: "#4a7a5e",
-  observado: "#b78524",
-  critico: "#bf4f2d",
-  urgente: "#b12f2f"
+  Normal: "#4a7a5e",
+  Baja: "#22c55e",
+  Media: "#eab308",
+  Alta: "#f97316",
+  "Crítica": "#ef4444"
 };
 
 interface Props {
@@ -199,7 +200,14 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
                 <td>{r.yacimiento}</td>
                 <td>{r.elemento}</td>
                 <td>{r.estado}</td>
-                <td><span className="badge" style={{ "--badge-color": CRITICIDAD_COLOR[r.criticidad] } as React.CSSProperties}>{r.criticidad}</span></td>
+                <td>
+                  <span
+                    className="badge badge-criticidad"
+                    style={{ "--badge-color": CRITICIDAD_COLOR[r.criticidad] ?? "#6b7280" } as React.CSSProperties}
+                  >
+                    {r.criticidad}
+                  </span>
+                </td>
                 <td><button className="icon-button" type="button" title="Ver detalle" onClick={() => { setInspectionDetailId(r.id); setInspectionDetailOpen(true); }}>Ver</button></td>
               </tr>
             ))}
@@ -224,4 +232,3 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
     </main>
   );
 }
-

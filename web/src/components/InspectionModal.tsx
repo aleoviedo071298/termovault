@@ -43,9 +43,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   const [cuadrilla, setCuadrilla] = useState("");
   const [integrantes, setIntegrantes] = useState("");
   const [empresaContratista, setEmpresaContratista] = useState("PECOM S.A.");
-  const [temperaturaAmbiente, setTemperaturaAmbiente] = useState<number | "">("");
-  const [humedadRelativa, setHumedadRelativa] = useState<number | "">("");
-  const [cargaPct, setCargaPct] = useState<number | "">("");
   const [condicionesClima, setCondicionesClima] = useState("Despejado");
   const [resumen, setResumen] = useState("");
 
@@ -97,9 +94,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         setCuadrilla(isTestUser ? "625" : "625");
         setEmpresaContratista("PECOM");
         setIntegrantes("");
-        setTemperaturaAmbiente("");
-        setHumedadRelativa("");
-        setCargaPct("");
         setCondicionesClima("Despejado");
         setResumen("");
         setReporteFile(null);
@@ -171,9 +165,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       formData.append("cuadrilla", cuadrilla.trim());
       formData.append("integrantes", integrantes.trim());
       formData.append("empresa_contratista", empresaContratista.trim());
-      if (temperaturaAmbiente !== "") formData.append("temperatura_ambiente", String(temperaturaAmbiente));
-      if (humedadRelativa !== "") formData.append("humedad_relativa", String(humedadRelativa));
-      if (cargaPct !== "") formData.append("carga_pct", String(cargaPct));
       formData.append("condiciones_clima", condicionesClima);
       formData.append("resumen", resumen.trim());
 

@@ -23,6 +23,7 @@ class InspeccionManagementTest extends TestCase
     private $tipo;
     private $adminClaims;
     private $techClaims;
+    private $admin2Claims;
     private $otherEmpresaClaims;
 
     protected function setUp(): void
@@ -58,6 +59,16 @@ class InspeccionManagementTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $adminRole->id,
+            'nombre' => 'Admin',
+            'apellido' => 'Dos',
+            'email' => 'admin2@example.com',
+            'password_hash' => 'secret',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         \DB::table('usuarios')->insert([
             'empresa_id' => $this->empresa->id,
@@ -82,6 +93,12 @@ class InspeccionManagementTest extends TestCase
             'email' => 'tech@example.com',
             'token_use' => 'access',
             'cognito:groups' => ['tecnico'],
+        ];
+        $this->admin2Claims = [
+            'sub' => 'admin-456',
+            'email' => 'admin2@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['admin'],
         ];
 
         // Another company user for multi-tenancy verification
@@ -188,5 +205,100 @@ class InspeccionManagementTest extends TestCase
 
         // Should fail due to multi-tenant scoping check in InspeccionController
         $response->assertStatus(422);
+    }
+
+    public function test_closing_inspection_resolves_open_findings(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Cierre',
+            'codigo' => 'SET-CIERRE-TEST',
+        ]);
+
+        $createResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'novedades' => json_encode([
+                    [
+                        'criticidad_id' => 3,
+                        'titulo' => 'Punto caliente',
+                        'descripcion' => 'Hallazgo inicial',
+                    ],
+                ]),
+            ]);
+
+        $createResponse->assertStatus(201);
+        $inspeccionId = (int) $createResponse->json('inspeccion.id');
+
+        $this->assertDatabaseHas('novedades', [
+            'inspeccion_id' => $inspeccionId,
+            'estado' => 'abierta',
+        ]);
+
+        $this->mockVerifier($this->adminClaims);
+        $closeResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'cerrada',
+            ]);
+
+        $closeResponse->assertOk();
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccionId,
+            'estado' => 'cerrada',
+        ]);
+        $this->assertDatabaseHas('novedades', [
+            'inspeccion_id' => $inspeccionId,
+            'estado' => 'resuelta',
+        ]);
+    }
+
+    public function test_closing_by_another_supervisor_or_admin_keeps_reviewer_and_sets_closer(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Trazabilidad',
+            'codigo' => 'SET-TRAZA-TEST',
+        ]);
+
+        $createResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+            ]);
+        $createResponse->assertStatus(201);
+        $inspeccionId = (int) $createResponse->json('inspeccion.id');
+
+        $reviewerId = (int) \DB::table('usuarios')->where('email', 'admin@example.com')->value('id');
+        $closerId = (int) \DB::table('usuarios')->where('email', 'admin2@example.com')->value('id');
+
+        $this->mockVerifier($this->adminClaims);
+        $reviewResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'revisada',
+            ]);
+        $reviewResponse->assertOk();
+
+        $this->mockVerifier($this->admin2Claims);
+        $closeResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'cerrada',
+            ]);
+        $closeResponse->assertOk();
+
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccionId,
+            'estado' => 'cerrada',
+            'revisada_por' => $reviewerId,
+            'cerrada_por' => $closerId,
+        ]);
     }
 }
