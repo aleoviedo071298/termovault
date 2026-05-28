@@ -427,7 +427,7 @@ tbody tr:hover {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 34px;
   color: #fff9e8;
   background:
@@ -478,7 +478,8 @@ tbody tr:hover {
 
 .login-headline {
   max-width: 650px;
-  margin-top: 80px;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .login-headline h1 {
@@ -649,6 +650,7 @@ tbody tr:hover {
 
   .login-headline {
     margin-top: 48px;
+    margin-bottom: 0;
   }
 
   .login-headline h1 {
