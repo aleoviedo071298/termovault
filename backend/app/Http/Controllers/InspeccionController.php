@@ -8,12 +8,70 @@ use App\Models\Inspeccion;
 use App\Models\Novedad;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class InspeccionController extends Controller
 {
     public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+
+    private function archivoPayload(Archivo $archivo): array
+    {
+        $disk = $archivo->s3_bucket === 'local' ? 'public' : 's3';
+
+        return [
+            'id' => $archivo->id,
+            'tipo' => $archivo->tipo,
+            'nombre' => $archivo->nombre_original,
+            'bucket' => $archivo->s3_bucket,
+            'key' => $archivo->s3_key,
+            'url' => Storage::disk($disk)->url($archivo->s3_key),
+            'tamano' => $archivo->tamano_bytes,
+            'mime' => $archivo->mime_type,
+        ];
+    }
+
+    private function safeStorageFileName(string $originalName): string
+    {
+        $name = basename($originalName);
+        $name = Str::ascii($name);
+        $name = preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?? '';
+        $name = trim($name, '.-_');
+
+        return $name !== '' ? $name : 'archivo';
+    }
+
+    private function storeInspectionFile(
+        Inspeccion $inspeccion,
+        UploadedFile $file,
+        string $folder,
+        string $tipo,
+        int $userId
+    ): void {
+        $archivo = Archivo::create([
+            'inspeccion_id' => $inspeccion->id,
+            'tipo' => $tipo,
+            'nombre_original' => $file->getClientOriginalName(),
+            's3_bucket' => config('filesystems.disks.s3.bucket'),
+            's3_key' => 'pending/' . (string) Str::uuid(),
+            'tamano_bytes' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'subido_por' => $userId,
+        ]);
+
+        $filename = $archivo->id . '-' . $this->safeStorageFileName($file->getClientOriginalName());
+        $directory = "inspecciones/{$inspeccion->id}/{$folder}";
+        $path = $file->storeAs($directory, $filename, 's3');
+
+        if (! $path) {
+            throw new \RuntimeException('No se pudo guardar el archivo en MinIO');
+        }
+
+        $archivo->update(['s3_key' => $path]);
+    }
 
     public function show(Request $request, int $id): JsonResponse
     {
@@ -99,15 +157,7 @@ class InspeccionController extends Controller
                 'tipo' => $inspeccion->elemento->tipoElemento?->nombre,
                 'yacimiento' => $inspeccion->elemento->yacimiento?->nombre,
             ] : null,
-            'archivos' => $inspeccion->archivos->map(fn ($archivo) => [
-                'id' => $archivo->id,
-                'tipo' => $archivo->tipo,
-                'nombre' => $archivo->nombre_original,
-                'bucket' => $archivo->s3_bucket,
-                'key' => $archivo->s3_key,
-                'tamano' => $archivo->tamano_bytes,
-                'mime' => $archivo->mime_type,
-            ])->values(),
+            'archivos' => $inspeccion->archivos->map(fn ($archivo) => $this->archivoPayload($archivo))->values(),
             'novedades' => $inspeccion->novedades->map(fn ($n) => [
                 'id' => $n->id,
                 'titulo' => $n->titulo,
@@ -261,36 +311,14 @@ class InspeccionController extends Controller
                 $reportFile = $request->file('reporte');
                 $extension = strtolower($reportFile->getClientOriginalExtension());
                 $tipo = ($extension === 'xls' || $extension === 'xlsx') ? 'informe_excel' : 'informe_word';
-                
-                $path = $reportFile->store('reports', 'public');
-                
-                Archivo::create([
-                    'inspeccion_id' => $inspeccion->id,
-                    'tipo' => $tipo,
-                    'nombre_original' => $reportFile->getClientOriginalName(),
-                    's3_bucket' => 'local',
-                    's3_key' => $path,
-                    'tamano_bytes' => $reportFile->getSize(),
-                    'mime_type' => $reportFile->getMimeType(),
-                    'subido_por' => $userId,
-                ]);
+
+                $this->storeInspectionFile($inspeccion, $reportFile, 'reports', $tipo, $userId);
             }
 
             // 3. Handle Imagenes ZIP File
             if ($request->hasFile('imagenes')) {
                 $imgFile = $request->file('imagenes');
-                $path = $imgFile->store('images', 'public');
-
-                Archivo::create([
-                    'inspeccion_id' => $inspeccion->id,
-                    'tipo' => 'pack_imagenes_zip',
-                    'nombre_original' => $imgFile->getClientOriginalName(),
-                    's3_bucket' => 'local',
-                    's3_key' => $path,
-                    'tamano_bytes' => $imgFile->getSize(),
-                    'mime_type' => $imgFile->getMimeType(),
-                    'subido_por' => $userId,
-                ]);
+                $this->storeInspectionFile($inspeccion, $imgFile, 'images', 'pack_imagenes_zip', $userId);
             }
 
             // 4. Handle Findings (Novedades)

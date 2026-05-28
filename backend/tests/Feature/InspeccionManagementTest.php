@@ -30,7 +30,7 @@ class InspeccionManagementTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('public');
+        Storage::fake('s3');
 
         $this->empresa = Empresa::create(['nombre' => 'PECOM', 'cuit' => '30-12345678-0']);
         $this->yacimiento = Yacimiento::create([
@@ -178,9 +178,16 @@ class InspeccionManagementTest extends TestCase
             'temperatura_detectada' => 65.5,
         ]);
 
-        // Check file storage fakes
-        Storage::disk('public')->assertExists('reports/' . $reporte->hashName());
-        Storage::disk('public')->assertExists('images/' . $imagenes->hashName());
+        $inspeccionId = (int) $response->json('inspeccion.id');
+        $reporteArchivo = \DB::table('archivos')->where('tipo', 'informe_word')->first();
+        $imagenesArchivo = \DB::table('archivos')->where('tipo', 'pack_imagenes_zip')->first();
+
+        Storage::disk('s3')->assertExists($reporteArchivo->s3_key);
+        Storage::disk('s3')->assertExists($imagenesArchivo->s3_key);
+        $this->assertSame('termovault-dev', $reporteArchivo->s3_bucket);
+        $this->assertSame("inspecciones/{$inspeccionId}/reports/{$reporteArchivo->id}-reporte.docx", $reporteArchivo->s3_key);
+        $this->assertSame('termovault-dev', $imagenesArchivo->s3_bucket);
+        $this->assertSame("inspecciones/{$inspeccionId}/images/{$imagenesArchivo->id}-imagenes.zip", $imagenesArchivo->s3_key);
     }
 
     public function test_cannot_upload_inspection_for_other_company_element(): void

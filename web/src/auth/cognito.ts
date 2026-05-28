@@ -17,6 +17,26 @@ export type LoginResult =
   | { kind: "success"; data: AuthResponse }
   | { kind: "challenge"; data: AuthChallengeResponse };
 
+function normalizeAuthError(message: string): string {
+  const text = message.toLowerCase();
+  if (text.includes("incorrect") || text.includes("notauthorized") || text.includes("authentication failed")) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (text.includes("usernotfound") || text.includes("user does not exist")) {
+    return "No existe un usuario registrado con ese email.";
+  }
+  if (text.includes("password") && text.includes("reset")) {
+    return "Debes restablecer tu contraseña antes de ingresar.";
+  }
+  if (text.includes("too many") || text.includes("limitexceeded")) {
+    return "Demasiados intentos. Espera unos minutos y vuelve a probar.";
+  }
+  if (text.includes("network") || text.includes("failed to fetch")) {
+    return "No se pudo conectar con el servidor. Verifica que la app esté levantada.";
+  }
+  return message || "No se pudo iniciar sesión. Verifica tus datos.";
+}
+
 export async function loginCognito(
   email: string,
   password: string,
@@ -31,9 +51,9 @@ export async function loginCognito(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json"
+      Accept: "application/json",
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
   if (response.status === 202) {
@@ -42,11 +62,10 @@ export async function loginCognito(
   }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message ?? "Error de autenticación");
+    const errorData = await response.json().catch(() => ({} as { message?: string }));
+    throw new Error(normalizeAuthError(errorData.message ?? "Error de autenticacion"));
   }
 
   const data = await response.json() as AuthResponse;
   return { kind: "success", data };
 }
-

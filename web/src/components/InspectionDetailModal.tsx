@@ -158,10 +158,8 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
                     <p>Sin archivos adjuntos.</p>
                   ) : (
                     data.archivos.map((file) => {
-                      const backendUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace("/api", "");
-                      const url = `${backendUrl}/storage/${file.key}`;
                       return (
-                        <a className="file-download-btn" key={file.id} href={url} target="_blank" rel="noreferrer">
+                        <a className="file-download-btn" key={file.id} href={file.url} target="_blank" rel="noreferrer">
                           {file.tipo.includes("zip") ? <FolderArchive size={18} className="icon-zip" /> : <FileText size={18} className="icon-word" />}
                           <div className="file-info">
                             <span className="file-name">{file.nombre}</span>

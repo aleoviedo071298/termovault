@@ -18,7 +18,7 @@ class AccessScopeResolver
 
         $dbUser = null;
         if ($userId) {
-            $dbUser = Usuario::query()->with('yacimientos:id,codigo', 'empresa:id,nombre')->find($userId);
+            $dbUser = Usuario::query()->with('yacimientos:id,nombre,codigo', 'empresa:id,nombre')->find($userId);
         }
 
         if ($dbUser && ! $empresaId) {
@@ -50,12 +50,18 @@ class AccessScopeResolver
         return [
             'user_id' => $dbUser?->id ? (int) $dbUser->id : null,
             'empresa_id' => $empresaId ? (int) $empresaId : null,
+            'empresa_nombre' => $dbUser?->empresa?->nombre,
+            'user_name' => $dbUser ? trim($dbUser->nombre . ' ' . $dbUser->apellido) : null,
             'roles' => $roles,
             'is_admin' => $isAdmin,
             'is_supervisor' => $isSupervisor,
             'is_tecnico' => $isTecnico,
             'is_pae_supervisor' => $isSupervisor && $isPaeCompany && in_array('YAC-PAE', $assignedYacimientoCodes, true),
             'assigned_yacimiento_ids' => $assignedYacimientoIds,
+            'assigned_yacimiento_codes' => $assignedYacimientoCodes,
+            'assigned_yacimiento_names' => $dbUser
+                ? $dbUser->yacimientos->pluck('nombre')->filter()->values()->all()
+                : [],
         ];
     }
 

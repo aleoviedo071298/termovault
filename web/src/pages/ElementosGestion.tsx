@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, RefreshCw, Search, Settings } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Boxes, Factory, Gauge, MapPin, Plus, RefreshCw, Search, Settings2, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getDashboardOverview } from "../api/dashboard";
 import { listElementos } from "../api/elementos";
@@ -17,9 +17,11 @@ export default function ElementosGestion({ onBack }: Props) {
   const groups = user?.groups ?? [];
   const isAdmin = groups.includes("admin");
   const [isPaeSupervisor, setIsPaeSupervisor] = useState(false);
+  const [scopeLabel, setScopeLabel] = useState("Alcance operativo");
   const [items, setItems] = useState<Elemento[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [tipoFilter, setTipoFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editElementId, setEditElementId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -45,6 +47,11 @@ export default function ElementosGestion({ onBack }: Props) {
       try {
         const overview = await getDashboardOverview();
         setIsPaeSupervisor(Boolean(overview.scope.is_pae_supervisor));
+        const empresa = overview.scope.empresa_nombre ?? "sin empresa";
+        const yacimientos = overview.scope.assigned_yacimiento_names?.length
+          ? overview.scope.assigned_yacimiento_names.join(", ")
+          : "segun alcance";
+        setScopeLabel(`${empresa} / ${yacimientos}`);
       } catch {
         setIsPaeSupervisor(false);
       }
@@ -53,54 +60,168 @@ export default function ElementosGestion({ onBack }: Props) {
 
   const canManage = isAdmin || isPaeSupervisor;
 
+  const tipos = useMemo(() => {
+    return Array.from(new Set(items.map((e) => e.tipo).filter((tipo): tipo is string => Boolean(tipo))))
+      .sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  const yacimientosCount = useMemo(() => {
+    return new Set(items.map((e) => e.yacimiento).filter(Boolean)).size;
+  }, [items]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((e) => [e.nombre, e.codigo, e.tipo, e.yacimiento].filter(Boolean).some((v) => v!.toLowerCase().includes(q)));
-  }, [items, query]);
+    return items.filter((e) => {
+      const matchesSearch = q === "" || [e.nombre, e.codigo, e.tipo, e.yacimiento, e.funcion, e.tension]
+        .filter(Boolean)
+        .some((v) => v!.toLowerCase().includes(q));
+      const matchesTipo = tipoFilter === "" || e.tipo === tipoFilter;
+      return matchesSearch && matchesTipo;
+    });
+  }, [items, query, tipoFilter]);
 
   return (
-    <main className="app-shell">
-      <section className="toolbar">
-        <div className="brand-mark"><Settings size={20} /></div>
-        <div className="title-stack">
-          <p>TermoVault</p>
-          <h1>Gestión de Elementos</h1>
+    <main className="app-shell element-management-shell">
+      <section className="element-hero dashboard-section">
+        <div className="element-hero-main">
+          <div className="hero-kicker">
+            <span className="system-dot" />
+            Inventario tecnico / activos termograficos
+          </div>
+          <h1>Gestion de elementos</h1>
+          <p>Catalogo operativo de subestaciones, transformadores y activos inspeccionables por alcance.</p>
+          <div className="element-scope-row">
+            <span><Factory size={14} /> {scopeLabel}</span>
+            <span><Settings2 size={14} /> {canManage ? "Edicion habilitada" : "Solo consulta"}</span>
+          </div>
         </div>
-        <div className="metric"><span>{loading ? "--" : filtered.length}</span><small>elementos</small></div>
-        <div className="search-box">
-          <Search size={16} />
-          <input placeholder="Buscar por nombre, código, tipo, yacimiento..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="icon-button" type="button" onClick={onBack} title="Volver al dashboard"><ArrowLeft size={16} /></button>
-          {canManage ? (
-            <button className="add-element-btn" type="button" onClick={() => { setEditElementId(null); setModalOpen(true); }}><Plus size={16} /><span>Agregar elemento</span></button>
-          ) : null}
-          <button className="icon-button" type="button" onClick={() => void load()}><RefreshCw size={16} /></button>
+
+        <div className="element-hero-panel">
+          <div className="element-metrics">
+            <article>
+              <Boxes size={16} />
+              <span>Elementos</span>
+              <strong>{loading ? "--" : filtered.length}</strong>
+            </article>
+            <article>
+              <MapPin size={16} />
+              <span>Yacimientos</span>
+              <strong>{loading ? "--" : yacimientosCount}</strong>
+            </article>
+            <article>
+              <Gauge size={16} />
+              <span>Tipos</span>
+              <strong>{loading ? "--" : tipos.length}</strong>
+            </article>
+          </div>
+
+          <div className="element-actions">
+            <button className="secondary-command" type="button" onClick={onBack}>
+              <ArrowLeft size={15} />
+              Dashboard
+            </button>
+            {canManage ? (
+              <button className="primary-command" type="button" onClick={() => { setEditElementId(null); setModalOpen(true); }}>
+                <Plus size={16} />
+                Agregar elemento
+              </button>
+            ) : null}
+            <button className="utility-command" type="button" onClick={() => void load()} title="Recargar elementos">
+              <RefreshCw size={15} />
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="table-frame" style={{ marginTop: 16 }}>
-        <table>
-          <thead><tr><th>Nombre</th><th>Código</th><th>Tipo</th><th>Yacimiento</th><th>Criticidad</th><th>Acción</th></tr></thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="empty-cell">Cargando elementos...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="empty-cell">No hay elementos para el filtro.</td></tr>
-            ) : filtered.map((e) => (
-              <tr key={e.id}>
-                <td>{e.nombre}</td>
-                <td>{e.codigo}</td>
-                <td>{e.tipo ?? "-"}</td>
-                <td>{e.yacimiento ?? "-"}</td>
-                <td>{e.criticidad ?? "-"}</td>
-                <td><button className="icon-button" type="button" onClick={() => { setDetailId(e.id); setDetailOpen(true); }}>Ver</button></td>
+      <section className="dashboard-section element-filter-bar">
+        <div className="filter-head">
+          <div className="filter-title">
+            <SlidersHorizontal size={16} />
+            <span>Busqueda de activos</span>
+          </div>
+          <div className="filter-actions">
+            <small>{filtered.length} de {items.length} elementos</small>
+            <button className="ghost-action" type="button" onClick={() => { setQuery(""); setTipoFilter(""); }}>
+              <X size={14} />
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+        <div className="element-filter-grid">
+          <label className="filter-input search">
+            <Search size={16} />
+            <input
+              placeholder="Buscar por nombre, codigo, yacimiento, funcion o tension"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+
+          <label className="filter-input">
+            <span>Tipo</span>
+            <select value={tipoFilter} onChange={(e) => setTipoFilter(e.target.value)}>
+              <option value="">Todos los tipos</option>
+              {tipos.map((tipo) => (
+                <option key={tipo} value={tipo}>{tipo}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className="dashboard-section element-table-panel">
+        <div className="section-heading report-heading">
+          <div>
+            <span>Inventario de elementos</span>
+            <small>Tabla compacta para exploracion y apertura de ficha tecnica</small>
+          </div>
+          <strong>{filtered.length}</strong>
+        </div>
+
+        <div className="report-table-wrap">
+          <table className="report-table element-table">
+            <thead>
+              <tr>
+                <th>Elemento</th>
+                <th>Codigo</th>
+                <th>Tipo</th>
+                <th>Yacimiento</th>
+                <th>Funcion</th>
+                <th>Tension</th>
+                <th aria-label="Accion" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="empty-cell">Cargando elementos...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} className="empty-cell">No hay elementos para los filtros aplicados.</td></tr>
+              ) : filtered.map((e) => (
+                <tr key={e.id}>
+                  <td className="main-report-cell">
+                    <div className="report-title-line">
+                      <Boxes size={16} />
+                      <strong>{e.nombre}</strong>
+                    </div>
+                    <span>Activo #{e.id}</span>
+                  </td>
+                  <td><span className="code-chip">{e.codigo}</span></td>
+                  <td>{e.tipo ?? "-"}</td>
+                  <td>{e.yacimiento ?? "-"}</td>
+                  <td>{e.funcion ?? "-"}</td>
+                  <td>{e.tension ?? "No requiere"}</td>
+                  <td className="action-cell">
+                    <button className="table-action" type="button" onClick={() => { setDetailId(e.id); setDetailOpen(true); }}>
+                      Ver
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <ElementModal

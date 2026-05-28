@@ -6,6 +6,7 @@ use App\Services\Auth\LocalUserProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -67,7 +68,7 @@ class AuthController extends Controller
             $challengeData = $challengeResponse->json();
             if (! $challengeResponse->successful()) {
                 return response()->json([
-                    'message' => $challengeData['message'] ?? 'No se pudo actualizar la contraseña inicial',
+                    'message' => $this->translateCognitoError($challengeData['__type'] ?? null, $challengeData['message'] ?? null),
                     'error' => $challengeData['__type'] ?? 'UnknownError',
                 ], 401);
             }
@@ -119,7 +120,7 @@ class AuthController extends Controller
         $data = $response->json();
 
         if (! $response->successful()) {
-            $message = $data['message'] ?? 'Authentication failed';
+            $message = $this->translateCognitoError($data['__type'] ?? null, $data['message'] ?? null);
             return response()->json([
                 'message' => $message,
                 'error' => $data['__type'] ?? 'UnknownError',
@@ -195,5 +196,34 @@ class AuthController extends Controller
 
         $claims = json_decode($json, true);
         return is_array($claims) ? $claims : null;
+    }
+
+    private function translateCognitoError(?string $type, ?string $message): string
+    {
+        $raw = mb_strtolower((string) ($type . ' ' . $message));
+
+        if (str_contains($raw, 'notauthorized') || str_contains($raw, 'incorrect username or password')) {
+            return 'Email o contraseña incorrectos.';
+        }
+        if (str_contains($raw, 'usernotfound')) {
+            return 'No existe un usuario registrado con ese email.';
+        }
+        if (str_contains($raw, 'usernotconfirmed')) {
+            return 'El usuario todavía no está confirmado.';
+        }
+        if (str_contains($raw, 'passwordresetrequired')) {
+            return 'Debes restablecer tu contraseña antes de ingresar.';
+        }
+        if (str_contains($raw, 'invalidpassword')) {
+            return 'La nueva contraseña no cumple los requisitos de seguridad.';
+        }
+        if (str_contains($raw, 'limitexceeded') || str_contains($raw, 'toomanyrequests')) {
+            return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
+        }
+        if (str_contains($raw, 'expired')) {
+            return 'La sesión expiró. Inicia sesión nuevamente.';
+        }
+
+        return 'No se pudo iniciar sesión. Verifica tus datos e intenta nuevamente.';
     }
 }
