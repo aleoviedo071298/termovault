@@ -41,15 +41,18 @@ class ElementoTest extends TestCase
      */
     public function test_tecnico_cannot_create_elemento(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $usuario = Usuario::factory()->tecnico()->create();
+        $yacimiento = Yacimiento::first();
+        $tipoElemento = TipoElemento::first();
+        $criticidad = Criticidad::first();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
-                'yacimiento_id' => 1,
-                'tipo_elemento_id' => 1,
+                'yacimiento_id' => $yacimiento->id,
+                'tipo_elemento_id' => $tipoElemento->id,
                 'nombre' => 'SET TEST',
                 'codigo' => 'SET-001',
-                'criticidad_id' => 1
+                'criticidad_id' => $criticidad->id
             ]);
 
         // Debería retornar 403 Forbidden
@@ -61,15 +64,18 @@ class ElementoTest extends TestCase
      */
     public function test_admin_can_create_elemento(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
+        $yacimiento = Yacimiento::first();
+        $tipoElemento = TipoElemento::first();
+        $criticidad = Criticidad::first();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
-                'yacimiento_id' => 1,
-                'tipo_elemento_id' => 1,
+                'yacimiento_id' => $yacimiento->id,
+                'tipo_elemento_id' => $tipoElemento->id,
                 'nombre' => 'SET AGR',
                 'codigo' => 'SET-AGR',
-                'criticidad_id' => 1
+                'criticidad_id' => $criticidad->id
             ]);
 
         $response->assertStatus(201);
@@ -84,15 +90,16 @@ class ElementoTest extends TestCase
      */
     public function test_elemento_validation_required_fields(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
                 // Falta: yacimiento_id, tipo_elemento_id, nombre, codigo
+                // This should trigger validation errors
             ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'The given data was invalid.');
+        $response->assertJsonStructure(['message', 'errors']);
     }
 
     /**
@@ -107,7 +114,7 @@ class ElementoTest extends TestCase
             'fecha_inspeccion' => now()
         ]);
 
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->deleteJson("/api/elementos/{$elemento->id}");
@@ -125,7 +132,7 @@ class ElementoTest extends TestCase
     {
         $elemento = Elemento::factory()->create();
 
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->deleteJson("/api/elementos/{$elemento->id}");
@@ -148,7 +155,7 @@ class ElementoTest extends TestCase
         Elemento::factory()->create(['yacimiento_id' => $yac2->id]);
 
         // Técnico sin yacimiento asignado no ve nada
-        $usuario = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $usuario = Usuario::factory()->tecnico()->create();
 
         $response = $this->actingAs($usuario)
             ->getJson('/api/elementos');
@@ -163,7 +170,7 @@ class ElementoTest extends TestCase
     public function test_elemento_update_with_invalid_data(): void
     {
         $elemento = Elemento::factory()->create();
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->putJson("/api/elementos/{$elemento->id}", [

@@ -27,7 +27,12 @@ class InspeccionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Setup maestros si es necesario
+        // Create shared empresa and yacimiento for tests
+        $this->empresa = \App\Models\Empresa::factory()->create(['nombre' => 'PAE']);
+        $this->yacimiento = \App\Models\Yacimiento::factory()->create([
+            'empresa_id' => $this->empresa->id,
+            'codigo' => 'YAC-PAE'  // Required for supervisor PAE scope recognition
+        ]);
     }
 
     /**
@@ -35,13 +40,13 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_can_create_inspeccion(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),  // Use date format instead of datetime
                 'cuadrilla' => 'Cuadrilla A',
                 'empresa_contratista' => 'PECOM',
                 'condiciones_clima' => 'Despejado',
@@ -65,14 +70,14 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_estado_enum_validation(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Intentar crear con estado inválido
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'estado' => 'estado_invalido',  // ❌ NO es una opción válida
                 'novedades' => json_encode([])
             ]);
@@ -87,9 +92,9 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_can_only_see_own_inspecciones(): void
     {
-        $tecnico1 = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $tecnico2 = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico1 = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico2 = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Tecnico 1 crea inspección
         $inspeccion = Inspeccion::factory()->create([
@@ -110,8 +115,16 @@ class InspeccionTest extends TestCase
      */
     public function test_supervisor_can_update_inspeccion_estado(): void
     {
-        $supervisor = Usuario::factory()->create(['local_role' => 'supervisor']);
-        $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada']);
+        // Para actualizar inspecciones, el supervisor debe ser PAE supervisor
+        // (es decir, de empresa PAE y asignado al yacimiento PAE)
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+
+        // Asignar al yacimiento PAE (required for is_pae_supervisor scope)
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada', 'elemento_id' => $elemento->id]);
 
         $response = $this->actingAs($supervisor)
             ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
@@ -131,8 +144,9 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_cannot_update_inspeccion_estado(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada']);
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada', 'elemento_id' => $elemento->id]);
 
         $response = $this->actingAs($tecnico)
             ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
@@ -150,8 +164,8 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_file_upload_mime_validation(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Crear un archivo inválido (por ejemplo, .exe)
         $invalidFile = UploadedFile::fake()->create('malware.exe', 100);
@@ -159,13 +173,14 @@ class InspeccionTest extends TestCase
         $response = $this->actingAs($tecnico)
             ->post('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'reporte' => $invalidFile,  // ❌ .exe no permitido
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('reporte');
     }
 
     /**
@@ -173,8 +188,8 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_file_upload_size_limit(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Crear archivo Word muy grande (> 10MB)
         $largeFile = UploadedFile::fake()
@@ -183,13 +198,14 @@ class InspeccionTest extends TestCase
         $response = $this->actingAs($tecnico)
             ->post('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'reporte' => $largeFile,  // ❌ > 10MB
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('reporte');
     }
 
     /**
@@ -197,8 +213,8 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_imagenes_must_be_zip(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Subir JPG en lugar de ZIP
         $jpgFile = UploadedFile::fake()->image('photo.jpg');
@@ -206,13 +222,14 @@ class InspeccionTest extends TestCase
         $response = $this->actingAs($tecnico)
             ->post('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'imagenes' => $jpgFile,  // ❌ Solo ZIP permitido
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('imagenes');
     }
 
     /**
@@ -220,16 +237,17 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_novedades_created_as_abierta(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $criticidad = \App\Models\Criticidad::factory()->create();
 
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'novedades' => json_encode([
                     [
-                        'criticidad_id' => 1,
+                        'criticidad_id' => $criticidad->id,
                         'titulo' => 'Hallazgo de prueba',
                         'descripcion' => 'Test finding',
                         'temperatura_detectada' => 75.5
@@ -251,11 +269,21 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_closure_resolves_novedades(): void
     {
-        $supervisor = Usuario::factory()->create(['local_role' => 'supervisor']);
-        $inspeccion = Inspeccion::factory()->create(['estado' => 'revisada']);
+        // Para actualizar inspecciones, el supervisor debe ser PAE supervisor
+        // (es decir, de empresa PAE y asignado al yacimiento PAE)
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+
+        // Asignar al yacimiento PAE (required for is_pae_supervisor scope)
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create(['estado' => 'revisada', 'elemento_id' => $elemento->id]);
+        $criticidad = \App\Models\Criticidad::factory()->create();
         $novedad = $inspeccion->novedades()->create([
             'titulo' => 'Test',
-            'estado' => 'abierta'
+            'estado' => 'abierta',
+            'criticidad_id' => $criticidad->id
         ]);
 
         $response = $this->actingAs($supervisor)

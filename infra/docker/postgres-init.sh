@@ -26,10 +26,10 @@ $PSQL -f "$SQL_DIR/seed-criticidades.sql"
 echo "→ Aplicando seeds (empresa + yacimiento default)..."
 $PSQL -f "$SQL_DIR/seed-empresas.sql"
 
-echo "→ Aplicando seed de 65 elementos..."
+echo "→ Aplicando seed de elementos (PAE yacimiento)..."
 $PSQL -f "$SQL_DIR/seed-elementos.sql"
 
 echo "→ Verificación:"
 $PSQL -c "SELECT funcion, COUNT(*) FROM elementos GROUP BY funcion ORDER BY funcion;"
 TOTAL=$($PSQL -tA -c "SELECT COUNT(*) FROM elementos;")
-echo "✓ Total elementos: $TOTAL (esperado: 65)"
+echo "✓ Total elementos: $TOTAL (1294 elementos del yacimiento PAE)"

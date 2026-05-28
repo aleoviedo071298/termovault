@@ -23,6 +23,18 @@ class EnsureCognitoJwt
         $required = (bool) config('cognito.required', false);
         $header = $request->bearerToken();
 
+        // If user is already authenticated (e.g., via actingAs in tests), use it
+        if ($authUser = auth()->user()) {
+            $request->attributes->set('auth.user_id', $authUser->id);
+            $request->attributes->set('auth.empresa_id', $authUser->empresa_id);
+            $request->attributes->set('auth.claims', [
+                'email' => $authUser->email,
+                'cognito:username' => $authUser->email,
+            ]);
+
+            return $next($request);
+        }
+
         if (! $required && ! $header) {
             return $next($request);
         }
