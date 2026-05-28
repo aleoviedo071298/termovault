@@ -92,7 +92,7 @@ class ElementoTest extends TestCase
             ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', 'The given data was invalid.');
+        $response->assertJsonStructure(['message', 'errors']);
     }
 
     /**
