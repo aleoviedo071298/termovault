@@ -121,6 +121,7 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 6. ✅ **CORS explícito** (RESUELTO 2026-05-28) — `backend/config/cors.php` configurable por `.env`. En prod requiere whitelist explícita.
 7. **`DELETE /api/elementos/{id}` hard-delete cascada** — borra evidencia histórica. Cambiar a soft-delete.
 8. ✅ **`/api/auth/me` filtra claims** (RESUELTO 2026-05-28) — Devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`. Eliminado payload completo de JWT.
+9. ✅ **Magic string 'local' para bucket** (RESUELTO 2026-05-28) — Reemplazado con `config('filesystems.local_bucket_name')`. Archivo model ahora expone `isLocallyStored()` y `getStorageDisk()`.
 
 ### Medios
 

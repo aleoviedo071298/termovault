@@ -35,6 +35,7 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades r
   - `imagenes`: `mimes:zip` (max 50MB)
 - [x] **CORS explícito** (2026-05-28): `backend/config/cors.php` creado con whitelist desde `.env`. Default: `http://localhost:5173`.
 - [x] **Sacar `claims` completos** (2026-05-28): `GET /api/auth/me` devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`.
+- [x] **Magic string 'local' para bucket** (2026-05-28): Reemplazado con `config('filesystems.local_bucket_name')`. Archivo model expone helpers.
 - [ ] **Verificar bucket público** en MinIO/S3: quitar `mc anonymous set download` o restringirlo a un prefix readonly específico.
 
 ### Infra
