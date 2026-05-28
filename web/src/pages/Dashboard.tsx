@@ -26,7 +26,7 @@ function isDashboardRole(value: string | null): value is DashboardRole {
 }
 
 function normalizeCriticidad(value: string): string {
-  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace("Ã­tica", "itica").toLowerCase();
+  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
 export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios }: Props) {

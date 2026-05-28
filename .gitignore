@@ -68,3 +68,4 @@ coverage/
 
 # Local backups/audits generated during cleanup
 /backups/
+/logs/
