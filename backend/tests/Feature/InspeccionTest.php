@@ -239,6 +239,7 @@ class InspeccionTest extends TestCase
     {
         $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $criticidad = \App\Models\Criticidad::factory()->create();
 
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
@@ -246,7 +247,7 @@ class InspeccionTest extends TestCase
                 'fecha_inspeccion' => now()->format('Y-m-d'),
                 'novedades' => json_encode([
                     [
-                        'criticidad_id' => 1,
+                        'criticidad_id' => $criticidad->id,
                         'titulo' => 'Hallazgo de prueba',
                         'descripcion' => 'Test finding',
                         'temperatura_detectada' => 75.5
@@ -278,10 +279,11 @@ class InspeccionTest extends TestCase
 
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
         $inspeccion = Inspeccion::factory()->create(['estado' => 'revisada', 'elemento_id' => $elemento->id]);
+        $criticidad = \App\Models\Criticidad::factory()->create();
         $novedad = $inspeccion->novedades()->create([
             'titulo' => 'Test',
             'estado' => 'abierta',
-            'criticidad_id' => 1
+            'criticidad_id' => $criticidad->id
         ]);
 
         $response = $this->actingAs($supervisor)
