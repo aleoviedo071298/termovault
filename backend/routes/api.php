@@ -29,7 +29,7 @@ Route::middleware('api')->group(function () {
         ], 200);
     });
 
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
     Route::middleware('cognito.auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
