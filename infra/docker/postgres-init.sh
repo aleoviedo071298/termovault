@@ -3,6 +3,10 @@
 # Init script de Postgres para docker-compose.
 # Se ejecuta UNA SOLA VEZ cuando el volumen está vacío.
 # Lee los .sql desde /sql (montado read-only) y los aplica en orden.
+#
+# IMPORTANT: schema.sql is a GENERATED SNAPSHOT, not manually maintained.
+# See scripts/regenerate-schema-sql.md for how to keep it in sync with migrations.
+# Source of truth: Laravel migrations (backend/database/migrations/)
 # ============================================================
 
 set -e
@@ -10,7 +14,7 @@ set -e
 SQL_DIR=/sql
 PSQL="psql -v ON_ERROR_STOP=1 --username $POSTGRES_USER --dbname $POSTGRES_DB"
 
-echo "→ Aplicando schema..."
+echo "→ Aplicando schema (snapshot de migraciones)..."
 $PSQL -f "$SQL_DIR/schema.sql"
 
 echo "→ Aplicando seeds (catálogos)..."

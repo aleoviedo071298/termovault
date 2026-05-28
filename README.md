@@ -51,6 +51,8 @@ Servicios:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
+**Note on schema.sql:** The `database/schema.sql` is a generated snapshot used for fast Docker initialization. The canonical source of truth is Laravel migrations (`backend/database/migrations/`). See `scripts/regenerate-schema-sql.md` for details on keeping them in sync.
+
 ### 2) Backend
 
 ```bash
