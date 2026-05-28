@@ -77,7 +77,18 @@ jobs:
       - name: Setup Laravel environment
         run: |
           cd backend
-          cp .env.testing .env
+          cp .env.example .env
+          # Configure for testing
+          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=localhost/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=termovault_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=termovault_test/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=password/' .env
+          sed -i 's/CACHE_STORE=.*/CACHE_STORE=array/' .env
+          sed -i 's/COGNITO_AUTH_REQUIRED=.*/COGNITO_AUTH_REQUIRED=false/' .env
+          # Generate APP_KEY
           php artisan key:generate
 
       - name: Wait for PostgreSQL
