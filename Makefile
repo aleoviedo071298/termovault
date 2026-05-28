@@ -6,7 +6,7 @@
 # En Windows: instalá `make` con `winget install GnuWin32.Make`
 # o corré los comandos directos (están abajo de cada target).
 
-.PHONY: help up down restart logs psql adminer minio reset clean status
+.PHONY: help up down restart logs psql adminer minio reset clean status test test-watch test-coverage
 
 help: ## Lista todos los comandos disponibles
 	@echo "Comandos disponibles:"
@@ -52,8 +52,39 @@ reset: ## ⚠️  Borra TODOS los datos (volumes) y vuelve a aplicar schema + se
 clean: ## Borra contenedores, volumes y red (sin tocar imágenes)
 	docker compose down -v --remove-orphans
 
+# ─── Testing ───────────────────────────────────────────────────────────────
+
+test: ## Ejecuta todos los tests del backend
+	cd backend && php artisan test
+
+test-watch: ## Ejecuta tests en modo watch (rerun on file change)
+	cd backend && php artisan test --watch
+
+test-coverage: ## Ejecuta tests con coverage (requiere xdebug)
+	cd backend && php artisan test --coverage --min=70
+
+test-feature: ## Solo Feature tests
+	cd backend && php artisan test --filter Feature
+
+test-unit: ## Solo Unit tests
+	cd backend && php artisan test --filter Unit
+
+test-verbose: ## Tests con output verboso
+	cd backend && php artisan test --verbose
+
+test-auth: ## Solo tests de autenticación
+	cd backend && php artisan test tests/Feature/AuthTest.php
+
+test-elemento: ## Solo tests de elementos
+	cd backend && php artisan test tests/Feature/ElementoTest.php
+
+test-inspeccion: ## Solo tests de inspecciones
+	cd backend && php artisan test tests/Feature/InspeccionTest.php
+
 # ─── Comandos sin make (copiá y pegá si no tenés make en Windows) ───────────
-# up:       docker compose up -d
-# down:     docker compose down
-# psql:     docker compose exec postgres psql -U termovault -d termovault
-# reset:    docker compose down -v && docker compose up -d
+# up:        docker compose up -d
+# down:      docker compose down
+# psql:      docker compose exec postgres psql -U termovault -d termovault
+# reset:     docker compose down -v && docker compose up -d
+# test:      cd backend && php artisan test
+# test-auth: cd backend && php artisan test tests/Feature/AuthTest.php
