@@ -16,17 +16,12 @@ class Usuario extends Model
 
     protected $table = 'usuarios';
 
-    protected $hidden = [
-        'password_hash',
-    ];
-
     protected $fillable = [
         'empresa_id',
         'rol_id',
         'nombre',
         'apellido',
         'email',
-        'password_hash',
         'activo',
     ];
 
