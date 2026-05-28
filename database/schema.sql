@@ -47,11 +47,7 @@ CREATE TABLE usuarios (
   nombre        VARCHAR(100) NOT NULL,
   apellido      VARCHAR(100) NOT NULL,
   email         VARCHAR(150) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  legajo        VARCHAR(50),
-  telefono      VARCHAR(30),
   activo        BOOLEAN DEFAULT true,
-  ultimo_login  TIMESTAMP,
   created_at    TIMESTAMP DEFAULT NOW(),
   updated_at    TIMESTAMP DEFAULT NOW()
 );
@@ -153,7 +149,7 @@ CREATE TABLE archivos (
   inspeccion_id   INT NOT NULL REFERENCES inspecciones(id) ON DELETE CASCADE,
   tipo            VARCHAR(30) NOT NULL,   -- informe_word | pack_imagenes_zip | otro
   nombre_original VARCHAR(255),
-  s3_bucket       VARCHAR(100),
+  s3_bucket       VARCHAR(100) NOT NULL CHECK (s3_bucket <> 'local'),
   s3_key          VARCHAR(500) NOT NULL,
   tamano_bytes    BIGINT,
   mime_type       VARCHAR(100),

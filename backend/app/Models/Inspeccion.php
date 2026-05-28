@@ -12,6 +12,19 @@ class Inspeccion extends Model
 {
     use HasFactory;
 
+    public const ESTADO_ENVIADA = 'enviada';
+    public const ESTADO_REVISADA = 'revisada';
+    public const ESTADO_CERRADA = 'cerrada';
+
+    public static function getEstados(): array
+    {
+        return [
+            self::ESTADO_ENVIADA,
+            self::ESTADO_REVISADA,
+            self::ESTADO_CERRADA,
+        ];
+    }
+
     protected $table = 'inspecciones';
 
     protected $fillable = [
