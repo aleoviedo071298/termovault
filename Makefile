@@ -47,7 +47,7 @@ reset: ## ⚠️  Borra TODOS los datos (volumes) y vuelve a aplicar schema + se
 	docker compose down -v
 	docker compose up -d
 	@echo ""
-	@echo "✓ Postgres recreado con schema fresco y 65 elementos seedados"
+	@echo "✓ Postgres recreado con schema fresco y 1294 elementos seedados (PAE yacimiento)"
 
 clean: ## Borra contenedores, volumes y red (sin tocar imágenes)
 	docker compose down -v --remove-orphans
