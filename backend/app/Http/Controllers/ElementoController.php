@@ -15,7 +15,7 @@ class ElementoController extends Controller
 
     private function archivoPayload($archivo): array
     {
-        $disk = $archivo->s3_bucket === 'local' ? 'public' : 's3';
+        $disk = $archivo->getStorageDisk();
 
         return [
             'id' => $archivo->id,

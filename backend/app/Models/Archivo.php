@@ -35,4 +35,24 @@ class Archivo extends Model
     {
         return $this->belongsTo(Usuario::class, 'subido_por');
     }
+
+    /**
+     * Determine if this file is stored on the local public disk.
+     *
+     * @return bool True if stored locally, false if in S3
+     */
+    public function isLocallyStored(): bool
+    {
+        return $this->s3_bucket === config('filesystems.local_bucket_name');
+    }
+
+    /**
+     * Get the appropriate storage disk for this file.
+     *
+     * @return string 'public' for local files, 's3' for remote
+     */
+    public function getStorageDisk(): string
+    {
+        return $this->isLocallyStored() ? 'public' : 's3';
+    }
 }

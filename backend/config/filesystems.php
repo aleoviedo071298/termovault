@@ -77,4 +77,20 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Local Bucket Identifier
+    |--------------------------------------------------------------------------
+    |
+    | When storing files locally (not in S3), this value is used as the
+    | s3_bucket value in the database to identify files stored on the local
+    | 'public' disk. In production, avoid using 'local' as an actual S3
+    | bucket name to prevent ambiguity.
+    |
+    | This replaces the magic string 'local' used in filesystem checks.
+    |
+    */
+
+    'local_bucket_name' => env('FILESYSTEMS_LOCAL_BUCKET_NAME', 'local'),
+
 ];
