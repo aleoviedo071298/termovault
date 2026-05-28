@@ -124,7 +124,7 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 ### Medios
 
 9. **Modelo `User.php` + tabla `users` duplicados** con `Usuario`/`usuarios` reales. Dropear.
-10. **`password_hash` NOT NULL** en `usuarios` rellenado con basura random — convertir a nullable y dejar de generarlo.
+10. ✅ **`password_hash` removido** (RESUELTO 2026-05-28) — Columna dropeda por migración 2026_05_28_000011. Seed actualizado. Código (LocalUserProvisioner, AdminUserController) nunca la genera.
 
 ---
 

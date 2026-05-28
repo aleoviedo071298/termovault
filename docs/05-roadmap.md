@@ -50,7 +50,7 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades r
 
 - [ ] **Soft-delete de elementos**: cambiar `DELETE /api/elementos/{id}` a `UPDATE elementos SET activo=false` o bloquear si hay inspecciones cerradas.
 - [ ] **Cleanup de archivos huérfanos**: comando `php artisan inspecciones:cleanup-orphan-files` que borre de S3 los blobs cuya inspección/archivo ya no existe.
-- [ ] **`password_hash` → nullable**: migración que la haga nullable y sacar la generación de basura random en `AdminUserController` y `LocalUserProvisioner`.
+- [x] **`password_hash` removido** (2026-05-28): Migración 2026_05_28_000011 dropea columna completamente. Seed actualizado. Nunca se genera en código (A1+A2 resueltos).
 - [ ] **Notificación de revisión**: email al técnico cuando su informe pasa a `revisada` o `cerrada` con observaciones (queue + mailer).
 - [ ] **Filtrado por criticidad** en `GET /api/dashboard/overview` (hoy se hace client-side).
 - [ ] **Endpoints de stats** específicos por elemento (`GET /api/elementos/{id}/stats`) para evitar cargar todo el historial.
