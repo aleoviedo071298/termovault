@@ -7,7 +7,9 @@ INSERT INTO tipos_elemento (codigo, nombre, prefijo_archivo, requiere_tension) V
   ('estacion_transformadora', 'Estación Transformadora',  'ETR',     true),
   ('banco_capacitores',       'Banco de Capacitores',     'Bco Cap', false),
   ('seccionador',             'Seccionador',              'SEC',     true),
-  ('reconectador',            'Reconectador',             'REC',     true);
+  ('reconectador',            'Reconectador',             'REC',     true),
+  ('seccionalizador',         'Seccionalizador',          'SECC',    true),
+  ('fusesaver',               'Fusesaver',                'FS',      true);
 
 -- Nota: dentro de "subestación" hay varias funciones (SET, PIAS, PC, PTC, PB_PTC, RCI)
 -- que se guardan en la columna elementos.funcion. Si el nombre del archivo empieza
