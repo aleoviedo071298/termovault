@@ -20,8 +20,11 @@ trait RunsRootSqlSeed
 {
     private function runRootSqlSeed(string $filename): void
     {
-        // base_path() returns project root, database/ is at root level
-        $path = base_path('database/'.$filename);
+        // Look for the database folder at the project root first, then fallback to backend folder
+        $path = base_path('../database/'.$filename);
+        if (! file_exists($path)) {
+            $path = base_path('database/'.$filename);
+        }
 
         if (! file_exists($path)) {
             throw new RuntimeException("Seed SQL not found: {$path}");
