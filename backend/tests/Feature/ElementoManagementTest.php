@@ -47,7 +47,6 @@ class ElementoManagementTest extends TestCase
             'nombre' => 'Admin',
             'apellido' => 'User',
             'email' => 'admin@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -58,7 +57,6 @@ class ElementoManagementTest extends TestCase
             'nombre' => 'Tech',
             'apellido' => 'User',
             'email' => 'tech@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -94,7 +94,6 @@ class AuthMiddlewareTest extends TestCase
             'nombre' => 'User',
             'apellido' => 'Inactive',
             'email' => 'inactive@example.com',
-            'password_hash' => bcrypt('secret123'),
             'activo' => false,
             'created_at' => now(),
             'updated_at' => now(),

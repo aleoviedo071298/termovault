@@ -57,7 +57,6 @@ class LocalUserProvisioner
             'nombre' => $nombre,
             'apellido' => $apellido,
             'email' => $email,
-            'password_hash' => password_hash(Str::random(32), PASSWORD_BCRYPT),
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),

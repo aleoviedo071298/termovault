@@ -55,7 +55,6 @@ class InspeccionManagementTest extends TestCase
             'nombre' => 'Admin',
             'apellido' => 'User',
             'email' => 'admin@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -65,7 +64,6 @@ class InspeccionManagementTest extends TestCase
             'nombre' => 'Admin',
             'apellido' => 'Dos',
             'email' => 'admin2@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -76,7 +74,6 @@ class InspeccionManagementTest extends TestCase
             'nombre' => 'Tech',
             'apellido' => 'User',
             'email' => 'tech@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -109,7 +106,6 @@ class InspeccionManagementTest extends TestCase
             'nombre' => 'Other',
             'apellido' => 'User',
             'email' => 'other@example.com',
-            'password_hash' => 'secret',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

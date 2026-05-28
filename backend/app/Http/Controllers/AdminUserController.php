@@ -6,7 +6,6 @@ use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
 {
@@ -62,7 +61,6 @@ class AdminUserController extends Controller
                 'nombre' => trim($data['nombre']),
                 'apellido' => trim($data['apellido']),
                 'email' => $email,
-                'password_hash' => password_hash(Str::random(32), PASSWORD_BCRYPT),
                 'activo' => true,
             ]);
 
