@@ -6,6 +6,22 @@ import Dashboard from "./pages/Dashboard";
 import ElementosGestion from "./pages/ElementosGestion";
 import AdminUsuariosPage from "./pages/AdminUsuariosPage";
 
+/**
+ * ROUTING IMPLEMENTATION
+ *
+ * ⚠️  CURRENT: Manual routing using window.location.pathname
+ * - Works for current simple routes (/, /elementos/gestion, /admin/usuarios)
+ * - Lacks: params, nested routes, route guards, lazy loading
+ * - Fragile: string matching on paths is error-prone
+ *
+ * ✅ PLANNED: Migrate to react-router-dom v6
+ * - See docs/REFACTORING_ROUTING.md for migration guide
+ * - Target: Before adding new complex routes (e.g., /elementos/:id, /inspecciones/:id)
+ * - Timeline: Next sprint (when feature requires params/nested routes)
+ *
+ * TODO: Implement BrowserRouter, Routes, Route components (see refactoring guide)
+ */
+
 function App() {
   const { user } = useAuth();
   const path = window.location.pathname;
