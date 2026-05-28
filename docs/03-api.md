@@ -217,9 +217,26 @@ Misma forma que POST. Roles: `admin`, `supervisor`.
 
 #### `DELETE /api/elementos/{id}`
 
-Hard-delete cascada (elimina inspecciones del elemento). Roles: `admin`, `supervisor`.
+Elimina un elemento, pero SOLO si no tiene inspecciones asociadas. Roles: `admin`, `supervisor`.
 
-> En el roadmap: cambiar a soft-delete (`activo=false`) para preservar evidencia histórica.
+**Protección de auditoría:** Un elemento que tiene historial de inspecciones no puede ser eliminado para preservar la trazabilidad. El usuario debe primero eliminar o archivar todas las inspecciones.
+
+**Respuesta si tiene inspecciones (422 Unprocessable Entity):**
+```json
+{
+  "message": "No se puede eliminar un elemento que tiene inspecciones cargadas. Elimina o archiva las inspecciones primero.",
+  "inspecciones_count": 5
+}
+```
+
+**Respuesta si eliminación exitosa (200 OK):**
+```json
+{
+  "message": "Elemento eliminado correctamente"
+}
+```
+
+> Futuro: Implementar soft-delete (`activo=false`) para preservar historial de elementos también, junto con soft-delete de inspecciones.
 
 ---
 
