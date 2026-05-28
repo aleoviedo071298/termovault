@@ -83,6 +83,7 @@ export default function ElementosGestion({ onBack }: Props) {
   return (
     <main className="app-shell element-management-shell">
       <section className="element-hero dashboard-section">
+        <div className="hero-gridline" />
         <div className="element-hero-main">
           <div className="hero-kicker">
             <span className="system-dot" />

@@ -117,6 +117,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   return (
     <main className="app-shell admin-users-shell">
       <section className="admin-hero dashboard-section">
+        <div className="hero-gridline" />
         <div className="admin-hero-main">
           <div className="hero-kicker">
             <span className="system-dot" />

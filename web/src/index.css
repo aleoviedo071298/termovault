@@ -1899,7 +1899,9 @@ tbody tr:hover {
   box-shadow: 0 24px 58px rgba(18, 39, 31, 0.18);
 }
 
-.dashboard-hero-v2::before {
+.dashboard-hero-v2::before,
+.admin-hero::before,
+.element-hero::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2477,19 +2479,20 @@ tbody tr:hover {
 }
 
 .element-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.8fr);
   gap: 22px;
   overflow: hidden;
   padding: 24px;
   background:
-    linear-gradient(135deg, rgba(248, 250, 244, 0.96), rgba(238, 245, 239, 0.94)),
-    #fbfcf7;
+    linear-gradient(135deg, rgba(17, 45, 34, 0.96) 0%, rgba(29, 92, 70, 0.94) 46%, rgba(230, 226, 203, 0.98) 46.2%, rgba(250, 249, 239, 0.98) 100%);
+  box-shadow: 0 24px 58px rgba(18, 39, 31, 0.18);
 }
 
 .element-hero-main h1 {
   margin: 22px 0 0;
-  color: #132119;
+  color: #fff9e8;
   font-size: clamp(2.1rem, 4vw, 4.3rem);
   font-weight: 920;
   line-height: 0.98;
@@ -2498,15 +2501,9 @@ tbody tr:hover {
 .element-hero-main p {
   max-width: 680px;
   margin: 12px 0 0;
-  color: #53635a;
+  color: rgba(246, 242, 223, 0.82);
   font-size: 1rem;
   line-height: 1.45;
-}
-
-.element-hero .hero-kicker {
-  border-color: #c4d0c1;
-  background: #f5f8f1;
-  color: #2e4a3d;
 }
 
 .element-scope-row {
@@ -2522,12 +2519,12 @@ tbody tr:hover {
   gap: 7px;
   min-height: 34px;
   padding: 0 11px;
-  border: 1px solid #c8d3c7;
+  border: 1px solid rgba(244, 240, 223, 0.18);
   border-radius: 8px;
-  background: #fffef8;
-  color: #435047;
+  background: rgba(12, 29, 23, 0.3);
+  color: rgba(246, 242, 223, 0.84);
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .element-hero-panel {
@@ -2627,6 +2624,7 @@ tbody tr:hover {
 @media (max-width: 1120px) {
   .element-hero {
     grid-template-columns: 1fr;
+    background: linear-gradient(160deg, #123024 0%, #1d5c46 56%, #f7f5e9 56.3%, #fbfcf7 100%);
   }
 
   .element-filter-grid {
@@ -2670,13 +2668,15 @@ tbody tr:hover {
 }
 
 .admin-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(460px, 0.9fr);
   gap: 22px;
+  overflow: hidden;
   padding: 24px;
   background:
-    linear-gradient(135deg, rgba(18, 48, 36, 0.97), rgba(29, 92, 70, 0.92) 45%, rgba(251, 252, 247, 0.96) 45.3%, rgba(246, 249, 243, 0.96)),
-    #fbfcf7;
+    linear-gradient(135deg, rgba(17, 45, 34, 0.96) 0%, rgba(29, 92, 70, 0.94) 46%, rgba(230, 226, 203, 0.98) 46.2%, rgba(250, 249, 239, 0.98) 100%);
+  box-shadow: 0 24px 58px rgba(18, 39, 31, 0.18);
 }
 
 .admin-hero-main {
@@ -2894,7 +2894,7 @@ tbody tr:hover {
 
   .admin-hero {
     padding: 18px;
-    background: linear-gradient(160deg, #123024, #1d5c46 52%, #fbfcf7 52.4%);
+    background: linear-gradient(160deg, #123024 0%, #1d5c46 56%, #f7f5e9 56.3%, #fbfcf7 100%);
   }
 
   .admin-hero-main h1 {
