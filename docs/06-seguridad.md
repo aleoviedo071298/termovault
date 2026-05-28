@@ -107,15 +107,17 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 
 ### Críticos
 
-1. ✅ **`COGNITO_AUTH_REQUIRED=true`** (RESUELTO 2026-05-28) — Middleware ahora enforces JWT en endpoints protegidos. `/api/health` y `/api/auth/login` permanecen públicos.
-2. **`COGNITO_APP_CLIENT_SECRET` en filesystem local** — rotar y mantener solo placeholder en `.env.example`.
-3. **Sin validación de mime/extensión en uploads** — un archivo arbitrario puede subirse como "reporte". Mitigación: agregar `mimes:doc,docx,xls,xlsx` y `mimes:zip` en validación.
+1. ✅ **`COGNITO_AUTH_REQUIRED=true`** (RESUELTO 2026-05-28) — Middleware enforces JWT en endpoints protegidos. `/api/health` y `/api/auth/login` permanecen públicos.
+2. **`COGNITO_APP_CLIENT_SECRET` en filesystem local** — rotar y mantener solo placeholder en `.env.example`. (POSPUESTO: costo innecesario en fase de desarrollo)
+3. ✅ **Validación de mime/extensión en uploads** (RESUELTO 2026-05-28) — `InspeccionController` valida tipos:
+   - `reporte`: `doc,docx,xls,xlsx` (max 10MB)
+   - `imagenes`: `zip` (max 50MB)
 
 ### Altos
 
 4. **Bucket MinIO con `mc anonymous set download` sobre prefix `public`** — revisar en docker-compose.yml.
-5. **Sin throttle en `/api/auth/login`** — vector de fuerza bruta (Cognito ya hace su throttle, pero conviene defensa en profundidad).
-6. **Sin CORS explícito** — Laravel default permite cualquier origen en dev; en prod usar whitelist.
+5. ✅ **Throttle en `/api/auth/login`** (RESUELTO 2026-05-28) — `throttle:10,1` implementado. Limita a 10 intentos por minuto para mitigar fuerza bruta.
+6. ✅ **CORS explícito** (RESUELTO 2026-05-28) — `backend/config/cors.php` configurable por `.env`. En prod requiere whitelist explícita.
 7. **`DELETE /api/elementos/{id}` hard-delete cascada** — borra evidencia histórica. Cambiar a soft-delete.
 8. **`/api/auth/me` expone `claims` completos** — devolver solo lo necesario.
 

@@ -27,13 +27,13 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades r
 
 ### Seguridad
 
-- [x] **Re-activar Cognito**: `COGNITO_AUTH_REQUIRED=true` habilitado. Middleware enforces JWT en protected endpoints.
-- [ ] **Rotar `COGNITO_APP_CLIENT_SECRET`** en AWS Console; reemplazar en `.env` y mover a Secrets Manager.
-- [ ] **Throttle en `/api/auth/login`** (`throttle:10,1`) para mitigar fuerza bruta.
-- [ ] **Validar mime/extension** en uploads de `InspeccionController::store`:
-  - `reporte`: `mimes:doc,docx,xls,xlsx`
-  - `imagenes`: `mimes:zip`
-- [ ] **CORS explícito**: crear `backend/config/cors.php` con whitelist (dominio del frontend prod, `http://localhost:5173` en dev).
+- [x] **Re-activar Cognito**: `COGNITO_AUTH_REQUIRED=true` (2026-05-28). Middleware enforces JWT en protected endpoints.
+- [ ] **Rotar `COGNITO_APP_CLIENT_SECRET`** en AWS Console; reemplazar en `.env` y mover a Secrets Manager. (Pospuesto: costo innecesario en dev)
+- [x] **Throttle en `/api/auth/login`** (2026-05-28): `throttle:10,1` implementado. Limita a 10 intentos por minuto.
+- [x] **Validar mime/extension** (2026-05-28): `InspeccionController::store` valida tipos
+  - `reporte`: `mimes:doc,docx,xls,xlsx` (max 10MB)
+  - `imagenes`: `mimes:zip` (max 50MB)
+- [x] **CORS explícito** (2026-05-28): `backend/config/cors.php` creado con whitelist desde `.env`. Default: `http://localhost:5173`.
 - [ ] **Sacar `claims` completos** de `GET /api/auth/me` (devolver solo `sub`, `email`, `groups`, `local_role`, `empresa_id`).
 - [ ] **Verificar bucket público** en MinIO/S3: quitar `mc anonymous set download` o restringirlo a un prefix readonly específico.
 
