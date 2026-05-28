@@ -164,15 +164,20 @@ class AuthController extends Controller
                 ->value('roles.codigo');
         }
 
+        // Extract Cognito groups from claims, if present.
+        $groups = $claims['cognito:groups'] ?? [];
+        if (!is_array($groups)) {
+            $groups = [];
+        }
+
+        // Return only necessary information; no full JWT claims.
         return response()->json([
             'id' => $userId,
-            'sub' => $claims['sub'] ?? null,
             'email' => $claims['email'] ?? null,
-            'username' => $claims['username'] ?? ($claims['cognito:username'] ?? null),
-            'token_use' => $claims['token_use'] ?? null,
-            'empresa_id' => $empresaId,
+            'sub' => $claims['sub'] ?? null,
+            'groups' => $groups,
             'local_role' => $localRole,
-            'claims' => $claims,
+            'empresa_id' => $empresaId,
         ]);
     }
 
