@@ -35,7 +35,7 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_can_create_inspeccion(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         $response = $this->actingAs($tecnico)
@@ -65,7 +65,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_estado_enum_validation(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         // Intentar crear con estado inválido
@@ -87,8 +87,8 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_can_only_see_own_inspecciones(): void
     {
-        $tecnico1 = Usuario::factory()->create(['local_role' => 'tecnico']);
-        $tecnico2 = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico1 = Usuario::factory()->tecnico()->create();
+        $tecnico2 = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         // Tecnico 1 crea inspección
@@ -110,7 +110,7 @@ class InspeccionTest extends TestCase
      */
     public function test_supervisor_can_update_inspeccion_estado(): void
     {
-        $supervisor = Usuario::factory()->create(['local_role' => 'supervisor']);
+        $supervisor = Usuario::factory()->supervisor()->create();
         $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada']);
 
         $response = $this->actingAs($supervisor)
@@ -131,7 +131,7 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_cannot_update_inspeccion_estado(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada']);
 
         $response = $this->actingAs($tecnico)
@@ -150,7 +150,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_file_upload_mime_validation(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         // Crear un archivo inválido (por ejemplo, .exe)
@@ -173,7 +173,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_file_upload_size_limit(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         // Crear archivo Word muy grande (> 10MB)
@@ -197,7 +197,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_imagenes_must_be_zip(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         // Subir JPG en lugar de ZIP
@@ -220,7 +220,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_novedades_created_as_abierta(): void
     {
-        $tecnico = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento = Elemento::factory()->create();
 
         $response = $this->actingAs($tecnico)
@@ -251,7 +251,7 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_closure_resolves_novedades(): void
     {
-        $supervisor = Usuario::factory()->create(['local_role' => 'supervisor']);
+        $supervisor = Usuario::factory()->supervisor()->create();
         $inspeccion = Inspeccion::factory()->create(['estado' => 'revisada']);
         $novedad = $inspeccion->novedades()->create([
             'titulo' => 'Test',

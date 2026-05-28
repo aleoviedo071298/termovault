@@ -41,7 +41,7 @@ class ElementoTest extends TestCase
      */
     public function test_tecnico_cannot_create_elemento(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $usuario = Usuario::factory()->tecnico()->create();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
@@ -61,7 +61,7 @@ class ElementoTest extends TestCase
      */
     public function test_admin_can_create_elemento(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
@@ -84,7 +84,7 @@ class ElementoTest extends TestCase
      */
     public function test_elemento_validation_required_fields(): void
     {
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
@@ -107,7 +107,7 @@ class ElementoTest extends TestCase
             'fecha_inspeccion' => now()
         ]);
 
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->deleteJson("/api/elementos/{$elemento->id}");
@@ -125,7 +125,7 @@ class ElementoTest extends TestCase
     {
         $elemento = Elemento::factory()->create();
 
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->deleteJson("/api/elementos/{$elemento->id}");
@@ -148,7 +148,7 @@ class ElementoTest extends TestCase
         Elemento::factory()->create(['yacimiento_id' => $yac2->id]);
 
         // Técnico sin yacimiento asignado no ve nada
-        $usuario = Usuario::factory()->create(['local_role' => 'tecnico']);
+        $usuario = Usuario::factory()->tecnico()->create();
 
         $response = $this->actingAs($usuario)
             ->getJson('/api/elementos');
@@ -163,7 +163,7 @@ class ElementoTest extends TestCase
     public function test_elemento_update_with_invalid_data(): void
     {
         $elemento = Elemento::factory()->create();
-        $usuario = Usuario::factory()->create(['local_role' => 'admin']);
+        $usuario = Usuario::factory()->admin()->create();
 
         $response = $this->actingAs($usuario)
             ->putJson("/api/elementos/{$elemento->id}", [
