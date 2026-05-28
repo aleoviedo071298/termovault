@@ -16,7 +16,7 @@ up: ## Levanta todos los servicios (Postgres, MinIO, Adminer)
 	docker compose up -d
 	@echo ""
 	@echo "✓ Servicios arriba:"
-	@echo "  Postgres:  localhost:5432 (user: termovault, db: termovault)"
+	@echo "  Postgres:  localhost:5433 (user: termovault, db: termovault)"
 	@echo "  Adminer:   http://localhost:8080"
 	@echo "  MinIO UI:  http://localhost:9001 (user: minioadmin)"
 
