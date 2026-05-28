@@ -45,7 +45,7 @@ Necesitamos un sistema de login con roles, MFA, password policies y eventualment
 - ✅ MFA, reset flow y challenges manejados por Cognito.
 - ✅ Posibilidad de federar con AD/SSO corporativo a futuro.
 - ⚠️ Acoplamiento a AWS.
-- ⚠️ La columna `password_hash` quedó en `usuarios` con un valor random dummy — candidata a `nullable()` o drop.
+- La tabla local `usuarios` no almacena contrasenas; Cognito es la autoridad de identidad.
 - ⚠️ Para desarrollo local se puede deshabilitar (`COGNITO_AUTH_REQUIRED=false`), pero entonces el endpoint queda público. **Nunca dejar `false` en producción.**
 
 ---
@@ -86,7 +86,7 @@ Cada inspección produce un Word (~5 MB) y un ZIP de imágenes (~30–60 MB). Al
 - La tabla `archivos` guarda solo metadata: `s3_bucket`, `s3_key`, `tamano_bytes`, `mime_type`, `nombre_original`.
 - El binario va a S3 (producción) o MinIO (local).
 - Naming convention de keys: `inspecciones/{inspeccion_id}/{reports|images}/{archivo_id}-{nombre-original}`.
-- URLs se generan via `Storage::disk('s3')->url(...)` con presigned cuando el bucket no es público.
+- Las descargas pasan por `GET /api/archivos/{id}/download`, con JWT y scope por rol antes de transmitir el archivo desde S3/MinIO.
 
 ### Consecuencias
 
@@ -97,17 +97,18 @@ Cada inspección produce un Word (~5 MB) y un ZIP de imágenes (~30–60 MB). Al
 
 ---
 
-## ADR-005 — Migraciones Laravel como fuente de verdad del schema
+## ADR-005 - DB actual como fuente de verdad operativa
 
 ### Contexto
 
 El repo arrancó con un `database/schema.sql` curado a mano. Cuando Laravel entró en escena, se sumaron migraciones que dropean/agregan columnas. Resultado: dos fuentes de verdad desincronizadas.
 
-### Decisión
+### Decision
 
-- Las **migraciones** son la fuente de verdad.
-- `database/schema.sql` queda como referencia y para el arranque rápido del container Postgres en dev. Se regenera con `pg_dump --schema-only` o se elimina si todo se hace por `artisan migrate`.
-- El init script de Docker en producción debe correr `artisan migrate --force`, no `psql -f schema.sql`.
+- La estructura actual de Postgres es la fuente de verdad operativa para auditorias y limpiezas.
+- Las migraciones de Laravel explican y versionan la evolucion del esquema.
+- `database/schema.sql` queda como snapshot generado para arranque local y debe regenerarse desde la DB, no editarse a mano.
+- En produccion se aplican migraciones con respaldo previo; nunca se pisa una DB real con `schema.sql`.
 
 ### Consecuencias
 

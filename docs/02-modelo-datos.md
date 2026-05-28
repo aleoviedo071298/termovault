@@ -4,7 +4,7 @@
 
 ## Fuente de verdad
 
-Las migraciones de Laravel (`backend/database/migrations/`) son la fuente de verdad del esquema. El archivo `database/schema.sql` sigue presente como referencia de arranque inicial para Docker, pero queda regenerado a partir de las migraciones — no editar a mano.
+Para cualquier decision relacionada con datos, primero se mira la estructura actual de Postgres y sus datos. Las migraciones de Laravel (`backend/database/migrations/`) explican la evolucion del esquema. `database/schema.sql` es un snapshot generado desde la DB local actual para Docker; no editar a mano ni usar como autoridad si contradice a la DB real.
 
 ## Jerarquía
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminOrganizationController;
+use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ElementoController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,7 @@ Route::middleware('api')->group(function () {
             Route::get('/elementos/{id}', [ElementoController::class, 'show']);
             Route::get('/inspecciones/{id}', [\App\Http\Controllers\InspeccionController::class, 'show']);
             Route::post('/inspecciones', [\App\Http\Controllers\InspeccionController::class, 'store']);
+            Route::get('/archivos/{id}/download', [ArchivoController::class, 'download']);
         });
 
         Route::middleware('role.claim:admin,supervisor')->group(function () {

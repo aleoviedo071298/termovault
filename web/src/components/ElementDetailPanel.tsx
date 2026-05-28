@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { apiDownload } from "../api/client";
 import { X, FileText, FolderArchive, Calendar, ShieldAlert, Edit3, Settings, MapPin, Loader2, AlertTriangle } from "lucide-react";
-import { getElemento, deleteElemento, type ElementoDetailResponse } from "../api/elementos";
+import { getElemento, deleteElemento, type ElementoDetailResponse, type InspeccionArchivo } from "../api/elementos";
 
 interface ElementDetailPanelProps {
   isOpen: boolean;
@@ -73,9 +74,13 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
 
   const canInspect = userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
 
-  // Helper to trigger a browser download (real download from backend or simulated mock blob)
-  function handleDownload(file: any) {
-    window.open(file.url, "_blank");
+  async function handleDownload(file: InspeccionArchivo) {
+    try {
+      setError(null);
+      await apiDownload(file.download_url, file.nombre);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al descargar el archivo");
+    }
   }
 
   // Format bytes into human readable format
@@ -290,7 +295,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                                 <button
                                   key={file.id}
                                   className="file-download-btn"
-                                  onClick={() => handleDownload(file)}
+                                  onClick={() => void handleDownload(file)}
                                   type="button"
                                 >
                                   {isWord ? (

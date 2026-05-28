@@ -15,7 +15,7 @@ Lee primero:
 - Archivos historicos migrados a keys legibles:
   - `inspecciones/{inspeccion_id}/reports/{archivo_id}-{nombre-original}`
   - `inspecciones/{inspeccion_id}/images/{archivo_id}-{nombre-original}`
-- La API devuelve `url` por archivo; el frontend ya no construye `/storage/...`.
+- La API devuelve `download_url` por archivo; el frontend descarga por endpoint autorizado y ya no construye `/storage/...`.
 - Dashboard, gestion de elementos, admin usuarios y login redisenados con UI industrial SaaS premium.
 - Flujo de informe: `enviada -> revisada -> cerrada`.
 - Cierre de informe resuelve novedades abiertas (`abierta -> resuelta`).

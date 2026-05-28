@@ -60,9 +60,10 @@ cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan storage:link
 php artisan serve --host=0.0.0.0 --port=8000
 ```
+
+Los adjuntos de inspecciones se guardan en MinIO/S3. No hace falta `php artisan storage:link` para el flujo principal.
 
 ### 3) Frontend
 

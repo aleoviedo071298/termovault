@@ -1,124 +1,91 @@
-# Roadmap — TermoVault
+# Roadmap - TermoVault
 
-Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades reflejan los hallazgos de la auditoría del repo.
+Estado al **2026-05-28**. Las tareas se agrupan por horizonte y reflejan los hallazgos de auditoria del repo.
 
----
-
-## Done (último mes)
+## Done
 
 - Auth Cognito JWT validada con JWKS + cache.
-- Provisión automática de usuarios locales en primer login (`LocalUserProvisioner`).
+- Provision local de usuarios en primer login (`LocalUserProvisioner`).
 - Scope por rol + yacimiento en `AccessScopeResolver`.
-- Tres flujos de roles validados end-to-end: admin, supervisor PAE, supervisor contratista, técnico.
-- Flujo de inspección `enviada → revisada → cerrada` con audit fields.
-- Cierre automático de novedades al cerrar la inspección.
-- Storage a S3/MinIO con keys legibles (`inspecciones/{id}/reports/{archivo}` y `…/images/{archivo}`).
-- Importación bulk de 756 elementos del yacimiento PAE (reconectadores + seccionadores + bancos de capacitores + subestaciones).
-- Cleanup de tablas y columnas no usadas (`comentarios`, `historial_cambios`, `sesiones`; campos `cuit`, `logo_url`, `legajo`, `telefono`, `ultimo_login`, `zona`, `descripcion`, métricas ambientales).
-- Índices compuestos para queries de dashboard.
-- CHECK constraints en estados de `inspecciones` y `novedades`.
-- **Re-activar Cognito** (2026-05-28): `COGNITO_AUTH_REQUIRED=true` en backend/.env. Middleware valida JWT en endpoints protegidos; /health y /auth/login quedan públicos.
+- Flujos de roles validados: admin, supervisor PAE, supervisor contratista y tecnico.
+- Flujo de inspeccion `enviada -> revisada -> cerrada` con audit fields.
+- Cierre automatico de novedades al cerrar inspeccion.
+- Storage a S3/MinIO con keys legibles.
+- Descargas por API autorizada, sin exponer la URL real del bucket.
+- Importacion bulk de elementos del yacimiento PAE.
+- Cleanup de tablas/columnas sin uso en DB actual.
+- Indices compuestos para queries de dashboard.
+- CHECK constraints en estados de `inspecciones`, `novedades` y bucket de `archivos`.
+- `COGNITO_AUTH_REQUIRED=true` por defecto.
+- Routing frontend migrado a `react-router-dom`.
+- Scaffold publico de Laravel removido.
+- `database/schema.sql` regenerado desde la DB local actual.
 
----
-
-## Now — sprint actual (crítico, semana 1)
-
-> Bloqueante para considerar el sistema "production-ready".
+## Now - Sprint Actual
 
 ### Seguridad
 
-- [x] **Re-activar Cognito**: `COGNITO_AUTH_REQUIRED=true` (2026-05-28). Middleware enforces JWT en protected endpoints.
-- [ ] **Rotar `COGNITO_APP_CLIENT_SECRET`** en AWS Console; reemplazar en `.env` y mover a Secrets Manager. (Pospuesto: costo innecesario en dev)
-- [x] **Throttle en `/api/auth/login`** (2026-05-28): `throttle:10,1` implementado. Limita a 10 intentos por minuto.
-- [x] **Validar mime/extension** (2026-05-28): `InspeccionController::store` valida tipos
-  - `reporte`: `mimes:doc,docx,xls,xlsx` (max 10MB)
-  - `imagenes`: `mimes:zip` (max 50MB)
-- [x] **CORS explícito** (2026-05-28): `backend/config/cors.php` creado con whitelist desde `.env`. Default: `http://localhost:5173`.
-- [x] **Sacar `claims` completos** (2026-05-28): `GET /api/auth/me` devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`.
-- [x] **Magic string 'local' para bucket** (2026-05-28): Reemplazado con `config('filesystems.local_bucket_name')`. Archivo model expone helpers.
-- [ ] **Verificar bucket público** en MinIO/S3: quitar `mc anonymous set download` o restringirlo a un prefix readonly específico.
+- [x] **Reactivar Cognito**: `COGNITO_AUTH_REQUIRED=true`.
+- [ ] **Rotar `COGNITO_APP_CLIENT_SECRET`** en AWS Console antes de produccion.
+- [x] **Throttle en `/api/auth/login`**: `throttle:10,1`.
+- [x] **Validar MIME/extension** en uploads:
+  - `reporte`: `doc`, `docx`, `xls`, `xlsx`, max 10 MB.
+  - `imagenes`: `zip`, max 50 MB.
+- [x] **CORS explicito** desde `backend/config/cors.php`.
+- [x] **Sacar claims completos** de `/api/auth/me`.
+- [x] **Eliminar magic string `local` para bucket**.
+- [x] **Rol local domina sobre Cognito stale**.
+- [x] **Provisioning sin fallback a primera empresa**.
+- [ ] **Verificar bucket publico** en MinIO/S3: quitar `mc anonymous set download` si ya no se usa para el flujo principal.
 
-### Infra
+### Infra / DB
 
-- [x] **Schema consolidado** (2026-05-28): Documentado que `schema.sql` es snapshot generado, migraciones son fuente de verdad. Ver `scripts/regenerate-schema-sql.md` para procedimiento de sincronización.
-- [x] **Drop tabla `users`** (2026-05-28): Eliminado modelo User.php, UserFactory, migración scaffold. Migración 2026_05_28_000012 dropea tabla. Config auth.php ahora usa Usuario.
+- [x] **Schema consolidado**: `database/schema.sql` es snapshot generado; DB real + migraciones aplicadas son la fuente de verdad.
+- [x] **Drop tabla `users`**: modelo `User.php`, `UserFactory.php` y tabla `users` no existen en el arbol/DB actual.
+- [x] **`password_hash` removido**: no existe en la migracion base actual, en `database/schema.sql` ni en la DB local actual.
 
----
-
-## Next — 2–4 semanas
+## Next - 2 a 4 Semanas
 
 ### Backend
 
-- [ ] **Soft-delete de elementos**: cambiar `DELETE /api/elementos/{id}` a `UPDATE elementos SET activo=false` o bloquear si hay inspecciones cerradas.
-- [ ] **Cleanup de archivos huérfanos**: comando `php artisan inspecciones:cleanup-orphan-files` que borre de S3 los blobs cuya inspección/archivo ya no existe.
-- [x] **`password_hash` removido** (2026-05-28): Migración 2026_05_28_000011 dropea columna completamente. Seed actualizado. Nunca se genera en código (A1+A2 resueltos).
-- [ ] **Notificación de revisión**: email al técnico cuando su informe pasa a `revisada` o `cerrada` con observaciones (queue + mailer).
-- [ ] **Filtrado por criticidad** en `GET /api/dashboard/overview` (hoy se hace client-side).
-- [ ] **Endpoints de stats** específicos por elemento (`GET /api/elementos/{id}/stats`) para evitar cargar todo el historial.
+- [ ] **Soft-delete de elementos**: reemplazar hard-delete por `activo=false` o bloquear si hay historial.
+- [ ] **Cleanup de archivos huerfanos**: comando que borre de S3/MinIO blobs sin fila `archivos`.
+- [ ] **Notificacion de revision**: email al tecnico cuando un informe pasa a `revisada` o `cerrada`.
+- [ ] **Filtrado por criticidad** en `GET /api/dashboard/overview`.
+- [ ] **Endpoints de stats por elemento** para evitar cargar todo el historial.
 
 ### Frontend
 
-- [ ] **Migrar a `react-router-dom`** v6. App.tsx con `<Routes>` en lugar del ruteo manual.
-- [ ] **Tipos compartidos**: completar `web/src/types/{inspeccion,usuario,api}.ts` (hoy vacíos).
-- [ ] **Borrar el parche `normalizeCriticidad`** en `Dashboard.tsx:29` (mojibake ya resuelto en backend).
-- [ ] **Pantalla `MisNovedades`** para técnico: ver hallazgos abiertos asignados a él.
+- [ ] **Tipos compartidos**: completar `web/src/types/{inspeccion,usuario,api}.ts`.
+- [ ] **Borrar parches legacy de normalizacion** cuando backend y datos queden totalmente limpios.
+- [ ] **Pantalla `MisNovedades`** para tecnico.
 - [ ] **Drag & drop** del Word + ZIP en `InspectionModal`.
 
 ### DX / Tooling
 
-- [ ] **CI completo**: agregar `test-backend` (PHPUnit) y `test-web` (vitest/build) al workflow.
-- [ ] **Pre-commit hook** que corra `php-cs-fixer` + `eslint --fix` en cambios staged.
-- [ ] **`.env.example`** sincronizado con todas las claves en uso.
-- [ ] **README de `backend/`** propio (no el scaffold de Laravel).
+- [ ] **CI completo**: backend tests + frontend build.
+- [ ] **Pre-commit hook** con formatter/linter.
+- [ ] **`.env.example`** sincronizado con claves reales en uso.
+- [ ] **README de `backend/`** propio.
 
----
+## Later
 
-## Later — 1–3 meses
+- [ ] Mobile offline con sync.
+- [ ] PDF server-side de informes.
+- [ ] Vista de tendencias.
+- [ ] Busqueda full-text.
+- [ ] Importador generico de Words legacy.
+- [ ] Terraform para RDS, S3, Cognito, frontend y backend.
+- [ ] Pipeline CD.
+- [ ] Observabilidad y backups.
+- [ ] Row-level security como defensa extra.
+- [ ] MFA obligatorio para admin/supervisor.
+- [ ] Auditoria detallada en tabla nueva `auditoria_eventos`.
 
-### Producto
+## Convenciones
 
-- [ ] **Mobile (Flutter)**: arrancar implementación del módulo `mobile/`, hoy vacío. Carga offline de inspecciones + sync al volver con conexión.
-- [ ] **Reportes**: PDF de un informe armado server-side (Word → PDF) descargable desde la UI.
-- [ ] **Vista de tendencias**: gráfico de novedades por mes y por elemento para detectar patrones.
-- [ ] **Búsqueda full-text** sobre `inspecciones.resumen` y `novedades.descripcion` (PG `tsvector`).
-- [ ] **Importador genérico** de Words: extraer novedades del Word legacy automáticamente y proponer estructurarlas.
+- **Now**: sprint actual.
+- **Next**: 2 a 4 semanas.
+- **Later**: identificado pero no priorizado.
 
-### Infra producción
-
-- [ ] **Terraform**: completar módulos `infra/terraform/` (hoy vacíos):
-  - `rds.tf` — RDS Postgres con backups automáticos.
-  - `s3.tf` — bucket privado con lifecycle (mover a Glacier después de 1 año).
-  - `cognito.tf` — User Pool + App Client.
-  - `cloudfront.tf` — distribución para frontend estático.
-  - `ec2.tf` o ECS — backend.
-- [ ] **Pipeline CD**: GitHub Actions con build → push imagen → deploy a ECS.
-- [ ] **Observabilidad**: CloudWatch logs centralizado + alarms básicos (error rate, latencia).
-- [ ] **Backups**: cron de `pg_dump` a un bucket S3 con encriptación y retención 30 días.
-
-### Seguridad avanzada
-
-- [ ] **Row-level security** en Postgres como red de seguridad extra contra fugas de tenant.
-- [ ] **MFA obligatorio** para `admin` y `supervisor` (configurar en Cognito).
-- [ ] **Rotación automática** del Cognito app client secret cada 90 días.
-- [ ] **Auditoría detallada**: re-introducir una tabla `auditoria_eventos` con solo los cambios sensibles (login, cambio de rol, alta/baja de usuario, cierre de inspección).
-
----
-
-## Wishlist (sin commitment)
-
-- Integración con sistemas SCADA del cliente para correlacionar temperaturas con carga eléctrica real.
-- IA / visión: análisis automático de imágenes termográficas para sugerir criticidad.
-- Alertas por umbral: si una novedad crítica no se resuelve en X días, escalado automático.
-- Multi-idioma (inglés) — hoy todo está en español.
-- Modo "campo" sin conexión en mobile con sincronización diferencial.
-
----
-
-## Convenciones para el roadmap
-
-- **Now** = en sprint actual, debería estar listo en 1 semana.
-- **Next** = en el horizonte de 2–4 semanas, ya con definición.
-- **Later** = identificado pero no priorizado, semanas/meses.
-- **Wishlist** = ideas sin commitment.
-
-Cuando se cierra una tarea, se mueve a la sección "Done" con la fecha aproximada en el changelog del repo.
+Cuando se cierra una tarea, se mueve a `Done` con fecha aproximada en el changelog del repo.

@@ -170,12 +170,14 @@ class AuthController extends Controller
             $groups = [];
         }
 
+        $effectiveGroups = $localRole ? [$localRole] : $groups;
+
         // Return only necessary information; no full JWT claims.
         return response()->json([
             'id' => $userId,
             'email' => $claims['email'] ?? null,
             'sub' => $claims['sub'] ?? null,
-            'groups' => $groups,
+            'groups' => $effectiveGroups,
             'local_role' => $localRole,
             'empresa_id' => $empresaId,
         ]);

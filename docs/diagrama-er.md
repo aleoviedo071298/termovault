@@ -65,7 +65,6 @@ erDiagram
         varchar nombre
         varchar apellido
         varchar email "UNIQUE LOWER"
-        varchar password_hash "dummy, Cognito es auth real"
         boolean activo
         timestamp created_at
         timestamp updated_at
