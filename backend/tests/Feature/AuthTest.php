@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Authentication Tests
@@ -17,6 +18,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Mock Cognito HTTP responses for all tests
+        Http::fake([
+            'cognito-idp.*' => Http::response([
+                '__type' => 'NotAuthorizedException',
+                'message' => 'Incorrect username or password.'
+            ], 400)
+        ]);
+    }
 
     /**
      * Test: Health endpoint accessible sin autenticación
@@ -56,6 +69,9 @@ class AuthTest extends TestCase
      */
     public function test_protected_endpoint_requires_token(): void
     {
+        // Force Cognito auth to be required for this test
+        config(['cognito.required' => true]);
+
         $response = $this->getJson('/api/catalogos');
 
         $response->assertStatus(401);
