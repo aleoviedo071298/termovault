@@ -225,10 +225,16 @@ class ElementoController extends Controller
             return response()->json(['message' => 'Elemento no encontrado'], 404);
         }
 
-        DB::transaction(function () use ($elemento): void {
-            $elemento->inspecciones()->delete();
-            $elemento->delete();
-        });
+        // Prevent hard-delete if element has inspection history (audit trail protection)
+        $inspeccionCount = $elemento->inspecciones()->count();
+        if ($inspeccionCount > 0) {
+            return response()->json([
+                'message' => 'No se puede eliminar un elemento que tiene inspecciones cargadas. Elimina o archiva las inspecciones primero.',
+                'inspecciones_count' => $inspeccionCount,
+            ], 422);
+        }
+
+        $elemento->delete();
 
         return response()->json(['message' => 'Elemento eliminado correctamente']);
     }
