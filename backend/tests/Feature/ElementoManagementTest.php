@@ -225,4 +225,103 @@ class ElementoManagementTest extends TestCase
         $responseFiltered->assertJsonFragment(['codigo' => 'SET-INSP']);
         $responseFiltered->assertJsonMissing(['codigo' => 'SET-CLEAN']);
     }
+
+    public function test_owner_supervisor_can_create_element_for_flagged_yacimiento(): void
+    {
+        config()->set('cognito.required', true);
+
+        $capsa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-87654321-0']);
+        $capsaYacimiento = Yacimiento::create([
+            'empresa_id' => $capsa->id,
+            'nombre' => 'Yacimiento CAPSA',
+            'codigo' => 'YAC-CAPSA',
+            'permite_supervisor_elementos' => true,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $capsa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'CAPSA',
+            'email' => 'supervisor.capsa@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $capsaYacimiento->id,
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-capsa-123',
+            'email' => 'supervisor.capsa@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $capsa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/elementos', [
+                'yacimiento_id' => $capsaYacimiento->id,
+                'tipo_elemento_id' => $this->tipo->id,
+                'nombre' => 'Elemento CAPSA Owner',
+                'codigo' => 'CAPSA-OWN-1',
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('elementos', [
+            'codigo' => 'CAPSA-OWN-1',
+            'yacimiento_id' => $capsaYacimiento->id,
+        ]);
+    }
+
+    public function test_non_owner_supervisor_cannot_create_element_even_if_assigned(): void
+    {
+        config()->set('cognito.required', true);
+
+        $capsa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-11223344-0']);
+        $capsaYacimiento = Yacimiento::create([
+            'empresa_id' => $capsa->id,
+            'nombre' => 'Yacimiento CAPSA Secundario',
+            'codigo' => 'YAC-CAPSA-2',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $capsa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'NoOwner',
+            'email' => 'supervisor.noowner@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $capsaYacimiento->id,
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-noowner-123',
+            'email' => 'supervisor.noowner@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $capsa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/elementos', [
+                'yacimiento_id' => $capsaYacimiento->id,
+                'tipo_elemento_id' => $this->tipo->id,
+                'nombre' => 'Elemento CAPSA NoOwner',
+                'codigo' => 'CAPSA-NOOWN-1',
+            ]);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseMissing('elementos', [
+            'codigo' => 'CAPSA-NOOWN-1',
+        ]);
+    }
 }

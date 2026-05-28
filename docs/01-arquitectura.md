@@ -139,5 +139,5 @@ Ver `docs/04-decisiones.md` para el detalle de cada ADR:
 - **ADR-002** — Auth con Cognito como SSO, no contraseñas locales.
 - **ADR-003** — Una sola tabla `elementos` con tipo + función.
 - **ADR-004** — Archivos en S3/MinIO, no en DB.
-- **ADR-005** — Migraciones Laravel como fuente de verdad del schema.
+- **ADR-005** — Carpeta `database/` (raiz) como referencia operativa de DB.
 - **ADR-006** — Audit fields en `inspecciones` (created_by/updated_by/cerrada_por/fecha_cierre).

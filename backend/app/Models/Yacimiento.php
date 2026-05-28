@@ -21,12 +21,14 @@ class Yacimiento extends Model
         'nombre',
         'codigo',
         'activo',
+        'permite_supervisor_elementos',
     ];
 
     protected function casts(): array
     {
         return [
             'activo' => 'boolean',
+            'permite_supervisor_elementos' => 'boolean',
         ];
     }
 

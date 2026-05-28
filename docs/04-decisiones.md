@@ -106,13 +106,13 @@ El repo arrancó con un `database/schema.sql` curado a mano. Cuando Laravel entr
 ### Decision
 
 - La estructura actual de Postgres es la fuente de verdad operativa para auditorias y limpiezas.
-- Las migraciones de Laravel explican y versionan la evolucion del esquema.
+- `database/` (raiz) es la referencia operativa real; `backend/database/migrations` queda como historial tecnico de Laravel.
 - `database/schema.sql` queda como snapshot generado para arranque local y debe regenerarse desde la DB, no editarse a mano.
 - En produccion se aplican migraciones con respaldo previo; nunca se pisa una DB real con `schema.sql`.
 
 ### Consecuencias
 
-- ✅ Una sola historia de cambios versionada (`backend/database/migrations/`).
+- ✅ Se evita ambiguedad operativa: decisiones de DB se validan contra `database/` (raiz) y DB real.
 - ✅ `artisan migrate:rollback` funciona para revertir.
 - ⚠️ El CI workflow `validate-schema.yml` todavía usa `schema.sql` — actualizar.
 - ⚠️ El `docker-compose.yml` arranca con `postgres-init.sh` que aún aplica `schema.sql` — actualizar.

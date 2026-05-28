@@ -40,7 +40,7 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte y reflejan los hal
 
 ### Infra / DB
 
-- [x] **Schema consolidado**: `database/schema.sql` es snapshot generado; DB real + migraciones aplicadas son la fuente de verdad.
+- [x] **Schema consolidado**: `database/schema.sql` es snapshot generado; DB real + carpeta `database/` (raiz) son la referencia operativa de verdad.
 - [x] **Drop tabla `users`**: modelo `User.php`, `UserFactory.php` y tabla `users` no existen en el arbol/DB actual.
 - [x] **`password_hash` removido**: no existe en la migracion base actual, en `database/schema.sql` ni en la DB local actual.
 

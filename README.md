@@ -51,7 +51,18 @@ Servicios:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
-**Note on schema.sql:** The `database/schema.sql` is a generated snapshot used for fast Docker initialization. The canonical source of truth is Laravel migrations (`backend/database/migrations/`). See `scripts/regenerate-schema-sql.md` for details on keeping them in sync.
+**Note on schema.sql:** The real DB reference in this project is the root `database/` folder (especially `database/schema.sql` + `seed-*.sql`). `backend/database/` is kept for Laravel runtime/testing support and migration history, but operational decisions should follow the root `database/` state.
+
+## Restore and backup (quick)
+
+- Fast operational restore from root SQL baseline:
+  - `.\scripts\db-restore.ps1 -Mode sql-base`
+- Restore via Laravel migrations/seeds:
+  - `.\scripts\db-restore.ps1 -Mode migrations`
+- Create backup before risky changes:
+  - `.\scripts\db-backup.ps1`
+
+Detailed notes: `scripts/DB_RESTORE.md`.
 
 ### 2) Backend
 

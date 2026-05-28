@@ -15,9 +15,9 @@ interface Props {
   onOpenAdminUsuarios: () => void;
 }
 
-function resolveRole(groups: string[], isPaeSupervisor: boolean): DashboardRole {
+function resolveRole(groups: string[], isOwnerSupervisor: boolean): DashboardRole {
   if (groups.includes("admin")) return "admin";
-  if (groups.includes("supervisor")) return isPaeSupervisor ? "supervisor-pae" : "supervisor-contratista";
+  if (groups.includes("supervisor")) return isOwnerSupervisor ? "supervisor-pae" : "supervisor-contratista";
   return "tecnico";
 }
 
@@ -54,7 +54,7 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
     return isDashboardRole(cached) ? cached : null;
   });
 
-  const resolvedRole = data ? resolveRole(groups, Boolean(data.scope.is_pae_supervisor)) : null;
+  const resolvedRole = data ? resolveRole(groups, Boolean(data.scope.is_owner_supervisor)) : null;
   const role = resolvedRole ?? cachedRole ?? resolveRole(groups, false);
   const canManageElements = role === "admin" || role === "supervisor-pae";
   const canManageUsers = role === "admin";

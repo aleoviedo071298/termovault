@@ -31,7 +31,8 @@ class InspeccionTest extends TestCase
         $this->empresa = \App\Models\Empresa::factory()->create(['nombre' => 'PAE']);
         $this->yacimiento = \App\Models\Yacimiento::factory()->create([
             'empresa_id' => $this->empresa->id,
-            'codigo' => 'YAC-PAE'  // Required for supervisor PAE scope recognition
+            'codigo' => 'YAC-PAE',  // Required for legacy compatibility checks
+            'permite_supervisor_elementos' => true, // Owner yacimiento: supervisors can mutate/review
         ]);
     }
 

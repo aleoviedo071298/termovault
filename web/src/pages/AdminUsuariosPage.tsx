@@ -31,6 +31,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   const [empresaNueva, setEmpresaNueva] = useState("");
   const [yacNombre, setYacNombre] = useState("");
   const [yacCodigo, setYacCodigo] = useState("");
+  const [yacPermiteSupervisorElementos, setYacPermiteSupervisorElementos] = useState(false);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -232,17 +233,37 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                   <label>Codigo yacimiento</label>
                   <input value={yacCodigo} onChange={(e) => setYacCodigo(e.target.value)} placeholder="Ej: YAC-PAE-CENTRAL" />
                 </div>
+                <div className="owner-toggle-group">
+                  <label className="owner-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={yacPermiteSupervisorElementos}
+                      onChange={(e) => setYacPermiteSupervisorElementos(e.target.checked)}
+                    />
+                    <span>Supervisor de la empresa puede editar/agregar/eliminar elementos</span>
+                  </label>
+                </div>
+              </div>
+              <div className="organization-yacimiento-actions">
                 <button className="secondary-command" type="button" disabled={!empresaId || !yacNombre.trim() || !yacCodigo.trim()} onClick={async () => {
                   if (!empresaId) return;
                   try {
-                    await createYacimiento({ empresa_id: Number(empresaId), nombre: yacNombre.trim(), codigo: yacCodigo.trim() });
-                    setYacNombre(""); setYacCodigo(""); await loadAll();
+                    await createYacimiento({
+                      empresa_id: Number(empresaId),
+                      nombre: yacNombre.trim(),
+                      codigo: yacCodigo.trim(),
+                      permite_supervisor_elementos: yacPermiteSupervisorElementos,
+                    });
+                    setYacNombre("");
+                    setYacCodigo("");
+                    setYacPermiteSupervisorElementos(false);
+                    await loadAll();
                   } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear yacimiento."); }
                 }}>Crear yacimiento</button>
               </div>
             </div>
             <p className="admin-rule-note">
-              Supervisor contratista ve informes de su empresa dentro de yacimientos asignados. Supervisor PAE con YAC-PAE asignado ve el yacimiento completo.
+              Supervisor contratista ve informes de su empresa dentro de yacimientos asignados. Si el yacimiento marca permiso de supervisor owner, ese supervisor tambien puede administrar elementos de ese yacimiento.
             </p>
           </div>
         </section>

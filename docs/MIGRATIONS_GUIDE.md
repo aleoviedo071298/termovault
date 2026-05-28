@@ -69,7 +69,7 @@ if (DB::getDriverName() === 'pgsql') {
 
 ### M7: Limpieza de Usuarios
 
-La DB actual no tiene tabla `users` ni columna `usuarios.password_hash`. No documentar numeraciones historicas inexistentes; si hace falta reconstruir el proceso, verificar primero `backend/database/migrations/` y la tabla `migrations` de Postgres.
+La DB actual no tiene tabla `users` ni columna `usuarios.password_hash`. No documentar numeraciones historicas inexistentes; si hace falta reconstruir el proceso, verificar primero `database/` (raiz), luego la tabla `migrations` y finalmente `backend/database/migrations/` si hace falta trazabilidad Laravel.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## Fuente de verdad para DB
 
-Para cualquier decision relacionada con datos, la fuente de verdad es la estructura actual de la DB y las migraciones aplicadas en `backend/database/migrations/`.
+Para cualquier decision relacionada con datos, la fuente de verdad es la estructura actual de la DB y los archivos de `database/` en la raiz del repo.
 
 `database/schema.sql` es un snapshot generado para inicializacion local con Docker. No debe editarse a mano ni usarse como autoridad si contradice a la DB real. Cuando cambie la estructura, regenerarlo desde Postgres siguiendo `scripts/regenerate-schema-sql.md`.
 
