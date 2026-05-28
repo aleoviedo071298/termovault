@@ -17,7 +17,7 @@ class AccessScopeResolver
 
         $dbUser = null;
         if ($userId) {
-            $dbUser = Usuario::query()->with('rol:id,codigo', 'yacimientos:id,nombre,codigo', 'empresa:id,nombre')->find($userId);
+            $dbUser = Usuario::query()->with('rol:id,codigo', 'yacimientos:id,nombre,codigo,empresa_id,permite_supervisor_elementos', 'empresa:id,nombre')->find($userId);
         }
 
         $roles = $this->extractRoles($claims, $dbUser);
@@ -42,11 +42,17 @@ class AccessScopeResolver
                 ->all();
         }
 
-        $isPaeCompany = false;
-        if ($dbUser?->empresa?->nombre) {
-            $companyName = mb_strtoupper(trim((string) $dbUser->empresa->nombre));
-            $isPaeCompany = $companyName === 'PAE' || str_contains($companyName, 'PAE');
+        $ownerYacimientoIds = [];
+        if ($dbUser) {
+            $ownerYacimientoIds = $dbUser->yacimientos
+                ->filter(fn ($yacimiento) => (bool) ($yacimiento->permite_supervisor_elementos ?? false))
+                ->filter(fn ($yacimiento) => (int) ($yacimiento->empresa_id ?? 0) === (int) $dbUser->empresa_id)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
         }
+        $isOwnerSupervisor = $isSupervisor && $ownerYacimientoIds !== [];
 
         return [
             'user_id' => $dbUser?->id ? (int) $dbUser->id : null,
@@ -57,7 +63,8 @@ class AccessScopeResolver
             'is_admin' => $isAdmin,
             'is_supervisor' => $isSupervisor,
             'is_tecnico' => $isTecnico,
-            'is_pae_supervisor' => $isSupervisor && $isPaeCompany && in_array('YAC-PAE', $assignedYacimientoCodes, true),
+            'is_owner_supervisor' => $isOwnerSupervisor,
+            'owner_yacimiento_ids' => $ownerYacimientoIds,
             'assigned_yacimiento_ids' => $assignedYacimientoIds,
             'assigned_yacimiento_codes' => $assignedYacimientoCodes,
             'assigned_yacimiento_names' => $dbUser
@@ -99,9 +106,8 @@ class AccessScopeResolver
             return false;
         }
 
-        // Solo supervisor PAE puede administrar elementos.
-        return $scope['is_pae_supervisor']
-            && in_array($yacimientoId, $scope['assigned_yacimiento_ids'], true);
+        return ($scope['is_owner_supervisor'] ?? false)
+            && in_array($yacimientoId, $scope['owner_yacimiento_ids'] ?? [], true);
     }
 
     public function canCreateInspectionForElement(array $scope, int $elementId): bool

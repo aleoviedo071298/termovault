@@ -99,7 +99,7 @@ class InspeccionController extends Controller
                 $query->whereRaw('1=0');
             }
         } elseif ($scope['is_supervisor']) {
-            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+            if (($scope['is_owner_supervisor'] ?? false) && $scope['assigned_yacimiento_ids'] !== []) {
                 $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
             } else {
                 $query->where('u.empresa_id', $scope['empresa_id']);
@@ -171,8 +171,8 @@ class InspeccionController extends Controller
     {
         $scope = $this->scopeResolver->resolve($request);
 
-        // Solo admin o supervisor PAE pueden revisar/cerrar.
-        if (! $scope['is_admin'] && ! $scope['is_pae_supervisor']) {
+        // Solo admin o supervisor owner pueden revisar/cerrar.
+        if (! $scope['is_admin'] && ! ($scope['is_owner_supervisor'] ?? false)) {
             return response()->json(['message' => 'No tenes permisos para revisar o cerrar informes'], 403);
         }
 
@@ -190,7 +190,7 @@ class InspeccionController extends Controller
         if ($scope['is_admin']) {
             // full access
         } elseif ($scope['is_supervisor']) {
-            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+            if (($scope['is_owner_supervisor'] ?? false) && $scope['assigned_yacimiento_ids'] !== []) {
                 $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
             } else {
                 $query->where('u.empresa_id', $scope['empresa_id']);

@@ -7,8 +7,8 @@
 For DB-related work, use this order of confidence:
 
 1. Current database structure and data.
-2. Applied Laravel migrations in `backend/database/migrations/`.
-3. `database/schema.sql` as a generated snapshot.
+2. Root `database/` files as operational reference.
+3. Laravel migrations in `backend/database/migrations/` as framework history/support.
 4. Older docs only as historical notes.
 
 ## When to Regenerate

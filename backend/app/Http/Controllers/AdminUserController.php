@@ -39,7 +39,11 @@ class AdminUserController extends Controller
         return response()->json([
             'roles' => DB::table('roles')->select('id', 'codigo', 'nombre')->orderBy('id')->get(),
             'empresas' => DB::table('empresas')->select('id', 'nombre')->where('activo', true)->orderBy('nombre')->get(),
-            'yacimientos' => DB::table('yacimientos')->select('id', 'nombre', 'codigo', 'empresa_id')->where('activo', true)->orderBy('nombre')->get(),
+            'yacimientos' => DB::table('yacimientos')
+                ->select('id', 'nombre', 'codigo', 'empresa_id', 'permite_supervisor_elementos')
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(),
         ]);
     }
 

@@ -4,7 +4,7 @@
 
 ## Fuente de verdad
 
-Para cualquier decision relacionada con datos, primero se mira la estructura actual de Postgres y sus datos. Las migraciones de Laravel (`backend/database/migrations/`) explican la evolucion del esquema. `database/schema.sql` es un snapshot generado desde la DB local actual para Docker; no editar a mano ni usar como autoridad si contradice a la DB real.
+Para cualquier decision relacionada con datos, primero se mira la estructura actual de Postgres y los archivos en `database/` (raiz). La carpeta `database/` en la raiz del repo es la referencia operativa real del esquema y seeds. `database/schema.sql` es un snapshot generado desde la DB local actual para Docker; no editar a mano ni usar como autoridad si contradice a la DB real.
 
 ## Jerarquía
 

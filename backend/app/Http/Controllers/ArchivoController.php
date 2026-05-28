@@ -34,7 +34,7 @@ class ArchivoController extends Controller
                 }
 
                 if ($scope['is_supervisor']) {
-                    if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+                    if (($scope['is_owner_supervisor'] ?? false) && $scope['assigned_yacimiento_ids'] !== []) {
                         $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
                         return;
                     }

@@ -31,6 +31,7 @@ class AdminOrganizationController extends Controller
             'empresa_id' => 'required|exists:empresas,id',
             'nombre' => 'required|string|max:150',
             'codigo' => 'required|string|max:50',
+            'permite_supervisor_elementos' => 'nullable|boolean',
         ]);
 
         $exists = DB::table('yacimientos')
@@ -46,10 +47,11 @@ class AdminOrganizationController extends Controller
             'nombre' => trim($data['nombre']),
             'codigo' => trim($data['codigo']),
             'activo' => true,
+            'permite_supervisor_elementos' => (bool) ($data['permite_supervisor_elementos'] ?? false),
             'created_at' => now(),
         ]);
 
-        $yac = DB::table('yacimientos')->where('id', $id)->first(['id', 'nombre', 'codigo', 'empresa_id']);
+        $yac = DB::table('yacimientos')->where('id', $id)->first(['id', 'nombre', 'codigo', 'empresa_id', 'permite_supervisor_elementos']);
         return response()->json($yac, 201);
     }
 }

@@ -2811,15 +2811,45 @@ tbody tr:hover {
 
 .organization-yacimiento-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr);
   gap: 12px;
-  align-items: end;
+  align-items: start;
 }
 
 .organization-line .secondary-command,
 .organization-yacimiento-grid .secondary-command {
   min-height: 42px;
   white-space: nowrap;
+}
+
+.owner-toggle-group {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: flex;
+  align-items: start;
+}
+
+.owner-toggle-label {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: start;
+  gap: 8px;
+  color: #2e3f35;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: none;
+}
+
+.owner-toggle-label input {
+  margin: 1px 0 0 0;
+  accent-color: #1d5c46;
+}
+
+.organization-yacimiento-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
 }
 
 .admin-rule-note {
@@ -2884,6 +2914,10 @@ tbody tr:hover {
   .organization-yacimiento-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .owner-toggle-group {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2905,6 +2939,14 @@ tbody tr:hover {
   .organization-line,
   .organization-yacimiento-grid {
     grid-template-columns: 1fr;
+  }
+
+  .owner-toggle-group {
+    grid-column: auto;
+  }
+
+  .organization-yacimiento-actions {
+    margin-top: 0;
   }
 
   .admin-actions {

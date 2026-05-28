@@ -202,7 +202,7 @@ class DashboardController extends Controller
                 'empresa_nombre' => $scope['empresa_nombre'],
                 'user_id' => $scope['user_id'],
                 'user_name' => $scope['user_name'],
-                'is_pae_supervisor' => $scope['is_pae_supervisor'],
+                'is_owner_supervisor' => $scope['is_owner_supervisor'] ?? false,
                 'assigned_yacimiento_names' => $scope['assigned_yacimiento_names'],
             ],
             'stats' => $stats,
@@ -230,7 +230,7 @@ class DashboardController extends Controller
         }
 
         if ($scope['is_supervisor']) {
-            if ($scope['is_pae_supervisor'] && $scope['assigned_yacimiento_ids'] !== []) {
+            if (($scope['is_owner_supervisor'] ?? false) && $scope['assigned_yacimiento_ids'] !== []) {
                 return $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
             }
 

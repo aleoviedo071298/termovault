@@ -3,7 +3,7 @@ import { apiGet, apiPost, apiPut } from "./client";
 export interface AdminUsuarioMeta {
   roles: Array<{ id: number; codigo: "admin" | "supervisor" | "tecnico"; nombre: string }>;
   empresas: Array<{ id: number; nombre: string }>;
-  yacimientos: Array<{ id: number; nombre: string; codigo: string; empresa_id: number }>;
+  yacimientos: Array<{ id: number; nombre: string; codigo: string; empresa_id: number; permite_supervisor_elementos: boolean }>;
 }
 
 export interface AdminUsuario {
@@ -53,6 +53,6 @@ export function createEmpresa(payload: { nombre: string }): Promise<{ id: number
   return apiPost<{ id: number; nombre: string }>("/admin/empresas", payload);
 }
 
-export function createYacimiento(payload: { empresa_id: number; nombre: string; codigo: string }): Promise<{ id: number; nombre: string; codigo: string; empresa_id: number }> {
-  return apiPost<{ id: number; nombre: string; codigo: string; empresa_id: number }>("/admin/yacimientos", payload);
+export function createYacimiento(payload: { empresa_id: number; nombre: string; codigo: string; permite_supervisor_elementos?: boolean }): Promise<{ id: number; nombre: string; codigo: string; empresa_id: number; permite_supervisor_elementos: boolean }> {
+  return apiPost<{ id: number; nombre: string; codigo: string; empresa_id: number; permite_supervisor_elementos: boolean }>("/admin/yacimientos", payload);
 }

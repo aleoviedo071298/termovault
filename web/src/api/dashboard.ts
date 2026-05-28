@@ -44,7 +44,7 @@ export interface DashboardOverview {
     empresa_nombre: string | null;
     user_id: number | null;
     user_name: string | null;
-    is_pae_supervisor: boolean;
+    is_owner_supervisor: boolean;
     assigned_yacimiento_names: string[];
   };
   stats: DashboardStats;

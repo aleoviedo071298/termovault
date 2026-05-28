@@ -16,7 +16,7 @@ export default function ElementosGestion({ onBack }: Props) {
   const { user } = useAuth();
   const groups = user?.groups ?? [];
   const isAdmin = groups.includes("admin");
-  const [isPaeSupervisor, setIsPaeSupervisor] = useState(false);
+  const [isOwnerSupervisor, setIsOwnerSupervisor] = useState(false);
   const [scopeLabel, setScopeLabel] = useState("Alcance operativo");
   const [items, setItems] = useState<Elemento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,19 +46,19 @@ export default function ElementosGestion({ onBack }: Props) {
     void (async () => {
       try {
         const overview = await getDashboardOverview();
-        setIsPaeSupervisor(Boolean(overview.scope.is_pae_supervisor));
+        setIsOwnerSupervisor(Boolean(overview.scope.is_owner_supervisor));
         const empresa = overview.scope.empresa_nombre ?? "sin empresa";
         const yacimientos = overview.scope.assigned_yacimiento_names?.length
           ? overview.scope.assigned_yacimiento_names.join(", ")
           : "segun alcance";
         setScopeLabel(`${empresa} / ${yacimientos}`);
       } catch {
-        setIsPaeSupervisor(false);
+        setIsOwnerSupervisor(false);
       }
     })();
   }, []);
 
-  const canManage = isAdmin || isPaeSupervisor;
+  const canManage = isAdmin || isOwnerSupervisor;
 
   const tipos = useMemo(() => {
     return Array.from(new Set(items.map((e) => e.tipo).filter((tipo): tipo is string => Boolean(tipo))))
