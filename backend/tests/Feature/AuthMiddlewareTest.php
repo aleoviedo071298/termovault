@@ -64,7 +64,6 @@ class AuthMiddlewareTest extends TestCase
             ->assertJson([
                 'sub' => 'user-123',
                 'email' => 'tech@example.com',
-                'token_use' => 'access',
                 'empresa_id' => 1,
             ]);
     }

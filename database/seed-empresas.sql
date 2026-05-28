@@ -1,15 +1,13 @@
 -- Empresas reales
-INSERT INTO empresas (nombre, cuit, plan) VALUES
-  ('PECOM', '30-00000000-0', 'basico'),
-  ('PAE', '30-11111111-1', 'basico');
+INSERT INTO empresas (nombre, plan) VALUES
+  ('PECOM', 'basico'),
+  ('PAE', 'basico');
 
 -- Yacimiento real asociado a PAE
-INSERT INTO yacimientos (empresa_id, nombre, codigo, zona, descripcion) VALUES
+INSERT INTO yacimientos (empresa_id, nombre, codigo) VALUES
   ((SELECT id FROM empresas WHERE nombre = 'PAE'),
    'PAE',
-   'YAC-PAE',
-   'Cuenca Neuquina',
-   'Yacimiento principal para carga de inspecciones termográficas');
+   'YAC-PAE');
 
 -- Usuario administrador principal (para linkeo de Cognito JWT)
 -- Note: password_hash field removed; auth is always via Cognito JWT, never local.
