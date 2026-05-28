@@ -112,6 +112,7 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 3. ✅ **Validación de mime/extensión en uploads** (RESUELTO 2026-05-28) — `InspeccionController` valida tipos:
    - `reporte`: `doc,docx,xls,xlsx` (max 10MB)
    - `imagenes`: `zip` (max 50MB)
+4. ✅ **`schema.sql` desincronizada** (RESUELTO 2026-05-28) — Documentado flujo: schema.sql es snapshot para Docker init, migraciones son canonical source. Ver `scripts/regenerate-schema-sql.md`.
 
 ### Altos
 
@@ -123,7 +124,7 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 
 ### Medios
 
-9. **Modelo `User.php` + tabla `users` duplicados** con `Usuario`/`usuarios` reales. Dropear.
+9. ✅ **Modelo `User.php` + tabla `users` duplicados** (RESUELTO 2026-05-28) — Eliminado modelo User.php, UserFactory.php, migración scaffold. Config auth.php ahora usa Usuario. Tabla users será dropeada por migración 2026_05_28_000012.
 10. ✅ **`password_hash` removido** (RESUELTO 2026-05-28) — Columna dropeda por migración 2026_05_28_000011. Seed actualizado. Código (LocalUserProvisioner, AdminUserController) nunca la genera.
 
 ---

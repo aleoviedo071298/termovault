@@ -39,8 +39,8 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades r
 
 ### Infra
 
-- [ ] **Schema consolidado**: decidir si `database/schema.sql` se elimina (todo por migraciones) o si se regenera con `pg_dump --schema-only`. Actualizar `postgres-init.sh` y workflow `validate-schema.yml`.
-- [ ] **Drop tabla `users`** y `password_reset_tokens` del scaffold de Laravel. Ajustar `config/auth.php`.
+- [x] **Schema consolidado** (2026-05-28): Documentado que `schema.sql` es snapshot generado, migraciones son fuente de verdad. Ver `scripts/regenerate-schema-sql.md` para procedimiento de sincronización.
+- [x] **Drop tabla `users`** (2026-05-28): Eliminado modelo User.php, UserFactory, migración scaffold. Migración 2026_05_28_000012 dropea tabla. Config auth.php ahora usa Usuario.
 
 ---
 
