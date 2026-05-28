@@ -20,7 +20,7 @@ class InspeccionController extends Controller
 
     private function archivoPayload(Archivo $archivo): array
     {
-        $disk = $archivo->s3_bucket === 'local' ? 'public' : 's3';
+        $disk = $archivo->getStorageDisk();
 
         return [
             'id' => $archivo->id,
@@ -268,8 +268,8 @@ class InspeccionController extends Controller
             'condiciones_clima' => 'nullable|string|max:50',
             'resumen' => 'nullable|string',
             'estado' => 'nullable|string|max:20',
-            'reporte' => 'nullable|file|max:15360', // Max 15MB
-            'imagenes' => 'nullable|file|max:61440', // Max 60MB
+            'reporte' => 'nullable|file|mimes:doc,docx,xls,xlsx|max:10240', // Max 10MB, Word/Excel only
+            'imagenes' => 'nullable|file|mimes:zip|max:51200', // Max 50MB, ZIP only
             'novedades' => 'nullable|string', // JSON string containing array of findings
         ]);
 

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(docker-compose config *)",
+      "Bash(wsl *)"
+    ]
+  }
+}
