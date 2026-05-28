@@ -210,6 +210,64 @@ class InspeccionManagementTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_technician_can_download_own_inspection_file_through_authorized_endpoint(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Descarga',
+            'codigo' => 'SET-DOWNLOAD-TEST',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'reporte' => UploadedFile::fake()->createWithContent('reporte.docx', 'contenido-reporte'),
+            ]);
+
+        $response->assertStatus(201);
+        $archivoId = (int) \DB::table('archivos')->where('tipo', 'informe_word')->value('id');
+
+        $download = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->get("/api/archivos/{$archivoId}/download");
+
+        $download->assertOk();
+        $this->assertStringContainsString('contenido-reporte', $download->streamedContent());
+    }
+
+    public function test_user_cannot_download_file_outside_scope(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Ajena',
+            'codigo' => 'SET-FOREIGN-DOWNLOAD',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'reporte' => UploadedFile::fake()->createWithContent('reporte.docx', 'contenido-reporte'),
+            ]);
+
+        $response->assertStatus(201);
+        $archivoId = (int) \DB::table('archivos')->where('tipo', 'informe_word')->value('id');
+
+        $this->mockVerifier($this->otherEmpresaClaims);
+        $download = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson("/api/archivos/{$archivoId}/download");
+
+        $download->assertNotFound();
+    }
+
     public function test_closing_inspection_resolves_open_findings(): void
     {
         config()->set('cognito.required', true);

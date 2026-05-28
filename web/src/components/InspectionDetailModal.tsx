@@ -1,5 +1,6 @@
 import { Download, FileText, FolderArchive, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { apiDownload } from "../api/client";
 import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado } from "../api/inspecciones";
 
 interface Props {
@@ -62,6 +63,15 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
       setError(err instanceof Error ? err.message : "No se pudo actualizar el estado.");
     } finally {
       setUpdating(false);
+    }
+  }
+
+  async function downloadFile(file: InspeccionDetalle["archivos"][number]) {
+    try {
+      setError(null);
+      await apiDownload(file.download_url, file.nombre);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo descargar el archivo.");
     }
   }
 
@@ -159,14 +169,14 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
                   ) : (
                     data.archivos.map((file) => {
                       return (
-                        <a className="file-download-btn" key={file.id} href={file.url} target="_blank" rel="noreferrer">
+                        <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
                           {file.tipo.includes("zip") ? <FolderArchive size={18} className="icon-zip" /> : <FileText size={18} className="icon-word" />}
                           <div className="file-info">
                             <span className="file-name">{file.nombre}</span>
                             <span className="file-size">{fmtBytes(file.tamano)}</span>
                           </div>
                           <Download size={16} style={{ marginLeft: "auto" }} />
-                        </a>
+                        </button>
                       );
                     })
                   )}

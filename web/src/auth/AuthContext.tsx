@@ -17,6 +17,11 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
+type MePayload = {
+  groups?: string[];
+  local_role?: string | null;
+};
+
 function parseJwt(token: string) {
   try {
     const base64Url = token.split(".")[1];
@@ -51,22 +56,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const claims = parseJwt(storedIdToken);
       if (claims && claims.exp * 1000 > Date.now()) {
         let groups: string[] = claims["cognito:groups"] ?? [];
-        if ((!Array.isArray(groups) || groups.length === 0) && storedAccessToken) {
-          try {
-            const res = await fetch(`${API_URL}/auth/me`, {
-              headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${storedAccessToken}`
-              }
-            });
-            if (res.ok) {
-              const me = await res.json() as { local_role?: string | null };
-              if (me.local_role) {
-                groups = [me.local_role];
-              }
+        try {
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${storedAccessToken}`
             }
-          } catch {}
-        }
+          });
+          if (res.ok) {
+            const me = await res.json() as MePayload;
+            groups = me.local_role ? [me.local_role] : (me.groups ?? groups);
+          }
+        } catch {}
 
         setToken(storedAccessToken);
         setUser({
@@ -122,10 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error(msg);
         }
 
-        const me = await res.json() as { local_role?: string | null };
-        if ((!Array.isArray(groups) || groups.length === 0) && me.local_role) {
-          groups = [me.local_role];
-        }
+        const me = await res.json() as MePayload;
+        groups = me.local_role ? [me.local_role] : (me.groups ?? groups);
       } catch (err) {
         throw err instanceof Error ? err : new Error("No se pudo validar la sesión");
       }

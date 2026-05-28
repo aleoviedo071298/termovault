@@ -9,8 +9,6 @@ const CRITICIDAD_COLOR: Record<string, string> = {
   Media: "#d8a316",
   Alta: "#f97316",
   Critica: "#ef4444",
-  "Crítica": "#ef4444",
-  "CrÃ­tica": "#ef4444",
 };
 
 function estadoLabel(estado: string): string {
@@ -21,7 +19,9 @@ function estadoLabel(estado: string): string {
 }
 
 function criticidadLabel(criticidad: DashboardReportRow["criticidad"]): string {
-  return String(criticidad).includes("tica") ? "Critica" : criticidad;
+  return String(criticidad).normalize("NFD").replace(/\p{Diacritic}/gu, "").includes("tica")
+    ? "Critica"
+    : criticidad;
 }
 
 export function ReportTable({ loading, reports, onOpenDetail }: ReportTableProps) {

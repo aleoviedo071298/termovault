@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class InspeccionController extends Controller
@@ -20,15 +19,11 @@ class InspeccionController extends Controller
 
     private function archivoPayload(Archivo $archivo): array
     {
-        $disk = $archivo->getStorageDisk();
-
         return [
             'id' => $archivo->id,
             'tipo' => $archivo->tipo,
             'nombre' => $archivo->nombre_original,
-            'bucket' => $archivo->s3_bucket,
-            'key' => $archivo->s3_key,
-            'url' => Storage::disk($disk)->url($archivo->s3_key),
+            'download_url' => "/archivos/{$archivo->id}/download",
             'tamano' => $archivo->tamano_bytes,
             'mime' => $archivo->mime_type,
         ];

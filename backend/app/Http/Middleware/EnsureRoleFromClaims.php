@@ -17,9 +17,9 @@ class EnsureRoleFromClaims
             ], 401);
         }
 
-        $roles = $this->extractRoles($claims);
+        $roles = $this->extractRolesFromLocalUser($request);
         if ($roles === []) {
-            $roles = $this->extractRolesFromLocalUser($request);
+            $roles = $this->extractRoles($claims);
         }
         if ($roles === []) {
             return response()->json([

@@ -1,70 +1,43 @@
-# Regenerating database/schema.sql
+# Regenerating `database/schema.sql`
 
 ## Context
 
-The `database/schema.sql` file is a **generated artifact** that provides a DDL snapshot of the current database schema. It is used by `docker-compose` to initialize a fresh Postgres container.
+`database/schema.sql` is a generated DDL snapshot of the current Postgres schema. It is useful for Docker initialization, but it is not the authority for cleanup decisions if it contradicts the real DB.
 
-However, the canonical source of truth for the schema is:
-- **Laravel migrations** in `backend/database/migrations/` (primary)
-- Applied in order, they define the actual schema
+For DB-related work, use this order of confidence:
 
-## Why Two Sources Exist
+1. Current database structure and data.
+2. Applied Laravel migrations in `backend/database/migrations/`.
+3. `database/schema.sql` as a generated snapshot.
+4. Older docs only as historical notes.
 
-1. **Docker initialization**: `postgres-init.sh` applies `schema.sql` for fast setup
-2. **Development evolution**: Migrations can be applied post-init to update the schema
-3. **Migration-based droppers**: Migration `2026_05_25_000000_create_termovault_tables.php` drops and recreates all tables in `local|testing` environments
+## When to Regenerate
 
-## Keeping Them in Sync
+Regenerate after a migration changes table structure, indexes, constraints or FK relationships.
 
-### When to Regenerate
+## Command
 
-After running a migration that changes the schema structure (not just data), regenerate the snapshot:
+From the repository root:
 
 ```bash
-# 1. Start fresh database with migrations applied
-docker compose up -d
-cd backend
-php artisan migrate
-php artisan seed
-
-# 2. From a separate terminal, export the current schema (NO data)
-docker compose exec postgres pg_dump \
+docker compose exec -T postgres pg_dump \
   --schema-only \
   --no-owner \
   --no-privileges \
   -U termovault \
   -d termovault > database/schema.sql
-
-# 3. Commit the updated schema.sql
-git add database/schema.sql
-git commit -m "chore(db): regenerate schema.sql after migrations"
 ```
 
-### Automated Regeneration (Future)
+On PowerShell, prefer UTF-8 output:
 
-Ideally, this would be automated in CI/CD:
-```yaml
-# .github/workflows/db-validate.yml
-- name: Regenerate schema.sql
-  run: |
-    docker compose up -d postgres
-    docker compose exec -T postgres pg_dump --schema-only ... > database/schema.sql
-    git diff database/schema.sql  # Ensure no changes (migrations should be self-sufficient)
+```powershell
+docker compose exec -T postgres pg_dump --schema-only --no-owner --no-privileges -U termovault -d termovault |
+  Set-Content -Encoding utf8 database\schema.sql
 ```
 
-## Important Notes
+## Notes
 
-- **Do NOT edit `schema.sql` manually** — it's generated, not maintained by hand
-- Migrations are the canonical source; always update via `php artisan make:migration`
-- The seed SQL files (`seed-*.sql`) are applied **after** schema.sql and handle data initialization
-- In production, migrations are applied as part of the deployment process, not docker-compose
-
-## Migration Behavior by Environment
-
-| Environment | Behavior |
-|-------------|----------|
-| `local` | `2026_05_25_000000` drops all tables, recreates them. Data regenerated from seeds. |
-| `testing` | Same as local (fresh state for each test run) |
-| `production` | Migrations applied without drop (preserves data) |
-
-This ensures dev/test environments are always in a clean state, while production evolves gradually.
+- Do not hand-edit `database/schema.sql`.
+- Do not infer drops from this file alone; inspect the current DB first.
+- Do not include data dumps in Git.
+- Production should evolve through migrations/backups, not by replaying local init SQL over real data.

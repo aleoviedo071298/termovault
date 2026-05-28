@@ -18,9 +18,7 @@ export interface InspeccionArchivo {
   id: number;
   tipo: string;
   nombre: string;
-  bucket: string | null;
-  key: string;
-  url: string;
+  download_url: string;
   tamano: number;
 }
 

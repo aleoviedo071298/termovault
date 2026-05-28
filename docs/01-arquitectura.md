@@ -57,7 +57,7 @@ routes/api.php
 - **Stack**: React 19 + Vite 7 + TypeScript.
 - **Estado de auth**: `AuthContext` guarda `access_token` e `id_token` en `localStorage`.
 - **HTTP**: cliente fetch envuelto en `api/client.ts` que inyecta el `Authorization: Bearer …` automáticamente.
-- **Ruteo**: manejo manual con `history.pushState` y `popstate` (pendiente migrar a `react-router-dom`).
+- **Ruteo**: `react-router-dom` con rutas explícitas para dashboard, gestión de elementos y administración de usuarios.
 - **Vistas activas**:
   - `Login` — login Cognito + challenge de NEW_PASSWORD_REQUIRED.
   - `Dashboard` — KPIs y tabla de informes según rol.
@@ -66,9 +66,9 @@ routes/api.php
 
 ### Database (`database/`)
 
-- `schema.sql` — DDL de referencia para arranque rápido del container Postgres.
+- `schema.sql` - snapshot DDL generado desde la DB local actual para arranque rapido del container Postgres.
 - `seed-*.sql` — datos mínimos: roles, tipos, niveles de tensión, criticidades, empresa PAE y usuarios pivote.
-- Las **migraciones de Laravel** (`backend/database/migrations/`) son la fuente de verdad. `schema.sql` se regenera desde ahí.
+- Para temas de DB, la estructura actual de Postgres es la primera referencia; las migraciones de Laravel explican la evolucion y `schema.sql` se regenera desde la DB.
 
 ### Infra local (`docker-compose.yml`)
 

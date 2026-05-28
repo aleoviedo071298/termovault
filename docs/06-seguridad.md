@@ -1,208 +1,129 @@
-# Seguridad — TermoVault
+# Seguridad - TermoVault
 
 > Modelo de seguridad, roles, scope y checklist de hardening.
+
+## Fuente de verdad para DB
+
+Para cualquier decision relacionada con datos, la fuente de verdad es la estructura actual de la DB y las migraciones aplicadas en `backend/database/migrations/`.
+
+`database/schema.sql` es un snapshot generado para inicializacion local con Docker. No debe editarse a mano ni usarse como autoridad si contradice a la DB real. Cuando cambie la estructura, regenerarlo desde Postgres siguiendo `scripts/regenerate-schema-sql.md`.
 
 ## Modelo de auth
 
 ### Identidad
 
-- **AWS Cognito User Pool** es el único proveedor de identidad. El backend no almacena contraseñas.
-- El usuario hace login contra `POST /api/auth/login`, que delega a Cognito vía `InitiateAuth` con `USER_PASSWORD_AUTH`.
-- Cognito devuelve tres tokens:
-  - **`access_token`** (JWT firmado RSA) — el que viaja en el header `Authorization: Bearer …` a la API.
-  - **`id_token`** (JWT con claims del usuario) — el frontend lo usa para extraer `email`, `cognito:groups`, etc.
-  - **`refresh_token`** — guardado en `localStorage` (frontend), permite renovar `access_token`.
+- AWS Cognito User Pool es el proveedor de identidad.
+- El backend no almacena contrasenas locales.
+- El login usa `POST /api/auth/login`, que delega a Cognito con `InitiateAuth`.
+- El frontend usa el `access_token` como `Authorization: Bearer ...` para la API.
+- `/api/auth/me` devuelve un perfil filtrado y el rol efectivo local.
 
-### Verificación de JWT (backend)
+### Verificacion de JWT
 
-Implementación en `App\Services\CognitoJwtVerifier`:
+Implementacion en `App\Services\CognitoJwtVerifier`:
 
 1. Split del JWT en `header.payload.signature`.
-2. Validar `exp`, `iat`, `iss` con leeway configurable (default 60s).
-3. Validar `aud` (id_token) o `client_id` (access_token).
-4. Descargar JWKS de Cognito (`https://cognito-idp.{region}.amazonaws.com/{pool}/.well-known/jwks.json`), cachear 6h.
-5. Verificar firma RSA-SHA256 con `openssl_verify`.
+2. Validacion de `exp`, `iat`, `iss` con leeway configurable.
+3. Validacion de `aud` o `client_id`.
+4. Descarga y cache de JWKS de Cognito.
+5. Verificacion de firma RSA-SHA256 con `openssl_verify`.
 
-Si cualquier paso falla → `401 Invalid token`.
+Si falla, la API responde `401 Invalid token` sin exponer detalles internos del verificador.
 
-### Provisioning local de usuarios
+### Provisioning local
 
-En el primer login válido de un usuario que existe en Cognito pero no en la tabla local `usuarios`, `LocalUserProvisioner::findOrProvisionFromClaims` crea la fila con:
+En el primer login valido de un usuario que existe en Cognito pero no en `usuarios`, `LocalUserProvisioner::findOrProvisionFromClaims` crea la fila local con:
 
-- Email del claim (normalizado lowercase).
-- Rol derivado del primer grupo en `cognito:groups`; default `tecnico` si no hay grupo.
-- Empresa del claim `custom:empresa_id`; default a la primera empresa de la DB si no hay claim.
-- `nombre` / `apellido` desde `given_name` / `family_name`.
+- Email normalizado a lowercase.
+- Rol derivado del primer grupo de `cognito:groups`; default `tecnico` si no hay grupo.
+- Empresa desde `custom:empresa_id` o `empresa_id`.
+- Nombre y apellido desde `given_name` y `family_name`.
 
-Si el usuario en `usuarios` está marcado `activo=false`, el middleware devuelve `403 Usuario inactivo`.
+Si el claim de empresa falta o apunta a una empresa inexistente, el provisioning falla con `403 Usuario no provisionado`. No hay fallback a la primera empresa de la DB.
 
-### Roles y matriz de permisos
+Si el usuario local esta `activo=false`, el middleware devuelve `403 Usuario inactivo`.
 
-Tres roles globales declarados en `roles.codigo`:
+## Roles y permisos
+
+Los roles globales viven en `roles.codigo`:
 
 | Codigo | Nombre | Alcance |
 |---|---|---|
 | `admin` | Administrador | Global, sin restricciones. |
-| `supervisor` | Supervisor | Ver `Tipos de supervisor` debajo. |
-| `tecnico` | Técnico | Solo sus propias inspecciones, en yacimientos asignados. |
+| `supervisor` | Supervisor | Segun empresa/yacimientos asignados. |
+| `tecnico` | Tecnico | Sus propias inspecciones, dentro de su scope. |
+
+El rol local en DB domina sobre grupos stale de Cognito. Los grupos de Cognito sirven para provisioning inicial o fallback cuando todavia no hay rol local.
 
 ### Tipos de supervisor
 
-El rol `supervisor` se interpreta en runtime según contexto:
-
-- **Supervisor PAE** = supervisor cuya empresa es PAE (o contiene "PAE") y que tiene `YAC-PAE` entre sus yacimientos asignados.
-  - Puede revisar/cerrar inspecciones.
-  - Puede crear/editar/borrar elementos.
-- **Supervisor contratista** = cualquier otro supervisor.
-  - Solo ve informes de técnicos de su empresa.
-  - No puede revisar/cerrar.
-  - No puede mutar elementos.
+- Supervisor PAE: supervisor de empresa PAE con `YAC-PAE` asignado. Puede operar con alcance global donde corresponde.
+- Supervisor contratista: supervisor no PAE. Ve informes de tecnicos de su empresa y no revisa/cierra.
 
 Implementado en `App\Services\Auth\AccessScopeResolver`.
 
 ### Matriz de capacidades
 
-| Acción | admin | supervisor PAE | supervisor contratista | tecnico |
+| Accion | admin | supervisor PAE | supervisor contratista | tecnico |
 |---|:---:|:---:|:---:|:---:|
-| Ver dashboard | ✓ global | ✓ yacimiento | ✓ su empresa | ✓ propias |
-| Ver elementos | ✓ | ✓ scope | ✓ scope | ✓ scope |
-| Crear/editar elemento | ✓ | ✓ scope | ✗ | ✗ |
-| Borrar elemento | ✓ | ✓ scope | ✗ | ✗ |
-| Crear inspección | ✓ | ✓ scope | ✓ scope | ✓ scope |
-| Ver inspección | ✓ | ✓ scope | ✓ scope | ✓ propias |
-| Revisar / cerrar inspección | ✓ | ✓ | ✗ | ✗ |
-| Gestionar usuarios / empresas / yacimientos | ✓ | ✗ | ✗ | ✗ |
-
-"Scope" = limitado a yacimientos asignados al usuario en `usuario_yacimientos`.
-
----
+| Ver dashboard | Si, global | Si, scope | Si, empresa | Si, propias |
+| Ver elementos | Si | Si, scope | Si, scope | Si, scope |
+| Crear/editar elemento | Si | Si, scope | No | No |
+| Borrar elemento | Si | Si, scope | No | No |
+| Crear inspeccion | Si | Si, scope | Si, scope | Si, scope |
+| Ver inspeccion | Si | Si, scope | Si, scope | Si, propias |
+| Revisar/cerrar inspeccion | Si | Si | No | No |
+| Gestionar usuarios | Si | No | No | No |
 
 ## Defensas implementadas
 
-### En backend
+- Middleware `cognito.auth` en rutas privadas.
+- Middleware `role.claim:*` parametrizable por endpoint.
+- Scope por rol/tenant mediante `AccessScopeResolver`.
+- Validacion de input en controladores.
+- Constraints y FK en Postgres.
+- `usuarios.email` unico.
+- Indice funcional `LOWER(email)`.
+- Bloqueo de usuarios inactivos.
+- Sanitizacion de nombres de archivo antes de guardar.
+- Descargas por endpoint backend autorizado: `/api/archivos/{id}/download`.
+- Bucket privado compatible con descargas desde plataforma.
+- CORS configurable por entorno.
+- Rate limit en `/api/auth/login`.
 
-- ✅ **Middleware obligatorio** `cognito.auth` en todas las rutas privadas.
-- ✅ **Middleware de roles** `role.claim:admin,supervisor,...` parametrizable por endpoint.
-- ✅ **Scope de tenant** automático vía `AccessScopeResolver` antes de ejecutar queries.
-- ✅ **Validación de input** con `$request->validate(...)` en cada `store/update`.
-- ✅ **CHECK constraints** en Postgres para estados de inspecciones y novedades.
-- ✅ **UNIQUE constraints**: `usuarios.email`, `yacimientos(empresa_id, codigo)`, `elementos(yacimiento_id, codigo)`.
-- ✅ **Email case-insensitive** vía índice funcional `LOWER(email)`.
-- ✅ **Bloqueo de usuarios inactivos** en middleware.
-- ✅ **Sanitización de nombres de archivo** (`safeStorageFileName`) antes de guardar en S3.
-- ✅ **Modelos esconden `password_hash`** (`Usuario::$hidden`).
+## Riesgos conocidos / pendientes
 
-### En frontend
+### Criticos
 
-- ✅ **Token storage** en `localStorage` (aceptable para SaaS interno; en consumer apps preferir HttpOnly cookies).
-- ✅ **Expiración chequeada al bootstrap**: si `exp < now`, se borra el token.
-- ✅ **Renovación automática** vía `id_token` claims al recargar.
-- ✅ **ProtectedRoute** valida que el usuario tenga al menos uno de los grupos requeridos.
-
----
-
-## Riesgos conocidos / pendientes (al 2026-05-28)
-
-Ver `docs/05-roadmap.md` para detalle. Los más importantes:
-
-### Críticos
-
-1. ✅ **`COGNITO_AUTH_REQUIRED=true`** (RESUELTO 2026-05-28) — Middleware enforces JWT en endpoints protegidos. `/api/health` y `/api/auth/login` permanecen públicos.
-2. **`COGNITO_APP_CLIENT_SECRET` en filesystem local** — rotar y mantener solo placeholder en `.env.example`. (POSPUESTO: costo innecesario en fase de desarrollo)
-3. ✅ **Validación de mime/extensión en uploads** (RESUELTO 2026-05-28) — `InspeccionController` valida tipos:
-   - `reporte`: `doc,docx,xls,xlsx` (max 10MB)
-   - `imagenes`: `zip` (max 50MB)
-4. ✅ **`schema.sql` desincronizada** (RESUELTO 2026-05-28) — Documentado flujo: schema.sql es snapshot para Docker init, migraciones son canonical source. Ver `scripts/regenerate-schema-sql.md`.
+1. ✅ `COGNITO_AUTH_REQUIRED=true` por defecto. `/api/health` y `/api/auth/login` permanecen publicos.
+2. `COGNITO_APP_CLIENT_SECRET` local: mantener fuera de Git y rotar antes de produccion.
+3. ✅ Validacion de MIME/extension en uploads:
+   - `reporte`: `doc`, `docx`, `xls`, `xlsx`, max 10 MB.
+   - `imagenes`: `zip`, max 50 MB.
+4. ✅ `database/schema.sql` regenerado desde la DB local actual el 2026-05-28.
 
 ### Altos
 
-4. **Bucket MinIO con `mc anonymous set download` sobre prefix `public`** — revisar en docker-compose.yml.
-5. ✅ **Throttle en `/api/auth/login`** (RESUELTO 2026-05-28) — `throttle:10,1` implementado. Limita a 10 intentos por minuto para mitigar fuerza bruta.
-6. ✅ **CORS explícito** (RESUELTO 2026-05-28) — `backend/config/cors.php` configurable por `.env`. En prod requiere whitelist explícita.
-7. **`DELETE /api/elementos/{id}` hard-delete cascada** — borra evidencia histórica. Cambiar a soft-delete.
-8. ✅ **`/api/auth/me` filtra claims** (RESUELTO 2026-05-28) — Devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`. Eliminado payload completo de JWT.
-9. ✅ **Magic string 'local' para bucket** (RESUELTO 2026-05-28) — Reemplazado con `config('filesystems.local_bucket_name')`. Archivo model ahora expone `isLocallyStored()` y `getStorageDisk()`.
+1. Revisar `mc anonymous set download` en `docker-compose.yml`; con descargas por API ya no deberia hacer falta para el bucket principal.
+2. `DELETE /api/elementos/{id}` hace hard-delete; conviene migrar a soft-delete o bloqueo si existe historial.
 
 ### Medios
 
-9. ✅ **Modelo `User.php` + tabla `users` duplicados** (RESUELTO 2026-05-28) — Eliminado modelo User.php, UserFactory.php, migración scaffold. Config auth.php ahora usa Usuario. Tabla users será dropeada por migración 2026_05_28_000012.
-10. ✅ **`password_hash` removido** (RESUELTO 2026-05-28) — Columna dropeda por migración 2026_05_28_000011. Seed actualizado. Código (LocalUserProvisioner, AdminUserController) nunca la genera.
+1. ✅ Modelo `User.php`, `UserFactory.php` y tabla `users` no existen en el arbol/DB actual.
+2. ✅ `password_hash` no existe en la migracion base actual, en `database/schema.sql` ni en la DB local actual.
+3. Pendiente: comando de limpieza de archivos huerfanos en S3/MinIO.
 
----
+## Checklist pre-deploy
 
-## Checklist de hardening pre-deploy
-
-Antes de cualquier despliegue a un entorno que no sea local:
-
-### Variables de entorno
-
-- [ ] `APP_ENV=production`
-- [ ] `APP_DEBUG=false`
-- [ ] `APP_KEY` regenerado para el entorno (no reusar el de dev)
-- [ ] `LOG_LEVEL=info` o `warning` (no `debug`)
-- [ ] `COGNITO_AUTH_REQUIRED=true`
-- [ ] `COGNITO_APP_CLIENT_SECRET` cargado desde un secret manager (AWS Secrets Manager / Parameter Store), no commiteado
-- [ ] `DB_PASSWORD` fuerte y diferente al de dev
-- [ ] `AWS_*` apuntan a buckets reales, no MinIO
-
-### Backend
-
-- [ ] `php artisan migrate --force` aplicado contra la DB target
-- [ ] `php artisan config:cache && php artisan route:cache && php artisan view:cache`
-- [ ] Sin `dd()`, `var_dump`, `dump()` en código
-- [ ] Sin `Log::debug` con info sensible
-- [ ] HTTPS obligatorio (TLS termination en ALB)
-
-### Frontend
-
-- [ ] `npm run build` produce bundle minified
-- [ ] `VITE_API_URL` apunta al dominio de prod (HTTPS)
-- [ ] Sourcemaps NO publicados (`build.sourcemap=false` en `vite.config.js`)
-- [ ] CSP header configurado en CloudFront
-
-### AWS
-
-- [ ] Cognito User Pool con password policy fuerte (min 12 chars, mayúsculas, números, símbolos)
-- [ ] Cognito con MFA opcional habilitada (obligatoria para admin)
-- [ ] RDS con backup automático diario, retención 7 días
-- [ ] RDS publicly accessible = false
-- [ ] S3 bucket sin acceso público (excepto rutas explícitas con presigned URLs)
-- [ ] CloudFront con WAF (mínimo rate limit y bad bots)
-- [ ] IAM roles con least privilege (la EC2/ECS solo puede leer/escribir el bucket TermoVault, nada más)
-
-### Operacional
-
-- [ ] Backups verificados restaurables
-- [ ] Plan de rotación de secretos documentado
-- [ ] Runbook de incident response básico
-- [ ] Monitoring de error rate y latencia
-- [ ] Alertas a Slack/email para 5xx > umbral
-
----
-
-## Procedimientos
-
-### Resetear contraseña de un usuario
-
-Cognito maneja el flujo. Admin de AWS:
-
-1. Consola de Cognito → Users → seleccionar usuario → Reset password.
-2. El usuario recibe un mail de Cognito con un código.
-3. Próximo login solicita el nuevo password vía challenge `NEW_PASSWORD_REQUIRED`.
-
-### Inactivar a un usuario
-
-- Frontend admin: editar usuario en `Admin Usuarios`, marcar `activo=false`.
-- Effect: el middleware `EnsureCognitoJwt` devuelve `403 Usuario inactivo` aunque el JWT siga válido.
-- **No** deshabilita la cuenta en Cognito. Para eso ir a la consola de AWS y deshabilitar/eliminar el usuario.
-
-### Cambiar el rol de un usuario
-
-- **En Cognito**: editar grupos del usuario (`cognito:groups`). El próximo token reflejará el cambio.
-- **En backend**: editar el usuario en `Admin Usuarios` y cambiar `rol_codigo`. Funciona como fallback si el JWT no trae `cognito:groups`.
-
-### Investigar un acceso sospechoso
-
-1. Revisar `storage/logs/laravel.log` filtrado por IP/email.
-2. Cross-check con Cognito CloudWatch logs (eventos `InitiateAuth`, `SignIn`, `ForgotPassword`).
-3. Si confirmado: invalidar la sesión del usuario en Cognito (Sign out user), forzar reset de password, marcar `activo=false` en backend si es interno.
+- [ ] `APP_ENV=production`.
+- [ ] `APP_DEBUG=false`.
+- [ ] `APP_KEY` unico del entorno.
+- [ ] `LOG_LEVEL=info` o `warning`.
+- [ ] `COGNITO_AUTH_REQUIRED=true`.
+- [ ] Secretos Cognito/AWS desde secret manager, no desde archivos versionados.
+- [ ] `DB_PASSWORD` fuerte y distinto a dev.
+- [ ] Bucket S3 privado.
+- [ ] `php artisan migrate --force` aplicado contra la DB target.
+- [ ] `php artisan config:cache && php artisan route:cache`.
+- [ ] Sin `dd()`, `var_dump`, `dump()` ni logs sensibles.
+- [ ] Frontend con `VITE_API_URL` HTTPS de prod.

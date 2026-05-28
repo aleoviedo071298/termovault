@@ -32,13 +32,11 @@ class LocalUserProvisioner
         }
 
         $empresaId = $claims['custom:empresa_id'] ?? $claims['empresa_id'] ?? null;
-        if ($empresaId && ! DB::table('empresas')->where('id', (int) $empresaId)->exists()) {
-            $empresaId = null;
-        }
         if (! $empresaId) {
-            $empresaId = DB::table('empresas')->orderBy('id')->value('id');
+            return null;
         }
-        if (! $empresaId) {
+
+        if (! DB::table('empresas')->where('id', (int) $empresaId)->exists()) {
             return null;
         }
 

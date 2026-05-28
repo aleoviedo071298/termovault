@@ -67,18 +67,9 @@ if (DB::getDriverName() === 'pgsql') {
 
 ## Patrones Actuales en TermoVault
 
-### M7: Migraciones de Limpieza (Usuarios)
+### M7: Limpieza de Usuarios
 
-| Migración | Propósito | Patrón |
-|-----------|-----------|--------|
-| 005 | Drop columns genéricamente | Schema builder |
-| 006 | Drop columns en PG | SQL directo fallback |
-| 007 | Índices y constraints | Schema builder |
-| 010 | Backfill audit fields | Raw INSERT/UPDATE |
-| 011 | Drop password_hash | Schema builder |
-| 012 | Drop users table | Schema builder |
-
-**Decisión**: 005 + 006 viajan juntas; 007+ son independientes.
+La DB actual no tiene tabla `users` ni columna `usuarios.password_hash`. No documentar numeraciones historicas inexistentes; si hace falta reconstruir el proceso, verificar primero `backend/database/migrations/` y la tabla `migrations` de Postgres.
 
 ---
 

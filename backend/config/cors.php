@@ -21,7 +21,7 @@ return [
 
     'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Empresa-Id'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Content-Disposition'],
 
     'max_age' => 0,
 

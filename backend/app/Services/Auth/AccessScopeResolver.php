@@ -14,12 +14,13 @@ class AccessScopeResolver
         $userId = $request->attributes->get('auth.user_id');
         $empresaId = $request->attributes->get('auth.empresa_id');
         $claims = $request->attributes->get('auth.claims', []);
-        $roles = $this->extractRoles($claims);
 
         $dbUser = null;
         if ($userId) {
-            $dbUser = Usuario::query()->with('yacimientos:id,nombre,codigo', 'empresa:id,nombre')->find($userId);
+            $dbUser = Usuario::query()->with('rol:id,codigo', 'yacimientos:id,nombre,codigo', 'empresa:id,nombre')->find($userId);
         }
+
+        $roles = $this->extractRoles($claims, $dbUser);
 
         if ($dbUser && ! $empresaId) {
             $empresaId = $dbUser->empresa_id;
@@ -135,8 +136,13 @@ class AccessScopeResolver
         return false;
     }
 
-    private function extractRoles(array $claims): array
+    private function extractRoles(array $claims, ?Usuario $dbUser = null): array
     {
+        $localRole = $dbUser?->rol?->codigo;
+        if (is_string($localRole) && trim($localRole) !== '') {
+            return [mb_strtolower(trim($localRole))];
+        }
+
         $fromGroups = $claims['cognito:groups'] ?? [];
         if (is_string($fromGroups)) {
             $fromGroups = explode(',', $fromGroups);
