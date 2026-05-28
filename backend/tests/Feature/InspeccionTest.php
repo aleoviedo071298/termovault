@@ -27,7 +27,9 @@ class InspeccionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Setup maestros si es necesario
+        // Create shared empresa and yacimiento for tests
+        $this->empresa = \App\Models\Empresa::factory()->create();
+        $this->yacimiento = \App\Models\Yacimiento::factory()->create(['empresa_id' => $this->empresa->id]);
     }
 
     /**
@@ -35,13 +37,13 @@ class InspeccionTest extends TestCase
      */
     public function test_tecnico_can_create_inspeccion(): void
     {
-        $tecnico = Usuario::factory()->tecnico()->create();
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),  // Use date format instead of datetime
                 'cuadrilla' => 'Cuadrilla A',
                 'empresa_contratista' => 'PECOM',
                 'condiciones_clima' => 'Despejado',
@@ -65,14 +67,14 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_estado_enum_validation(): void
     {
-        $tecnico = Usuario::factory()->tecnico()->create();
-        $elemento = Elemento::factory()->create();
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         // Intentar crear con estado inválido
         $response = $this->actingAs($tecnico)
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
-                'fecha_inspeccion' => now()->format('Y-m-d H:i:s'),
+                'fecha_inspeccion' => now()->format('Y-m-d'),
                 'estado' => 'estado_invalido',  // ❌ NO es una opción válida
                 'novedades' => json_encode([])
             ]);

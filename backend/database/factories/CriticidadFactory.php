@@ -12,8 +12,8 @@ class CriticidadFactory extends Factory
     public function definition(): array
     {
         return [
-            'nivel' => $this->faker->numberBetween(1, 5),
-            'nombre' => $this->faker->word(),
+            'nivel' => $this->faker->unique()->numberBetween(1, 100),
+            'nombre' => $this->faker->unique()->word(),
             'color' => $this->faker->hexColor(),
         ];
     }
