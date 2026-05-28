@@ -114,7 +114,7 @@ class AuthTest extends TestCase
             ->options('/api/auth/login');
 
         // Debería permitir (200 o 204)
-        $this->assertIn($response->getStatusCode(), [200, 204]);
+        $this->assertTrue(in_array($response->getStatusCode(), [200, 204]));
         // CORS header puede estar presente o no dependiendo de la configuración
         // Solo verificar que la respuesta es exitosa
     }

@@ -28,8 +28,11 @@ class InspeccionTest extends TestCase
     {
         parent::setUp();
         // Create shared empresa and yacimiento for tests
-        $this->empresa = \App\Models\Empresa::factory()->create();
-        $this->yacimiento = \App\Models\Yacimiento::factory()->create(['empresa_id' => $this->empresa->id]);
+        $this->empresa = \App\Models\Empresa::factory()->create(['nombre' => 'PAE']);
+        $this->yacimiento = \App\Models\Yacimiento::factory()->create([
+            'empresa_id' => $this->empresa->id,
+            'codigo' => 'YAC-PAE'  // Required for supervisor PAE scope recognition
+        ]);
     }
 
     /**
@@ -112,7 +115,14 @@ class InspeccionTest extends TestCase
      */
     public function test_supervisor_can_update_inspeccion_estado(): void
     {
-        $supervisor = Usuario::factory()->supervisor()->create(['empresa_id' => $this->empresa->id]);
+        // Para actualizar inspecciones, el supervisor debe ser PAE supervisor
+        // (es decir, de empresa PAE y asignado al yacimiento PAE)
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+
+        // Asignar al yacimiento PAE (required for is_pae_supervisor scope)
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
         $inspeccion = Inspeccion::factory()->create(['estado' => 'enviada', 'elemento_id' => $elemento->id]);
 
@@ -168,8 +178,9 @@ class InspeccionTest extends TestCase
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('reporte');
     }
 
     /**
@@ -192,8 +203,9 @@ class InspeccionTest extends TestCase
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('reporte');
     }
 
     /**
@@ -215,8 +227,9 @@ class InspeccionTest extends TestCase
                 'novedades' => json_encode([])
             ]);
 
-        // Debe rechazar
-        $response->assertStatus(422);
+        // Laravel valida y redirige (302) en form submissions, pero incluye el error
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('imagenes');
     }
 
     /**
@@ -255,7 +268,14 @@ class InspeccionTest extends TestCase
      */
     public function test_inspeccion_closure_resolves_novedades(): void
     {
-        $supervisor = Usuario::factory()->supervisor()->create(['empresa_id' => $this->empresa->id]);
+        // Para actualizar inspecciones, el supervisor debe ser PAE supervisor
+        // (es decir, de empresa PAE y asignado al yacimiento PAE)
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+
+        // Asignar al yacimiento PAE (required for is_pae_supervisor scope)
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
         $inspeccion = Inspeccion::factory()->create(['estado' => 'revisada', 'elemento_id' => $elemento->id]);
         $novedad = $inspeccion->novedades()->create([
