@@ -67,43 +67,25 @@ export const Login: React.FC = () => {
             </div>
             <div>
               <span>TermoVault</span>
-              <strong>Thermal Inspection OS</strong>
+              <strong>Inspecciones Termográficas</strong>
             </div>
           </div>
 
           <div className="login-headline">
             <div className="hero-kicker">
               <span className="system-dot" />
-              Acceso seguro / Oil & Gas
+              Portal Técnico
             </div>
-            <h1>Consola de informes termograficos</h1>
-            <p>Ingreso controlado para tecnicos, supervisores y administradores de activos inspeccionables.</p>
-          </div>
-
-          <div className="login-signal-grid" aria-label="Estado del sistema">
-            <article>
-              <ShieldCheck size={16} />
-              <span>Auth</span>
-              <strong>Cognito</strong>
-            </article>
-            <article>
-              <RadioTower size={16} />
-              <span>Storage</span>
-              <strong>MinIO/S3</strong>
-            </article>
-            <article>
-              <LockKeyhole size={16} />
-              <span>Scope</span>
-              <strong>Roles</strong>
-            </article>
+            <h1>Gestión de informes termográficos</h1>
+            <p>Acceso al sistema para el registro y revisión de reportes técnicos de termografía.</p>
           </div>
         </div>
 
         <div className={`login-card login-card-v2 ${challengeSession ? "is-challenge" : ""}`}>
           <header className="login-header">
             <div>
-              <p>{challengeSession ? "Primer ingreso" : "Sesion operativa"}</p>
-              <h2>{challengeSession ? "Crear nueva contraseña" : "Ingresar a TermoVault"}</h2>
+              <p>{challengeSession ? "Primer ingreso" : "Acceso"}</p>
+              <h2>{challengeSession ? "Establecer nueva contraseña" : "Iniciar Sesión"}</h2>
               <span>
                 {challengeSession
                   ? "Cognito requiere actualizar la contraseña inicial para activar tu acceso."
@@ -169,9 +151,9 @@ export const Login: React.FC = () => {
 
             <button type="submit" className="login-button login-button-v2" disabled={isSubmitting}>
               {isSubmitting
-                ? "Validando acceso..."
+                ? "Iniciando sesión..."
                 : challengeSession
-                  ? "Actualizar contraseña"
+                  ? "Establecer contraseña"
                   : "Ingresar"}
               <ArrowRight size={17} />
             </button>
