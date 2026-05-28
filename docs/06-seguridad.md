@@ -119,7 +119,7 @@ Ver `docs/05-roadmap.md` para detalle. Los más importantes:
 5. ✅ **Throttle en `/api/auth/login`** (RESUELTO 2026-05-28) — `throttle:10,1` implementado. Limita a 10 intentos por minuto para mitigar fuerza bruta.
 6. ✅ **CORS explícito** (RESUELTO 2026-05-28) — `backend/config/cors.php` configurable por `.env`. En prod requiere whitelist explícita.
 7. **`DELETE /api/elementos/{id}` hard-delete cascada** — borra evidencia histórica. Cambiar a soft-delete.
-8. **`/api/auth/me` expone `claims` completos** — devolver solo lo necesario.
+8. ✅ **`/api/auth/me` filtra claims** (RESUELTO 2026-05-28) — Devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`. Eliminado payload completo de JWT.
 
 ### Medios
 

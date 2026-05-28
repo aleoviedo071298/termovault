@@ -34,7 +34,7 @@ Estado al **2026-05-28**. Las tareas se agrupan por horizonte. Las prioridades r
   - `reporte`: `mimes:doc,docx,xls,xlsx` (max 10MB)
   - `imagenes`: `mimes:zip` (max 50MB)
 - [x] **CORS explícito** (2026-05-28): `backend/config/cors.php` creado con whitelist desde `.env`. Default: `http://localhost:5173`.
-- [ ] **Sacar `claims` completos** de `GET /api/auth/me` (devolver solo `sub`, `email`, `groups`, `local_role`, `empresa_id`).
+- [x] **Sacar `claims` completos** (2026-05-28): `GET /api/auth/me` devuelve solo `id`, `email`, `sub`, `groups`, `local_role`, `empresa_id`.
 - [ ] **Verificar bucket público** en MinIO/S3: quitar `mc anonymous set download` o restringirlo a un prefix readonly específico.
 
 ### Infra
