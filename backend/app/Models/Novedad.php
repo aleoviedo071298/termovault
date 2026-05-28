@@ -8,6 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Novedad extends Model
 {
+    public const ESTADO_ABIERTA = 'abierta';
+    public const ESTADO_RESUELTA = 'resuelta';
+
+    public static function getEstados(): array
+    {
+        return [
+            self::ESTADO_ABIERTA,
+            self::ESTADO_RESUELTA,
+        ];
+    }
+
     protected $table = 'novedades';
 
     protected $fillable = [

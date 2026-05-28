@@ -49,11 +49,7 @@ return new class extends Migration
             $table->string('nombre', 100);
             $table->string('apellido', 100);
             $table->string('email', 150)->unique();
-            $table->string('password_hash');
-            $table->string('legajo', 50)->nullable();
-            $table->string('telefono', 30)->nullable();
             $table->boolean('activo')->default(true);
-            $table->timestamp('ultimo_login')->nullable();
             $table->timestamps();
 
             $table->index('empresa_id', 'idx_usuarios_empresa');
@@ -141,7 +137,7 @@ return new class extends Migration
             $table->foreignId('inspeccion_id')->constrained('inspecciones')->cascadeOnDelete();
             $table->string('tipo', 30);
             $table->string('nombre_original')->nullable();
-            $table->string('s3_bucket', 100)->nullable();
+            $table->string('s3_bucket', 100);
             $table->string('s3_key', 500);
             $table->bigInteger('tamano_bytes')->nullable();
             $table->string('mime_type', 100)->nullable();
@@ -150,6 +146,10 @@ return new class extends Migration
 
             $table->index('inspeccion_id', 'idx_archivos_inspeccion');
         });
+
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+            \Illuminate\Support\Facades\DB::statement("ALTER TABLE archivos ADD CONSTRAINT chk_archivos_s3_bucket_valido CHECK (s3_bucket <> 'local')");
+        }
 
         Schema::create('novedades', function (Blueprint $table): void {
             $table->id();

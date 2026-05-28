@@ -182,7 +182,7 @@ class InspeccionController extends Controller
         }
 
         $data = $request->validate([
-            'estado' => 'required|in:enviada,revisada,cerrada',
+            'estado' => 'required|in:' . implode(',', Inspeccion::getEstados()),
             'observaciones_revisor' => 'nullable|string',
         ]);
 
@@ -218,14 +218,14 @@ class InspeccionController extends Controller
         }
         $inspeccion->updated_by = $scope['user_id'];
 
-        if ($data['estado'] === 'revisada') {
+        if ($data['estado'] === Inspeccion::ESTADO_REVISADA) {
             $inspeccion->revisada_por = $scope['user_id'];
             $inspeccion->fecha_revision = now();
             $inspeccion->cerrada_por = null;
             $inspeccion->fecha_cierre = null;
         }
 
-        if ($data['estado'] === 'cerrada') {
+        if ($data['estado'] === Inspeccion::ESTADO_CERRADA) {
             // Si se cierra directamente sin paso previo por "revisada", dejamos trazabilidad mínima.
             if (! $inspeccion->revisada_por) {
                 $inspeccion->revisada_por = $scope['user_id'];
@@ -237,11 +237,11 @@ class InspeccionController extends Controller
 
         $inspeccion->save();
 
-        if ($data['estado'] === 'cerrada') {
+        if ($data['estado'] === Inspeccion::ESTADO_CERRADA) {
             Novedad::query()
                 ->where('inspeccion_id', $inspeccion->id)
-                ->where('estado', 'abierta')
-                ->update(['estado' => 'resuelta']);
+                ->where('estado', Novedad::ESTADO_ABIERTA)
+                ->update(['estado' => Novedad::ESTADO_RESUELTA]);
         }
 
         return response()->json([
@@ -267,7 +267,7 @@ class InspeccionController extends Controller
             'empresa_contratista' => 'nullable|string|max:150',
             'condiciones_clima' => 'nullable|string|max:50',
             'resumen' => 'nullable|string',
-            'estado' => 'nullable|in:enviada,revisada,cerrada', // Enum: initial states only (técnico cannot set to 'cerrada')
+            'estado' => 'nullable|in:' . implode(',', Inspeccion::getEstados()), // Enum: initial states only (técnico cannot set to 'cerrada')
             'reporte' => 'nullable|file|mimes:doc,docx,xls,xlsx|max:10240', // Max 10MB, Word/Excel only
             'imagenes' => 'nullable|file|mimes:zip|max:51200', // Max 50MB, ZIP only
             'novedades' => 'nullable|string', // JSON string containing array of findings
@@ -283,9 +283,9 @@ class InspeccionController extends Controller
             $empresaSnapshot = trim((string) ($data['empresa_contratista'] ?? ''));
             if ($empresaSnapshot === '') {
                 $empresaSnapshot = (string) (DB::table('usuarios as u')
-                    ->join('empresas as e', 'e.id', '=', 'u.empresa_id')
-                    ->where('u.id', (int) $userId)
-                    ->value('e.nombre') ?? '');
+                     ->join('empresas as e', 'e.id', '=', 'u.empresa_id')
+                     ->where('u.id', (int) $userId)
+                     ->value('e.nombre') ?? '');
             }
             if ($empresaSnapshot === '') {
                 $empresaSnapshot = null;
@@ -301,7 +301,7 @@ class InspeccionController extends Controller
                 'empresa_contratista' => $empresaSnapshot,
                 'condiciones_clima' => $data['condiciones_clima'] ?? null,
                 'resumen' => $data['resumen'] ?? null,
-                'estado' => $data['estado'] ?? 'enviada',
+                'estado' => $data['estado'] ?? Inspeccion::ESTADO_ENVIADA,
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ]);
@@ -334,7 +334,7 @@ class InspeccionController extends Controller
                             'ubicacion_dentro_elemento' => $finding['ubicacion_dentro_elemento'] ?? null,
                             'temperatura_detectada' => isset($finding['temperatura_detectada']) && $finding['temperatura_detectada'] !== '' ? (float) $finding['temperatura_detectada'] : null,
                             'accion_recomendada' => $finding['accion_recomendada'] ?? null,
-                            'estado' => 'abierta',
+                            'estado' => Novedad::ESTADO_ABIERTA,
                         ]);
                     }
                 }
