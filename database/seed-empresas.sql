@@ -1,10 +1,11 @@
--- Empresa real
+-- Empresas reales
 INSERT INTO empresas (nombre, cuit, plan) VALUES
-  ('PECOM', '30-00000000-0', 'basico');
+  ('PECOM', '30-00000000-0', 'basico'),
+  ('PAE', '30-11111111-1', 'basico');
 
--- Yacimiento real asociado a PECOM
+-- Yacimiento real asociado a PAE
 INSERT INTO yacimientos (empresa_id, nombre, codigo, zona, descripcion) VALUES
-  ((SELECT id FROM empresas WHERE nombre = 'PECOM'),
+  ((SELECT id FROM empresas WHERE nombre = 'PAE'),
    'PAE',
    'YAC-PAE',
    'Cuenca Neuquina',
@@ -41,4 +42,3 @@ INSERT INTO usuarios (empresa_id, rol_id, nombre, apellido, email, password_hash
 INSERT INTO usuario_yacimientos (usuario_id, yacimiento_id) VALUES
   ((SELECT id FROM usuarios WHERE email = 'marijo006@gmail.com'),
    (SELECT id FROM yacimientos WHERE codigo = 'YAC-PAE'));
-

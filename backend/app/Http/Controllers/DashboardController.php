@@ -199,8 +199,11 @@ class DashboardController extends Controller
             'role' => $role,
             'scope' => [
                 'empresa_id' => $scope['empresa_id'],
+                'empresa_nombre' => $scope['empresa_nombre'],
                 'user_id' => $scope['user_id'],
+                'user_name' => $scope['user_name'],
                 'is_pae_supervisor' => $scope['is_pae_supervisor'],
+                'assigned_yacimiento_names' => $scope['assigned_yacimiento_names'],
             ],
             'stats' => $stats,
             'top_tecnicos' => $topTechnicians,

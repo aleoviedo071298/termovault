@@ -41,8 +41,11 @@ export interface DashboardOverview {
   role: "admin" | "supervisor" | "tecnico";
   scope: {
     empresa_id: number | null;
+    empresa_nombre: string | null;
     user_id: number | null;
+    user_name: string | null;
     is_pae_supervisor: boolean;
+    assigned_yacimiento_names: string[];
   };
   stats: DashboardStats;
   top_tecnicos: DashboardTopTecnico[];

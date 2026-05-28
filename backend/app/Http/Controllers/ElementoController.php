@@ -7,10 +7,26 @@ use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ElementoController extends Controller
 {
     public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+
+    private function archivoPayload($archivo): array
+    {
+        $disk = $archivo->s3_bucket === 'local' ? 'public' : 's3';
+
+        return [
+            'id' => $archivo->id,
+            'tipo' => $archivo->tipo,
+            'nombre' => $archivo->nombre_original,
+            'bucket' => $archivo->s3_bucket,
+            'key' => $archivo->s3_key,
+            'url' => Storage::disk($disk)->url($archivo->s3_key),
+            'tamano' => $archivo->tamano_bytes,
+        ];
+    }
 
     public function listElements(Request $request): JsonResponse
     {
@@ -89,14 +105,7 @@ class ElementoController extends Controller
                 'resumen' => $inspeccion->resumen,
                 'estado' => $inspeccion->estado,
                 'tecnico' => $inspeccion->tecnico ? $inspeccion->tecnico->nombre . ' ' . $inspeccion->tecnico->apellido : null,
-                'archivos' => $inspeccion->archivos->map(fn ($archivo) => [
-                    'id' => $archivo->id,
-                    'tipo' => $archivo->tipo,
-                    'nombre' => $archivo->nombre_original,
-                    'bucket' => $archivo->s3_bucket,
-                    'key' => $archivo->s3_key,
-                    'tamano' => $archivo->tamano_bytes,
-                ]),
+                'archivos' => $inspeccion->archivos->map(fn ($archivo) => $this->archivoPayload($archivo)),
                 'novedades' => $inspeccion->novedades->map(fn ($novedad) => [
                     'id' => $novedad->id,
                     'titulo' => $novedad->titulo,

@@ -75,26 +75,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
 
   // Helper to trigger a browser download (real download from backend or simulated mock blob)
   function handleDownload(file: any) {
-    if (file.bucket === "local") {
-      const backendUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:8000/api").replace("/api", "");
-      window.open(`${backendUrl}/storage/${file.key}`, "_blank");
-    } else {
-      const fileContent = `=== TermoVault - Descarga Simulada ===\nArchivo: ${file.nombre}\nFecha de descarga: ${new Date().toLocaleString()}\nContenido del reporte termografico simulado.`;
-      const mimeType = file.tipo === "informe_word"
-        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        : file.tipo === "informe_excel"
-        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        : "application/zip";
-      const blob = new Blob([fileContent], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.nombre;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
+    window.open(file.url, "_blank");
   }
 
   // Format bytes into human readable format

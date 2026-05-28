@@ -20,6 +20,7 @@ export interface InspeccionArchivo {
   nombre: string;
   bucket: string | null;
   key: string;
+  url: string;
   tamano: number;
 }
 

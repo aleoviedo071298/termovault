@@ -1,12 +1,18 @@
 # Changelog
 
-Todas las novedades relevantes de este proyecto se documentan acá.
+Todas las novedades relevantes de este proyecto se documentan aca.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto usa [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
 ### Added
+- Rediseño UX/UI premium industrial para dashboard, gestion de elementos, admin usuarios y login.
+- Componentes reutilizables de dashboard: `DashboardHero`, `ActionToolbar`, `RoleBadge`, `KPIGrid`, `StatsCard`, `FilterBar`, `ReportTable`.
+- Filtro por criticidad en dashboard.
+- Filtro por tipo en gestion de elementos.
+- URLs de archivo generadas por API para descargas desde MinIO/S3.
+- Soporte S3 Laravel con `league/flysystem-aws-s3-v3`.
 - Estructura inicial del proyecto (backend Laravel, web React, mobile Flutter, infra Terraform).
 - Laravel 12 backend with health endpoint (`/api/health`).
 - Eloquent models with multi-tenant relationships and `forEmpresa` query scopes.
@@ -14,34 +20,43 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `GET /api/elementos` endpoint listing seeded elements.
 - React/Vite frontend with Elementos list view backed by the API.
 - Modelo de datos PostgreSQL v2 con multi-tenant por `empresa_id`.
-- Seeds iniciales con 65 elementos extraídos de los Words actuales del cliente.
-- Catálogos: tipos de elemento (subestación, ETR, banco capacitores, seccionador, reconectador), niveles de tensión (6.6/13.2/33/132 kV), criticidades, roles.
-- Documentación: arquitectura, modelo de datos, decisiones, roadmap.
-- Configuración de Git: `.gitattributes`, `.editorconfig`, `.gitignore`.
+- Seeds iniciales con 65 elementos extraidos de los Words actuales del cliente.
+- Catalogos: tipos de elemento, niveles de tension, criticidades y roles.
+- Documentacion: arquitectura, modelo de datos, decisiones, roadmap.
+- Configuracion de Git: `.gitattributes`, `.editorconfig`, `.gitignore`.
 - Plantillas de GitHub: PR, issues, CODEOWNERS, Dependabot.
-- CI básico: validación de schema SQL contra Postgres en pipeline.
-- Hooks locales de Git: `pre-commit`, `commit-msg`, `pre-push` (suple branch protection en plan Free).
+- CI basico: validacion de schema SQL contra Postgres en pipeline.
+- Hooks locales de Git: `pre-commit`, `commit-msg`, `pre-push`.
 - Entorno local con `docker-compose`: Postgres 16 + MinIO + Adminer.
-- Script de init que aplica schema + seeds automáticamente al primer arranque.
+- Script de init que aplica schema + seeds automaticamente al primer arranque.
 - `Makefile` con comandos comunes (`make up`, `make psql`, `make reset`, etc.).
 
 ### Changed
-— (nada todavía)
+- Inspecciones ahora guardan adjuntos en MinIO/S3 en vez de `storage/app/public`.
+- Keys de archivos migradas a formato legible: `inspecciones/{inspeccion_id}/{reports|images}/{archivo_id}-{nombre-original}`.
+- Gestion de elementos ya no muestra criticidad en tabla principal; queda como dato extra en detalle/formulario.
+- Header del dashboard usa identidad y alcance reales del usuario autenticado, no datos derivados del primer informe.
+- Login separa el primer ingreso/cambio de contraseña en un panel dedicado.
+
+### Fixed
+- Mensajes de error de Cognito normalizados al español.
+- Caso Axel Elgueta/PAE: `YAC-PAE` asociado a empresa `PAE` y no `PECOM`.
+- Flicker de rol en dashboard al volver desde gestion de elementos.
 
 ### Removed
-— (nada todavía)
+- Descargas simuladas del panel de detalle de elementos.
 
 ---
 
 ## Convenciones
 
 - `[Unreleased]` agrupa los cambios pendientes de release.
-- Al hacer release, mover los cambios a una nueva sección `[X.Y.Z] - YYYY-MM-DD`.
-- Las subcategorías son: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+- Al hacer release, mover los cambios a una nueva seccion `[X.Y.Z] - YYYY-MM-DD`.
+- Las subcategorias son: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
 ## Ejemplo de release futuro
 
-```
+```md
 ## [0.1.0] - 2026-08-15
 
 ### Added
@@ -49,5 +64,5 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Login con AWS Cognito en frontend web.
 
 ### Fixed
-- Validación de tamaño máximo en upload de ZIP.
+- Validacion de tamaño maximo en upload de ZIP.
 ```

@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, Edit3, Plus, RefreshCw, Save, Users } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Building2, Edit3, Factory, Plus, RefreshCw, Save, ShieldCheck, SlidersHorizontal, UserPlus, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   createAdminUsuario,
@@ -55,9 +55,12 @@ export default function AdminUsuariosPage({ onBack }: Props) {
       setLoading(false);
     }
   }
+
   useEffect(() => { void loadAll(); }, []);
 
   const allYacimientos = useMemo(() => meta?.yacimientos ?? [], [meta]);
+  const activeUsers = useMemo(() => items.filter((u) => u.activo).length, [items]);
+  const supervisorCount = useMemo(() => items.filter((u) => u.rol === "supervisor").length, [items]);
 
   async function handleCreate() {
     if (!empresaId) return;
@@ -112,129 +115,178 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   }
 
   return (
-    <main className="app-shell">
-      <section className="toolbar">
-        <div className="brand-mark"><Users size={20} /></div>
-        <div className="title-stack"><p>Admin</p><h1>Usuarios y Organización</h1></div>
-        <div className="metric"><span>{loading ? "--" : items.length}</span><small>usuarios</small></div>
-        <div />
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="icon-button" type="button" onClick={onBack}><ArrowLeft size={16} /></button>
-          <button className="icon-button" type="button" onClick={() => void loadAll()}><RefreshCw size={16} /></button>
+    <main className="app-shell admin-users-shell">
+      <section className="admin-hero dashboard-section">
+        <div className="admin-hero-main">
+          <div className="hero-kicker">
+            <span className="system-dot" />
+            Administracion / identidad y alcance
+          </div>
+          <h1>Usuarios y organizacion</h1>
+          <p>Gestion de perfiles, empresas contratistas y yacimientos habilitados para operacion termografica.</p>
+        </div>
+
+        <div className="admin-hero-panel">
+          <div className="admin-metrics">
+            <article><Users size={16} /><span>Usuarios</span><strong>{loading ? "--" : items.length}</strong></article>
+            <article><ShieldCheck size={16} /><span>Activos</span><strong>{loading ? "--" : activeUsers}</strong></article>
+            <article><UserPlus size={16} /><span>Supervisores</span><strong>{loading ? "--" : supervisorCount}</strong></article>
+            <article><Factory size={16} /><span>Empresas</span><strong>{meta?.empresas.length ?? "--"}</strong></article>
+          </div>
+          <div className="admin-actions">
+            <button className="secondary-command" type="button" onClick={onBack}><ArrowLeft size={15} /> Dashboard</button>
+            <button className="utility-command" type="button" onClick={() => void loadAll()} title="Recargar"><RefreshCw size={15} /></button>
+          </div>
         </div>
       </section>
 
       {error ? <section className="notice">{error}</section> : null}
 
-      <section className="table-frame" style={{ marginTop: 16, padding: 20 }}>
-        <h3 style={{ marginTop: 0 }}>Alta rápida de usuario</h3>
-        <div className="form-grid">
-          <div className="form-group"><label>Nombre</label><input value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-          <div className="form-group"><label>Apellido</label><input value={apellido} onChange={(e) => setApellido(e.target.value)} /></div>
-          <div className="form-group col-span-2"><label>Email</label><input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <div className="form-group">
-            <label>Rol</label>
-            <select value={rol} onChange={(e) => setRol(e.target.value as RoleCode)}>
-              <option value="tecnico">Técnico</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="admin">Admin</option>
-            </select>
+      <section className="admin-grid">
+        <section className="dashboard-section admin-form-card">
+          <div className="section-heading">
+            <div>
+              <span>Alta rapida de usuario</span>
+              <small>Crear usuario local y asignar alcance operativo</small>
+            </div>
           </div>
-          <div className="form-group">
-            <label>Empresa / Contratista</label>
-            <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
-              {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
-            </select>
+          <div className="admin-card-body">
+            <div className="form-grid">
+              <div className="form-group"><label>Nombre</label><input value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
+              <div className="form-group"><label>Apellido</label><input value={apellido} onChange={(e) => setApellido(e.target.value)} /></div>
+              <div className="form-group col-span-2"><label>Email</label><input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div className="form-group">
+                <label>Rol</label>
+                <select value={rol} onChange={(e) => setRol(e.target.value as RoleCode)}>
+                  <option value="tecnico">Tecnico</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Empresa / Contratista</label>
+                <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
+                  {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
+                </select>
+              </div>
+              {rol !== "admin" ? (
+                <div className="form-group col-span-2">
+                  <label>{rol === "supervisor" ? "Yacimientos que puede supervisar" : "Yacimientos habilitados para carga"}</label>
+                  <div className="check-grid">
+                    {allYacimientos.map((y) => (
+                      <label key={y.id} className="check-row">
+                        <input
+                          type="checkbox"
+                          checked={yacimientos.includes(y.id)}
+                          onChange={(e) => setYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
+                        />
+                        {y.nombre} ({y.codigo})
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <button className="primary-command admin-submit" type="button" disabled={saving || !nombre || !apellido || !email || !empresaId} onClick={() => void handleCreate()}>
+              <Plus size={16} /> {saving ? "Creando..." : "Crear usuario local"}
+            </button>
           </div>
-          {rol !== "admin" ? (
-            <div className="form-group col-span-2">
-              <label>{rol === "supervisor" ? "Yacimientos que puede supervisar" : "Yacimientos habilitados para carga"}</label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
-                {allYacimientos.map((y) => (
-                  <label key={y.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={yacimientos.includes(y.id)}
-                      onChange={(e) => setYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
-                    />
-                    {y.nombre} ({y.codigo})
-                  </label>
-                ))}
+        </section>
+
+        <section className="dashboard-section admin-form-card">
+          <div className="section-heading">
+            <div>
+              <span>Organizacion</span>
+              <small>Empresas y yacimientos usados por permisos y reportes</small>
+            </div>
+          </div>
+          <div className="admin-card-body">
+            <div className="organization-stack">
+              <div className="organization-line">
+                <div className="form-group">
+                  <label>Nueva empresa / contratista</label>
+                  <input value={empresaNueva} onChange={(e) => setEmpresaNueva(e.target.value)} placeholder="Ej: ELECTROPATAGONIA" />
+                </div>
+                <button className="secondary-command" type="button" disabled={!empresaNueva.trim()} onClick={async () => {
+                  try {
+                    await createEmpresa({ nombre: empresaNueva.trim() });
+                    setEmpresaNueva("");
+                    await loadAll();
+                  } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear empresa."); }
+                }}><Building2 size={15} /> Crear empresa</button>
+              </div>
+
+              <div className="organization-yacimiento-grid">
+                <div className="form-group">
+                  <label>Empresa propietaria</label>
+                  <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
+                    {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Nuevo yacimiento</label>
+                  <input value={yacNombre} onChange={(e) => setYacNombre(e.target.value)} placeholder="Ej: PAE Central" />
+                </div>
+                <div className="form-group">
+                  <label>Codigo yacimiento</label>
+                  <input value={yacCodigo} onChange={(e) => setYacCodigo(e.target.value)} placeholder="Ej: YAC-PAE-CENTRAL" />
+                </div>
+                <button className="secondary-command" type="button" disabled={!empresaId || !yacNombre.trim() || !yacCodigo.trim()} onClick={async () => {
+                  if (!empresaId) return;
+                  try {
+                    await createYacimiento({ empresa_id: Number(empresaId), nombre: yacNombre.trim(), codigo: yacCodigo.trim() });
+                    setYacNombre(""); setYacCodigo(""); await loadAll();
+                  } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear yacimiento."); }
+                }}>Crear yacimiento</button>
               </div>
             </div>
-          ) : null}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <button className="submit-btn" type="button" disabled={saving || !nombre || !apellido || !email || !empresaId} onClick={() => void handleCreate()}>
-            <Plus size={16} /> {saving ? "Creando..." : "Crear usuario local"}
-          </button>
-        </div>
+            <p className="admin-rule-note">
+              Supervisor contratista ve informes de su empresa dentro de yacimientos asignados. Supervisor PAE con YAC-PAE asignado ve el yacimiento completo.
+            </p>
+          </div>
+        </section>
       </section>
 
-      <section className="table-frame" style={{ marginTop: 16, padding: 20 }}>
-        <h3 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}><Building2 size={18} />Organización</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr auto", gap: 12, alignItems: "end", marginBottom: 18 }}>
-          <div className="form-group">
-            <label>Nueva empresa / contratista</label>
-            <input value={empresaNueva} onChange={(e) => setEmpresaNueva(e.target.value)} placeholder="Ej: ELECTROPATAGONIA" />
+      <section className="dashboard-section admin-users-panel">
+        <div className="section-heading report-heading">
+          <div>
+            <span>Directorio de usuarios</span>
+            <small>Estado, rol, empresa y alcance de yacimientos</small>
           </div>
-          <div className="form-group" style={{ margin: 0 }}>
-            <button className="submit-btn" type="button" disabled={!empresaNueva.trim()} onClick={async () => {
-              try {
-                await createEmpresa({ nombre: empresaNueva.trim() });
-                setEmpresaNueva("");
-                await loadAll();
-              } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear empresa."); }
-            }}>Crear empresa</button>
-          </div>
+          <strong>{items.length}</strong>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
-          <div className="form-group">
-            <label>Empresa propietaria del yacimiento</label>
-            <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
-              {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Nuevo yacimiento</label>
-            <input value={yacNombre} onChange={(e) => setYacNombre(e.target.value)} placeholder="Ej: PAE Central" />
-          </div>
-          <div className="form-group">
-            <label>Código yacimiento</label>
-            <input value={yacCodigo} onChange={(e) => setYacCodigo(e.target.value)} placeholder="Ej: YAC-PAE-CENTRAL" />
-          </div>
-          <div className="form-group" style={{ margin: 0 }}>
-            <button className="submit-btn" type="button" disabled={!empresaId || !yacNombre.trim() || !yacCodigo.trim()} onClick={async () => {
-              if (!empresaId) return;
-              try {
-                await createYacimiento({ empresa_id: Number(empresaId), nombre: yacNombre.trim(), codigo: yacCodigo.trim() });
-                setYacNombre(""); setYacCodigo(""); await loadAll();
-              } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear yacimiento."); }
-            }}>Crear yacimiento</button>
-          </div>
-        </div>
-        <p style={{ marginTop: 12, marginBottom: 0, color: "#59645e", fontSize: 13 }}>
-          Regla operativa: supervisor contratista ve solo informes de su empresa dentro de yacimientos asignados. Supervisor PAE con <strong>YAC-PAE</strong> asignado ve todos los informes de ese yacimiento.
-        </p>
-      </section>
 
-      <section className="table-frame" style={{ marginTop: 16 }}>
-        <table>
-          <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Empresa</th><th>Yacimientos</th><th>Estado</th><th>Acción</th></tr></thead>
-          <tbody>
-            {loading ? <tr><td colSpan={7} className="empty-cell">Cargando usuarios...</td></tr> : items.map((u) => (
-              <tr key={u.id}>
-                <td>{u.nombre} {u.apellido}</td>
-                <td>{u.email}</td>
-                <td>{u.rol ?? "-"}</td>
-                <td>{u.empresa ?? "-"}</td>
-                <td>{u.yacimientos.map((y) => y.codigo).join(", ") || "-"}</td>
-                <td>{u.activo ? "Activo" : "Inactivo"}</td>
-                <td><button className="icon-button" type="button" onClick={() => startEdit(u)}><Edit3 size={14} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="report-table-wrap">
+          <table className="report-table admin-users-table">
+            <thead>
+              <tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Empresa</th><th>Yacimientos</th><th>Estado</th><th aria-label="Accion" /></tr>
+            </thead>
+            <tbody>
+              {loading ? <tr><td colSpan={7} className="empty-cell">Cargando usuarios...</td></tr> : items.map((u) => (
+                <tr key={u.id}>
+                  <td className="main-report-cell">
+                    <div className="report-title-line">
+                      <Users size={16} />
+                      <strong>{u.nombre} {u.apellido}</strong>
+                    </div>
+                    <span>Usuario #{u.id}</span>
+                  </td>
+                  <td>{u.email}</td>
+                  <td><span className={`role-chip role-chip-${u.rol ?? "none"}`}>{u.rol ?? "-"}</span></td>
+                  <td>{u.empresa ?? "-"}</td>
+                  <td>{u.yacimientos.map((y) => y.codigo).join(", ") || "-"}</td>
+                  <td><span className={`status-chip ${u.activo ? "status-cerrada" : "status-revisada"}`}>{u.activo ? "Activo" : "Inactivo"}</span></td>
+                  <td className="action-cell">
+                    <button className="table-action" type="button" onClick={() => startEdit(u)}>
+                      Editar
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {editingId ? (
@@ -242,7 +294,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
           <div className="modal-content">
             <header className="modal-header">
               <h2>Editar usuario #{editingId}</h2>
-              <button className="close-btn" onClick={() => setEditingId(null)} type="button">×</button>
+              <button className="close-btn" onClick={() => setEditingId(null)} type="button">x</button>
             </header>
             <div className="modal-form">
               <div className="form-grid">
@@ -252,7 +304,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                 <div className="form-group">
                   <label>Rol</label>
                   <select value={editRol} onChange={(e) => setEditRol(e.target.value as RoleCode)}>
-                    <option value="tecnico">Técnico</option>
+                    <option value="tecnico">Tecnico</option>
                     <option value="supervisor">Supervisor</option>
                     <option value="admin">Admin</option>
                   </select>
@@ -272,10 +324,10 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                 </div>
                 {editRol !== "admin" ? (
                   <div className="form-group col-span-2">
-                    <label>{editRol === "supervisor" ? "Yacimientos del supervisor" : "Yacimientos del técnico"}</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
+                    <label>{editRol === "supervisor" ? "Yacimientos del supervisor" : "Yacimientos del tecnico"}</label>
+                    <div className="check-grid">
                       {allYacimientos.map((y) => (
-                        <label key={y.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <label key={y.id} className="check-row">
                           <input
                             type="checkbox"
                             checked={editYacimientos.includes(y.id)}
@@ -301,4 +353,3 @@ export default function AdminUsuariosPage({ onBack }: Props) {
     </main>
   );
 }
-

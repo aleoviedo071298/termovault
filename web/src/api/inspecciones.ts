@@ -21,7 +21,7 @@ export interface InspeccionDetalle {
   cerrada_por: { id: number; nombre: string; email: string } | null;
   tecnico: { id: number; nombre: string; email: string } | null;
   elemento: { id: number; nombre: string; codigo: string; tipo: string | null; yacimiento: string | null } | null;
-  archivos: Array<{ id: number; tipo: string; nombre: string; bucket: string | null; key: string; tamano: number | null; mime: string | null }>;
+  archivos: Array<{ id: number; tipo: string; nombre: string; bucket: string | null; key: string; url: string; tamano: number | null; mime: string | null }>;
   novedades: Array<{
     id: number;
     titulo: string;

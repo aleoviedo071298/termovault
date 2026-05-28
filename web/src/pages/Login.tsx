@@ -1,6 +1,20 @@
-import { AlertCircle, ThermometerSun } from "lucide-react";
+import { AlertCircle, ArrowRight, LockKeyhole, RadioTower, ShieldCheck, ThermometerSun } from "lucide-react";
 import React, { useState } from "react";
 import { useAuth } from "../auth/useAuth";
+
+function normalizeLoginMessage(message: string): string {
+  const text = message.toLowerCase();
+  if (text.includes("incorrect") || text.includes("notauthorized") || text.includes("authentication failed")) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (text.includes("password is required")) {
+    return "Ingresa tu contraseña para continuar.";
+  }
+  if (text.includes("network") || text.includes("failed to fetch")) {
+    return "No se pudo conectar con el servidor local.";
+  }
+  return message;
+}
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -14,7 +28,7 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Por favor ingresa tu email y contraseña.");
+      setError("Ingresa tu email y contraseña para continuar.");
       return;
     }
     if (challengeSession && newPassword.trim().length < 8) {
@@ -34,87 +48,138 @@ export const Login: React.FC = () => {
 
       if (challenge?.challenge === "NEW_PASSWORD_REQUIRED") {
         setChallengeSession(challenge.session ?? null);
-        setError("Debes definir una nueva contraseña para completar el primer ingreso.");
+        setError(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+      setError(normalizeLoginMessage(err instanceof Error ? err.message : "Error al iniciar sesión."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="login-frame">
-      <div className="login-card animate-fade-in">
-        <header className="login-header">
-          <div className="brand-mark" aria-hidden="true">
-            <ThermometerSun size={28} strokeWidth={1.8} />
-          </div>
-          <h2>TermoVault</h2>
-          <p>Iniciar sesión en la plataforma</p>
-        </header>
-
-        {error && (
-          <div className="login-error mb-4" role="alert">
-            <AlertCircle size={18} aria-hidden="true" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">Correo electrónico</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="nombre@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isSubmitting}
-              required
-            />
+    <main className="login-frame login-frame-v2">
+      <section className="login-command-surface">
+        <div className="login-intel-panel">
+          <div className="login-brand-lockup">
+            <div className="brand-mark" aria-hidden="true">
+              <ThermometerSun size={28} strokeWidth={1.8} />
+            </div>
+            <div>
+              <span>TermoVault</span>
+              <strong>Thermal Inspection OS</strong>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Contraseña temporal/actual</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isSubmitting}
-              required
-            />
+          <div className="login-headline">
+            <div className="hero-kicker">
+              <span className="system-dot" />
+              Acceso seguro / Oil & Gas
+            </div>
+            <h1>Consola de informes termograficos</h1>
+            <p>Ingreso controlado para tecnicos, supervisores y administradores de activos inspeccionables.</p>
           </div>
 
-          {challengeSession ? (
+          <div className="login-signal-grid" aria-label="Estado del sistema">
+            <article>
+              <ShieldCheck size={16} />
+              <span>Auth</span>
+              <strong>Cognito</strong>
+            </article>
+            <article>
+              <RadioTower size={16} />
+              <span>Storage</span>
+              <strong>MinIO/S3</strong>
+            </article>
+            <article>
+              <LockKeyhole size={16} />
+              <span>Scope</span>
+              <strong>Roles</strong>
+            </article>
+          </div>
+        </div>
+
+        <div className={`login-card login-card-v2 ${challengeSession ? "is-challenge" : ""}`}>
+          <header className="login-header">
+            <div>
+              <p>{challengeSession ? "Primer ingreso" : "Sesion operativa"}</p>
+              <h2>{challengeSession ? "Crear nueva contraseña" : "Ingresar a TermoVault"}</h2>
+              <span>
+                {challengeSession
+                  ? "Cognito requiere actualizar la contraseña inicial para activar tu acceso."
+                  : "Usa tus credenciales asignadas para continuar."}
+              </span>
+            </div>
+          </header>
+
+          {error && (
+            <div className="login-error" role="alert">
+              <AlertCircle size={18} aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="newPassword">Nueva contraseña</label>
+              <label htmlFor="email">Correo electronico</label>
               <input
-                id="newPassword"
-                type="password"
-                placeholder="Nueva contraseña"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="nombre@empresa.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
                 required
               />
             </div>
-          ) : null}
 
-          <button type="submit" className="login-button" disabled={isSubmitting}>
-            {isSubmitting
-              ? "Ingresando..."
-              : challengeSession
-                ? "Actualizar contraseña e ingresar"
-                : "Ingresar"}
-          </button>
-        </form>
-      </div>
-    </div>
+            <div className="form-group">
+              <label htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+
+            {challengeSession ? (
+              <section className="password-challenge-panel">
+                <div>
+                  <strong>Validacion requerida</strong>
+                  <p>Defini una contraseña permanente. Debe tener al menos 8 caracteres.</p>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newPassword">Nueva contraseña</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Minimo 8 caracteres"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+              </section>
+            ) : null}
+
+            <button type="submit" className="login-button login-button-v2" disabled={isSubmitting}>
+              {isSubmitting
+                ? "Validando acceso..."
+                : challengeSession
+                  ? "Actualizar contraseña"
+                  : "Ingresar"}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
   );
 };
 
 export default Login;
-
