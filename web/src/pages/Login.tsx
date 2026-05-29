@@ -72,10 +72,6 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="login-headline">
-            <div className="hero-kicker">
-              <span className="system-dot" />
-              Portal Técnico
-            </div>
             <h1>Gestión de informes termográficos</h1>
             <p>Acceso al sistema para el registro y revisión de reportes técnicos de termografía.</p>
           </div>

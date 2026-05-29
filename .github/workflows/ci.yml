@@ -88,6 +88,17 @@ jobs:
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=password/' .env
           sed -i 's/CACHE_STORE=.*/CACHE_STORE=array/' .env
           sed -i 's/COGNITO_AUTH_REQUIRED=.*/COGNITO_AUTH_REQUIRED=false/' .env
+          # Cognito test config (no real AWS needed; HTTP calls are faked in tests).
+          # Region + client_id deben estar presentes para no cortar en 500 antes del flujo.
+          sed -i 's/COGNITO_REGION=.*/COGNITO_REGION=us-east-1/' .env
+          sed -i 's/COGNITO_USER_POOL_ID=.*/COGNITO_USER_POOL_ID=us-east-1_test/' .env
+          sed -i 's/COGNITO_APP_CLIENT_ID=.*/COGNITO_APP_CLIENT_ID=test_client_id/' .env
+          sed -i 's/COGNITO_APP_CLIENT_SECRET=.*/COGNITO_APP_CLIENT_SECRET=test_client_secret/' .env
+          # S3/MinIO: el almacenamiento se fakea en tests (Storage::fake); el bucket
+          # debe coincidir con el esperado en las aserciones de los tests.
+          sed -i 's/AWS_ACCESS_KEY_ID=.*/AWS_ACCESS_KEY_ID=testing/' .env
+          sed -i 's/AWS_SECRET_ACCESS_KEY=.*/AWS_SECRET_ACCESS_KEY=testing/' .env
+          sed -i 's/AWS_BUCKET=.*/AWS_BUCKET=termovault-dev/' .env
           # Generate APP_KEY
           php artisan key:generate
 

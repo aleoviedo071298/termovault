@@ -286,10 +286,33 @@ class InspeccionController extends Controller
             'condiciones_clima' => 'nullable|string|max:50',
             'resumen' => 'nullable|string',
             'estado' => 'nullable|in:' . Inspeccion::ESTADO_ENVIADA, // Solo estado inicial al crear: revisar/cerrar va por PATCH /estado con control de rol
-            'reporte' => 'nullable|file|mimes:doc,docx,xls,xlsx|max:10240', // Max 10MB, Word/Excel only
-            'imagenes' => 'nullable|file|mimes:zip|max:51200', // Max 50MB, ZIP only
+            // Informe formal OPCIONAL: PDF / Word / Excel. Un solo archivo.
+            'reporte' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10240', // Max 10MB
+            // Termografías OBLIGATORIAS: al menos un .is2 o .zip. La extensión .is2 se valida
+            // manualmente más abajo porque es un formato propietario sin MIME confiable
+            // (la regla mimes: de Laravel no lo reconoce).
+            'termografias' => 'required|array|min:1',
+            'termografias.*' => 'file|max:61440', // Max 60MB por archivo térmico
+            // Compatibilidad: campo legacy de un único ZIP (no usado por el frontend nuevo).
+            'imagenes' => 'nullable|file|mimes:zip|max:51200',
             'novedades' => 'nullable|string', // JSON string containing array of findings
+        ], [
+            'termografias.required' => 'Debes adjuntar al menos un archivo térmico (.is2 o .zip).',
+            'termografias.array' => 'Formato de archivos térmicos inválido.',
+            'termografias.min' => 'Debes adjuntar al menos un archivo térmico (.is2 o .zip).',
         ]);
+
+        // Validación manual de extensiones térmicas (.is2 no tiene MIME confiable).
+        $allowedThermalExtensions = ['is2', 'zip'];
+        foreach ((array) $request->file('termografias', []) as $thermalFile) {
+            $ext = strtolower($thermalFile->getClientOriginalExtension());
+            if (! in_array($ext, $allowedThermalExtensions, true)) {
+                return response()->json([
+                    'message' => 'Solo se permiten archivos térmicos .is2 o paquetes .zip.',
+                    'errors' => ['termografias' => ['Extensión no permitida: .' . $ext]],
+                ], 422);
+            }
+        }
 
         if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
             Log::notice('authz.denied.inspeccion.create', [
@@ -335,16 +358,27 @@ class InspeccionController extends Controller
                 'elemento_id' => $elemento->id,
             ]);
 
-            // 2. Handle Reporte File
+            // 2. Handle Reporte File (informe formal opcional)
             if ($request->hasFile('reporte')) {
                 $reportFile = $request->file('reporte');
                 $extension = strtolower($reportFile->getClientOriginalExtension());
-                $tipo = ($extension === 'xls' || $extension === 'xlsx') ? 'informe_excel' : 'informe_word';
+                $tipo = match ($extension) {
+                    'xls', 'xlsx' => 'informe_excel',
+                    'pdf' => 'informe_pdf',
+                    default => 'informe_word',
+                };
 
                 $this->storeInspectionFile($inspeccion, $reportFile, 'reports', $tipo, $userId);
             }
 
-            // 3. Handle Imagenes ZIP File
+            // 3. Handle Termografías (múltiples .is2 / .zip)
+            foreach ((array) $request->file('termografias', []) as $thermalFile) {
+                $ext = strtolower($thermalFile->getClientOriginalExtension());
+                $tipo = $ext === 'zip' ? 'termografia_zip' : 'termografia_is2';
+                $this->storeInspectionFile($inspeccion, $thermalFile, 'termografias', $tipo, $userId);
+            }
+
+            // 3b. Compatibilidad: campo legacy "imagenes" (un único ZIP).
             if ($request->hasFile('imagenes')) {
                 $imgFile = $request->file('imagenes');
                 $this->storeInspectionFile($inspeccion, $imgFile, 'images', 'pack_imagenes_zip', $userId);

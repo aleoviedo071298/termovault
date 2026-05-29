@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiDownload } from "../api/client";
-import { X, FileText, FolderArchive, Calendar, ShieldAlert, Edit3, Settings, MapPin, Loader2, AlertTriangle } from "lucide-react";
+import { X, FileText, FolderArchive, Thermometer, Calendar, ShieldAlert, Edit3, Settings, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { getElemento, deleteElemento, type ElementoDetailResponse, type InspeccionArchivo } from "../api/elementos";
 
 interface ElementDetailPanelProps {
@@ -286,32 +286,54 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                         </div>
 
                         {/* Archivos asociados */}
-                        <div className="files-section">
-                          <h4>Documentación y Archivos</h4>
-                          <div className="files-list">
-                            {inspeccion.archivos.map((file) => {
-                              const isWord = file.tipo === "informe_word";
-                              return (
-                                <button
-                                  key={file.id}
-                                  className="file-download-btn"
-                                  onClick={() => void handleDownload(file)}
-                                  type="button"
-                                >
-                                  {isWord ? (
-                                    <FileText size={18} className="icon-word" />
-                                  ) : (
-                                    <FolderArchive size={18} className="icon-zip" />
-                                  )}
-                                  <div className="file-info">
-                                    <span className="file-name">{file.nombre}</span>
-                                    <span className="file-size">{formatBytes(file.tamano)}</span>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        {(() => {
+                          const informes = inspeccion.archivos.filter((f) => f.tipo.startsWith("informe"));
+                          const termografias = inspeccion.archivos.filter((f) => !f.tipo.startsWith("informe"));
+                          const renderFile = (file: InspeccionArchivo) => {
+                            const isInforme = file.tipo.startsWith("informe");
+                            const isZip = file.tipo.includes("zip");
+                            return (
+                              <button
+                                key={file.id}
+                                className="file-download-btn"
+                                onClick={() => void handleDownload(file)}
+                                type="button"
+                              >
+                                {isInforme ? (
+                                  <FileText size={18} className="icon-word" />
+                                ) : isZip ? (
+                                  <FolderArchive size={18} className="icon-zip" />
+                                ) : (
+                                  <Thermometer size={18} className="icon-zip" />
+                                )}
+                                <div className="file-info">
+                                  <span className="file-name">{file.nombre}</span>
+                                  <span className="file-size">{formatBytes(file.tamano)}</span>
+                                </div>
+                              </button>
+                            );
+                          };
+                          return (
+                            <div className="files-section">
+                              <h4>Informe formal</h4>
+                              <div className="files-list">
+                                {informes.length === 0 ? (
+                                  <p style={{ fontStyle: "italic", color: "#59645e", margin: 0 }}>Sin informe formal</p>
+                                ) : (
+                                  informes.map(renderFile)
+                                )}
+                              </div>
+                              <h4 style={{ marginTop: "10px" }}>Archivos térmicos</h4>
+                              <div className="files-list">
+                                {termografias.length === 0 ? (
+                                  <p style={{ fontStyle: "italic", color: "#59645e", margin: 0 }}>Sin archivos térmicos</p>
+                                ) : (
+                                  termografias.map(renderFile)
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Novedades / Hallazgos */}
                         {inspeccion.novedades.length > 0 && (

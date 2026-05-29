@@ -122,10 +122,10 @@ export default function AdminUsuariosPage({ onBack }: Props) {
         <div className="admin-hero-main">
           <div className="hero-kicker">
             <span className="system-dot" />
-            Administracion / identidad y alcance
+            Administración
           </div>
-          <h1>Usuarios y organizacion</h1>
-          <p>Gestion de perfiles, empresas contratistas y yacimientos habilitados para operacion termografica.</p>
+          <h1>Usuarios</h1>
+          <p>Perfiles, empresas contratistas y yacimientos habilitados.</p>
         </div>
 
         <div className="admin-hero-panel">
@@ -148,8 +148,8 @@ export default function AdminUsuariosPage({ onBack }: Props) {
         <section className="dashboard-section admin-form-card">
           <div className="section-heading">
             <div>
-              <span>Alta rapida de usuario</span>
-              <small>Crear usuario local y asignar alcance operativo</small>
+              <span>Nuevo usuario</span>
+              <small>Crear un usuario y asignarle su alcance</small>
             </div>
           </div>
           <div className="admin-card-body">
@@ -198,8 +198,8 @@ export default function AdminUsuariosPage({ onBack }: Props) {
         <section className="dashboard-section admin-form-card">
           <div className="section-heading">
             <div>
-              <span>Organizacion</span>
-              <small>Empresas y yacimientos usados por permisos y reportes</small>
+              <span>Organización</span>
+              <small>Empresas y yacimientos</small>
             </div>
           </div>
           <div className="admin-card-body">
@@ -272,8 +272,8 @@ export default function AdminUsuariosPage({ onBack }: Props) {
       <section className="dashboard-section admin-users-panel">
         <div className="section-heading report-heading">
           <div>
-            <span>Directorio de usuarios</span>
-            <small>Estado, rol, empresa y alcance de yacimientos</small>
+            <span>Listado de usuarios</span>
+            <small>Estado, rol, empresa y yacimientos</small>
           </div>
           <strong>{items.length}</strong>
         </div>

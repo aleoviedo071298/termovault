@@ -96,24 +96,24 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
 
   const roleText = {
     admin: {
-      eyebrow: "Control corporativo / plataforma",
-      title: "Centro de control TermoVault",
-      subtitle: "Vista consolidada de informes, criticidad, usuarios y cobertura operacional.",
+      eyebrow: "Administración",
+      title: "Panel general",
+      subtitle: "Informes, criticidad, usuarios y cobertura en un solo lugar.",
     },
     "supervisor-pae": {
-      eyebrow: "Operacion PAE / monitoreo global",
-      title: "Monitoreo de yacimiento",
-      subtitle: "Seguimiento de informes recibidos, pendientes de revision y eventos criticos.",
+      eyebrow: "Supervisión",
+      title: "Panel de yacimiento",
+      subtitle: "Informes recibidos, pendientes de revisión y novedades a seguir.",
     },
     "supervisor-contratista": {
-      eyebrow: "Contratista / ejecucion tecnica",
-      title: "Control de cuadrillas",
-      subtitle: "Actividad de tecnicos propios, cobertura mensual y trazabilidad documental.",
+      eyebrow: "Contratista",
+      title: "Panel de cuadrillas",
+      subtitle: "Actividad de tus técnicos, cobertura del mes y documentación.",
     },
     tecnico: {
-      eyebrow: "Tecnico / carga operativa",
-      title: "Carga y seguimiento tecnico",
-      subtitle: "Acceso rapido para registrar termografias y revisar el estado de tus informes.",
+      eyebrow: "Técnico",
+      title: "Mis inspecciones",
+      subtitle: "Registrá termografías y seguí el estado de tus informes.",
     },
   } satisfies Record<DashboardRole, { eyebrow: string; title: string; subtitle: string }>;
 

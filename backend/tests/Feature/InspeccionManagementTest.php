@@ -140,7 +140,8 @@ class InspeccionManagementTest extends TestCase
         ]);
 
         $reporte = UploadedFile::fake()->create('reporte.docx', 100);
-        $imagenes = UploadedFile::fake()->create('imagenes.zip', 500);
+        $termoIs2 = UploadedFile::fake()->create('captura.is2', 50);
+        $termoZip = UploadedFile::fake()->create('paquete.zip', 500);
 
         $novedades = [
             [
@@ -160,7 +161,7 @@ class InspeccionManagementTest extends TestCase
                 'cuadrilla' => 'Cuadrilla 1',
                 'integrantes' => 'A. Perez',
                 'reporte' => $reporte,
-                'imagenes' => $imagenes,
+                'termografias' => [$termoIs2, $termoZip],
                 'novedades' => json_encode($novedades),
             ]);
 
@@ -177,14 +178,120 @@ class InspeccionManagementTest extends TestCase
 
         $inspeccionId = (int) $response->json('inspeccion.id');
         $reporteArchivo = \DB::table('archivos')->where('tipo', 'informe_word')->first();
-        $imagenesArchivo = \DB::table('archivos')->where('tipo', 'pack_imagenes_zip')->first();
+        $is2Archivo = \DB::table('archivos')->where('tipo', 'termografia_is2')->first();
+        $zipArchivo = \DB::table('archivos')->where('tipo', 'termografia_zip')->first();
 
         Storage::disk('s3')->assertExists($reporteArchivo->s3_key);
-        Storage::disk('s3')->assertExists($imagenesArchivo->s3_key);
+        Storage::disk('s3')->assertExists($is2Archivo->s3_key);
+        Storage::disk('s3')->assertExists($zipArchivo->s3_key);
         $this->assertSame('termovault-dev', $reporteArchivo->s3_bucket);
         $this->assertSame("inspecciones/{$inspeccionId}/reports/{$reporteArchivo->id}-reporte.docx", $reporteArchivo->s3_key);
-        $this->assertSame('termovault-dev', $imagenesArchivo->s3_bucket);
-        $this->assertSame("inspecciones/{$inspeccionId}/images/{$imagenesArchivo->id}-imagenes.zip", $imagenesArchivo->s3_key);
+        $this->assertSame("inspecciones/{$inspeccionId}/termografias/{$is2Archivo->id}-captura.is2", $is2Archivo->s3_key);
+        $this->assertSame("inspecciones/{$inspeccionId}/termografias/{$zipArchivo->id}-paquete.zip", $zipArchivo->s3_key);
+
+        // La inspección debe tener exactamente 3 archivos asociados.
+        $this->assertSame(3, \DB::table('archivos')->where('inspeccion_id', $inspeccionId)->count());
+    }
+
+    public function test_inspeccion_requires_at_least_one_thermal_file(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Sin Termo',
+            'codigo' => 'SET-NO-TERMO',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'novedades' => json_encode([]),
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('termografias');
+    }
+
+    public function test_inspeccion_rejects_invalid_thermal_extension(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Termo Invalida',
+            'codigo' => 'SET-TERMO-BAD',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('foto.jpg', 50)],
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_inspeccion_can_be_created_with_only_is2_and_no_report(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Seccionador Campo',
+            'codigo' => 'SEC-CAMPO-01',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [
+                    UploadedFile::fake()->create('a.is2', 30),
+                    UploadedFile::fake()->create('b.is2', 30),
+                    UploadedFile::fake()->create('c.is2', 30),
+                ],
+            ]);
+
+        $response->assertStatus(201);
+        $inspeccionId = (int) $response->json('inspeccion.id');
+
+        // Sin informe formal y con 3 termografías .is2.
+        $this->assertSame(0, \DB::table('archivos')->where('inspeccion_id', $inspeccionId)->where('tipo', 'like', 'informe%')->count());
+        $this->assertSame(3, \DB::table('archivos')->where('inspeccion_id', $inspeccionId)->where('tipo', 'termografia_is2')->count());
+    }
+
+    public function test_legacy_imagenes_field_still_supported(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Legacy',
+            'codigo' => 'SET-LEGACY-ZIP',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
+                'imagenes' => UploadedFile::fake()->create('legacy.zip', 200),
+            ]);
+
+        $response->assertStatus(201);
+        $inspeccionId = (int) $response->json('inspeccion.id');
+        $this->assertSame(1, \DB::table('archivos')->where('inspeccion_id', $inspeccionId)->where('tipo', 'pack_imagenes_zip')->count());
     }
 
     public function test_cannot_upload_inspection_for_other_company_element(): void
@@ -205,6 +312,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
             ]);
 
         // Should fail due to multi-tenant scoping check in InspeccionController
@@ -227,6 +335,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
                 'reporte' => UploadedFile::fake()->createWithContent('reporte.docx', 'contenido-reporte'),
             ]);
 
@@ -238,6 +347,48 @@ class InspeccionManagementTest extends TestCase
 
         $download->assertOk();
         $this->assertStringContainsString('contenido-reporte', $download->streamedContent());
+    }
+
+    public function test_download_uses_normalized_filename(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->techClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Trafo Principal',
+            'codigo' => 'SET-NORM-01',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
+                'reporte' => UploadedFile::fake()->createWithContent('reporte.docx', 'contenido-reporte'),
+            ]);
+        $response->assertStatus(201);
+
+        // Informe → "informe", fecha dd-mm-aaaa, nombre de elemento saneado.
+        $informeId = (int) \DB::table('archivos')->where('tipo', 'informe_word')->value('id');
+        $informeDownload = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->get("/api/archivos/{$informeId}/download");
+        $informeDownload->assertOk();
+        $this->assertStringContainsString(
+            "{$informeId}_Trafo-Principal_26-05-2026_informe.docx",
+            (string) $informeDownload->headers->get('Content-Disposition')
+        );
+
+        // Termografía → "termografia", conserva extensión .is2.
+        $termoId = (int) \DB::table('archivos')->where('tipo', 'termografia_is2')->value('id');
+        $termoDownload = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->get("/api/archivos/{$termoId}/download");
+        $termoDownload->assertOk();
+        $this->assertStringContainsString(
+            "{$termoId}_Trafo-Principal_26-05-2026_termografia.is2",
+            (string) $termoDownload->headers->get('Content-Disposition')
+        );
     }
 
     public function test_user_cannot_download_file_outside_scope(): void
@@ -256,6 +407,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
                 'reporte' => UploadedFile::fake()->createWithContent('reporte.docx', 'contenido-reporte'),
             ]);
 
@@ -285,6 +437,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
                 'novedades' => json_encode([
                     [
                         'criticidad_id' => 3,
@@ -335,6 +488,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
             ]);
         $createResponse->assertStatus(201);
         $inspeccionId = (int) $createResponse->json('inspeccion.id');
@@ -388,6 +542,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
                 'novedades' => json_encode([
                     [
                         'criticidad_id' => 3,
@@ -426,6 +581,7 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
             ]);
         $createResponse->assertStatus(201);
         $inspeccionId = (int) $createResponse->json('inspeccion.id');

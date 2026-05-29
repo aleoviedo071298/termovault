@@ -38,6 +38,9 @@ class SecurityHeaders
             $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
             $response->headers->set('Access-Control-Allow-Credentials', 'false');
             $response->headers->set('Access-Control-Max-Age', '3600');
+            // Permite que el navegador lea estos headers en respuestas cross-origin.
+            // Necesario para que el frontend obtenga el nombre de archivo en las descargas.
+            $response->headers->set('Access-Control-Expose-Headers', 'Content-Disposition');
         }
 
         // Prevent MIME-type sniffing
