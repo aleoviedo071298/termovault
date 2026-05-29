@@ -64,6 +64,20 @@ Servicios:
 
 Detailed notes: `scripts/DB_RESTORE.md`.
 
+## Sync de schema despues de migraciones
+
+Cuando una migracion cambia estructura (tablas, FK, indices o constraints), sincronizar el snapshot operativo:
+
+```powershell
+cd backend
+php artisan migrate --force
+cd ..
+docker compose exec -T postgres pg_dump --schema-only --no-owner --no-privileges -U termovault -d termovault |
+  Set-Content -Encoding utf8 database\schema.sql
+```
+
+No editar `database/schema.sql` a mano.
+
 ### 2) Backend
 
 ```bash
@@ -105,6 +119,18 @@ API: `http://localhost:8000/api`
   - Puede administrar elementos del yacimiento asignado.
 
 Todas las restricciones criticas se validan en backend. El frontend solo refleja permisos.
+
+## Auditoria de descargas de archivos
+
+Las descargas ahora quedan registradas en `auditoria_descargas_archivos` con:
+
+- `archivo_id`
+- `usuario_id`
+- `ip_address`
+- `user_agent`
+- `descargado_en`
+
+Esto mejora trazabilidad operativa/compliance sin cambiar el flujo funcional de descarga.
 
 ## Endpoints principales
 

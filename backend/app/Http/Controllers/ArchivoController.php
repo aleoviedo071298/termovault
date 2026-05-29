@@ -6,8 +6,11 @@ use App\Models\Archivo;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ArchivoController extends Controller
 {
@@ -66,6 +69,23 @@ class ArchivoController extends Controller
             'Content-Type' => $archivo->mime_type ?: 'application/octet-stream',
             'Content-Length' => $archivo->tamano_bytes ? (string) $archivo->tamano_bytes : null,
         ]);
+
+        try {
+            DB::table('auditoria_descargas_archivos')->insert([
+                'archivo_id' => (int) $archivo->id,
+                'usuario_id' => isset($scope['user_id']) ? (int) $scope['user_id'] : null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'descargado_en' => now(),
+            ]);
+        } catch (Throwable $e) {
+            // La auditoria no debe bloquear la operacion principal de descarga.
+            Log::warning('No se pudo registrar auditoria de descarga', [
+                'archivo_id' => $archivo->id,
+                'user_id' => $scope['user_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->streamDownload(function () use ($disk, $archivo): void {
             $stream = $disk->readStream($archivo->s3_key);
