@@ -373,4 +373,82 @@ class ElementoManagementTest extends TestCase
         $response->assertStatus(403);
         $this->assertDatabaseHas('elementos', ['id' => $elemento->id]);
     }
+
+    /**
+     * Test: CSRF protection via JWT authentication (M5)
+     *
+     * Verifies that state-changing endpoints are protected by JWT auth,
+     * not traditional CSRF tokens. This is appropriate for a stateless JSON API.
+     * The API uses Authorization headers (JWT) instead of CSRF tokens.
+     */
+    public function test_state_changing_endpoints_use_jwt_not_csrf(): void
+    {
+        config()->set('cognito.required', true);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Elemento Test',
+            'codigo' => 'TEST-001',
+        ]);
+
+        // Request without Authorization header should fail
+        // (when Cognito auth is enabled)
+        $response = $this->deleteJson("/api/elementos/{$elemento->id}");
+
+        $this->assertTrue(in_array($response->status(), [401, 403, 405]));
+        $this->assertDatabaseHas('elementos', ['id' => $elemento->id]);
+    }
+
+    /**
+     * Test: Admin bypass of yacimiento filtering is by design (M6)
+     *
+     * Confirms that admins are NOT restricted by yacimiento assignment.
+     * This allows enterprise-wide operations while maintaining per-role
+     * authorization checks (canMutateElement, etc.).
+     */
+    public function test_admin_can_mutate_elements_outside_assigned_yacimientos(): void
+    {
+        // Create a second yacimiento
+        $otherYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE 2',
+            'codigo' => 'YAC-PAE2'
+        ]);
+
+        // Create elemento in the second yacimiento
+        $elemento = Elemento::create([
+            'yacimiento_id' => $otherYacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Elemento en YAC 2',
+            'codigo' => 'YAC2-001',
+        ]);
+
+        // Admin claims (not assigned to any yacimiento via usuario_yacimientos)
+        $adminRole = Role::where('codigo', 'admin')->first();
+        $adminId = \DB::table('usuarios')
+            ->where('email', 'admin@example.com')
+            ->value('id');
+
+        $this->mockVerifier([
+            'sub' => 'admin-bypass-123',
+            'email' => 'admin@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['admin'],
+        ]);
+
+        // Admin should be able to view/delete elemento in any yacimiento
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson("/api/elementos/{$elemento->id}");
+
+        $response->assertOk();
+        $this->assertEquals($elemento->id, $response['elemento']['id']);
+
+        // Admin should be able to delete elemento in any yacimiento (M6 design decision)
+        $deleteResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->deleteJson("/api/elementos/{$elemento->id}");
+
+        $deleteResponse->assertOk();
+        $this->assertDatabaseMissing('elementos', ['id' => $elemento->id]);
+    }
 }

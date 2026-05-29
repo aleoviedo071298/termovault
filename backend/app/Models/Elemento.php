@@ -46,6 +46,33 @@ class Elemento extends Model
         return $query->whereHas('yacimiento', fn (Builder $query) => $query->where('empresa_id', (int) $empresaId));
     }
 
+    /**
+     * Scope to filter elementos by yacimiento IDs.
+     *
+     * Validates all IDs are integers to prevent SQL injection from dynamic whereIn.
+     * This scope ensures parameterized queries are used even if called with untrusted input.
+     *
+     * @param Builder $query
+     * @param array $yacimientoIds Array of yacimiento IDs to filter by
+     * @return Builder
+     * @throws \InvalidArgumentException if any ID is not an integer
+     */
+    public function scopeByYacimientoIds(Builder $query, array $yacimientoIds): Builder
+    {
+        if (empty($yacimientoIds)) {
+            return $query;
+        }
+
+        // Validate all IDs are integers to prevent SQL injection
+        foreach ($yacimientoIds as $id) {
+            if (! is_int($id) || $id <= 0) {
+                throw new \InvalidArgumentException('All yacimiento IDs must be positive integers.');
+            }
+        }
+
+        return $query->whereIn('yacimiento_id', $yacimientoIds);
+    }
+
     public function yacimiento(): BelongsTo
     {
         return $this->belongsTo(Yacimiento::class);
