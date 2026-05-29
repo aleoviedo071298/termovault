@@ -1,18 +1,37 @@
+import { tokenManager } from "../auth/TokenManager";
+
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json"
-  };
+/**
+ * Common fetch helper that injects Authorization token and intercepts 401 errors.
+ */
+async function secureFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  const token = tokenManager.getToken();
+  const headers = new Headers(options.headers || {});
 
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_URL}${path}`, {
+    ...options,
     headers
+  });
+
+  if (response.status === 401) {
+    tokenManager.clearToken();
+    // Redirect to login page on auth failure
+    window.location.href = "/login";
+  }
+
+  return response;
+}
+
+export async function apiGet<T>(path: string): Promise<T> {
+  const response = await secureFetch(path, {
+    headers: {
+      Accept: "application/json"
+    }
   });
 
   if (!response.ok) {
@@ -28,20 +47,12 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json",
-    "Content-Type": "application/json"
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await secureFetch(path, {
     method: "POST",
-    headers,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(body)
   });
 
@@ -58,20 +69,12 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json",
-    "Content-Type": "application/json"
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await secureFetch(path, {
     method: "PUT",
-    headers,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(body)
   });
 
@@ -88,20 +91,12 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json",
-    "Content-Type": "application/json"
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await secureFetch(path, {
     method: "PATCH",
-    headers,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(body)
   });
 
@@ -118,19 +113,11 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete(path: string): Promise<void> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json"
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await secureFetch(path, {
     method: "DELETE",
-    headers
+    headers: {
+      Accept: "application/json"
+    }
   });
 
   if (!response.ok) {
@@ -144,19 +131,11 @@ export async function apiDelete(path: string): Promise<void> {
 }
 
 export async function apiPostMultipart<T>(path: string, formData: FormData): Promise<T> {
-  const token = localStorage.getItem("access_token");
-
-  const headers: HeadersInit = {
-    Accept: "application/json"
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await secureFetch(path, {
     method: "POST",
-    headers,
+    headers: {
+      Accept: "application/json"
+    },
     body: formData
   });
 
@@ -185,16 +164,12 @@ function filenameFromContentDisposition(header: string | null): string | null {
 }
 
 export async function apiDownload(path: string, fallbackFilename: string): Promise<void> {
-  const token = localStorage.getItem("access_token");
-  const headers: HeadersInit = {
-    Accept: "application/octet-stream"
-  };
+  const response = await secureFetch(path, {
+    headers: {
+      Accept: "application/octet-stream"
+    }
+  });
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, { headers });
   if (!response.ok) {
     let errorMsg = `No se pudo descargar el archivo (${response.status})`;
     try {

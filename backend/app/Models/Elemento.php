@@ -107,4 +107,11 @@ class Elemento extends Model
     {
         return $this->belongsTo(Usuario::class, 'updated_by');
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::saved(fn() => \Illuminate\Support\Facades\Cache::forever('dashboard.version', microtime(true)));
+        static::deleted(fn() => \Illuminate\Support\Facades\Cache::forever('dashboard.version', microtime(true)));
+    }
 }

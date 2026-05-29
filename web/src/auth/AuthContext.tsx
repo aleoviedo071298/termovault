@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState } from "react";
 import { loginCognito } from "./cognito";
+import { tokenManager } from "./TokenManager";
 
 export interface User {
   email: string;
@@ -44,8 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedAccessToken = localStorage.getItem("access_token");
-    const storedIdToken = localStorage.getItem("id_token");
+    const storedAccessToken = tokenManager.getToken();
+    const storedIdToken = tokenManager.getIdToken();
 
     async function bootstrap() {
       if (!storedAccessToken || !storedIdToken) {
@@ -76,8 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       } else {
         // Token expired
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("id_token");
+        tokenManager.clearToken();
       }
       setLoading(false);
     }
@@ -101,8 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const response = result.data;
-      localStorage.setItem("access_token", response.access_token);
-      localStorage.setItem("id_token", response.id_token);
+      tokenManager.setToken(response.access_token, response.expires_in);
+      tokenManager.setIdToken(response.id_token);
 
       const claims = parseJwt(response.id_token);
       let groups: string[] = claims?.["cognito:groups"] ?? [];
@@ -144,8 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("id_token");
+    tokenManager.clearToken();
     setToken(null);
     setUser(null);
   };

@@ -17,6 +17,8 @@ Indice de documentacion interna del proyecto.
 | [`SECURITY.md`](./SECURITY.md) | Resumen operativo de controles de seguridad API. |
 | [`THREAT_MODEL.md`](./THREAT_MODEL.md) | Modelo de amenazas y riesgos residuales. |
 | [`INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md) | Playbook de respuesta a incidentes. |
+| [`FRONTEND_SECURITY.md`](./FRONTEND_SECURITY.md) | Medidas de seguridad y CSP del frontend React. |
+| [`PERFORMANCE.md`](./PERFORMANCE.md) | Estrategia de optimización de performance y caching. |
 | [`diagrama-er.md`](./diagrama-er.md) | Diagrama ER y estados. |
 
 ## Archivos clave en raiz

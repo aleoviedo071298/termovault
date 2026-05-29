@@ -29,4 +29,11 @@ class Criticidad extends Model
     {
         return $this->hasMany(Novedad::class);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::saved(fn() => \Illuminate\Support\Facades\Cache::forget('catalogs.static'));
+        static::deleted(fn() => \Illuminate\Support\Facades\Cache::forget('catalogs.static'));
+    }
 }

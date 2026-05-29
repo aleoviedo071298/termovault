@@ -1,8 +1,8 @@
-﻿--
+--
 -- PostgreSQL database dump
 --
 
-\restrict hWRFan5oh3gnqWdKhu80xAm8AiuSptiPtE4hE6czoi7QjqMX8JgHJvqXGcNH2by
+\restrict TXiiZ3J2wRx5uH0DQCfDMEdW7Qy9XaCEVCfMa1XCfats3bg1aU8qvvE5lAQcaD8
 
 -- Dumped from database version 16.14
 -- Dumped by pg_dump version 16.14
@@ -23,7 +23,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: archivos; Type: TABLE; Schema: public; Owner: -
+-- Name: archivos; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.archivos (
@@ -41,8 +41,10 @@ CREATE TABLE public.archivos (
 );
 
 
+ALTER TABLE public.archivos OWNER TO termovault;
+
 --
--- Name: archivos_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: archivos_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.archivos_id_seq
@@ -53,15 +55,17 @@ CREATE SEQUENCE public.archivos_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.archivos_id_seq OWNER TO termovault;
+
 --
--- Name: archivos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: archivos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.archivos_id_seq OWNED BY public.archivos.id;
 
 
 --
--- Name: auditoria_descargas_archivos; Type: TABLE; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.auditoria_descargas_archivos (
@@ -74,8 +78,10 @@ CREATE TABLE public.auditoria_descargas_archivos (
 );
 
 
+ALTER TABLE public.auditoria_descargas_archivos OWNER TO termovault;
+
 --
--- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.auditoria_descargas_archivos_id_seq
@@ -86,15 +92,17 @@ CREATE SEQUENCE public.auditoria_descargas_archivos_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.auditoria_descargas_archivos_id_seq OWNER TO termovault;
+
 --
--- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.auditoria_descargas_archivos_id_seq OWNED BY public.auditoria_descargas_archivos.id;
 
 
 --
--- Name: cache; Type: TABLE; Schema: public; Owner: -
+-- Name: cache; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.cache (
@@ -104,8 +112,10 @@ CREATE TABLE public.cache (
 );
 
 
+ALTER TABLE public.cache OWNER TO termovault;
+
 --
--- Name: cache_locks; Type: TABLE; Schema: public; Owner: -
+-- Name: cache_locks; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.cache_locks (
@@ -115,8 +125,10 @@ CREATE TABLE public.cache_locks (
 );
 
 
+ALTER TABLE public.cache_locks OWNER TO termovault;
+
 --
--- Name: criticidades; Type: TABLE; Schema: public; Owner: -
+-- Name: criticidades; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.criticidades (
@@ -127,8 +139,10 @@ CREATE TABLE public.criticidades (
 );
 
 
+ALTER TABLE public.criticidades OWNER TO termovault;
+
 --
--- Name: criticidades_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: criticidades_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.criticidades_id_seq
@@ -139,15 +153,17 @@ CREATE SEQUENCE public.criticidades_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.criticidades_id_seq OWNER TO termovault;
+
 --
--- Name: criticidades_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: criticidades_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.criticidades_id_seq OWNED BY public.criticidades.id;
 
 
 --
--- Name: elementos; Type: TABLE; Schema: public; Owner: -
+-- Name: elementos; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.elementos (
@@ -172,8 +188,10 @@ CREATE TABLE public.elementos (
 );
 
 
+ALTER TABLE public.elementos OWNER TO termovault;
+
 --
--- Name: elementos_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: elementos_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.elementos_id_seq
@@ -184,15 +202,17 @@ CREATE SEQUENCE public.elementos_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.elementos_id_seq OWNER TO termovault;
+
 --
--- Name: elementos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: elementos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.elementos_id_seq OWNED BY public.elementos.id;
 
 
 --
--- Name: empresas; Type: TABLE; Schema: public; Owner: -
+-- Name: empresas; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.empresas (
@@ -205,8 +225,10 @@ CREATE TABLE public.empresas (
 );
 
 
+ALTER TABLE public.empresas OWNER TO termovault;
+
 --
--- Name: empresas_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: empresas_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.empresas_id_seq
@@ -217,15 +239,17 @@ CREATE SEQUENCE public.empresas_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.empresas_id_seq OWNER TO termovault;
+
 --
--- Name: empresas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: empresas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.empresas_id_seq OWNED BY public.empresas.id;
 
 
 --
--- Name: failed_jobs; Type: TABLE; Schema: public; Owner: -
+-- Name: failed_jobs; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.failed_jobs (
@@ -239,8 +263,10 @@ CREATE TABLE public.failed_jobs (
 );
 
 
+ALTER TABLE public.failed_jobs OWNER TO termovault;
+
 --
--- Name: failed_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: failed_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.failed_jobs_id_seq
@@ -251,15 +277,17 @@ CREATE SEQUENCE public.failed_jobs_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.failed_jobs_id_seq OWNER TO termovault;
+
 --
--- Name: failed_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: failed_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.failed_jobs_id_seq OWNED BY public.failed_jobs.id;
 
 
 --
--- Name: inspecciones; Type: TABLE; Schema: public; Owner: -
+-- Name: inspecciones; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.inspecciones (
@@ -286,8 +314,10 @@ CREATE TABLE public.inspecciones (
 );
 
 
+ALTER TABLE public.inspecciones OWNER TO termovault;
+
 --
--- Name: inspecciones_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: inspecciones_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.inspecciones_id_seq
@@ -298,15 +328,17 @@ CREATE SEQUENCE public.inspecciones_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.inspecciones_id_seq OWNER TO termovault;
+
 --
--- Name: inspecciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: inspecciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.inspecciones_id_seq OWNED BY public.inspecciones.id;
 
 
 --
--- Name: job_batches; Type: TABLE; Schema: public; Owner: -
+-- Name: job_batches; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.job_batches (
@@ -323,8 +355,10 @@ CREATE TABLE public.job_batches (
 );
 
 
+ALTER TABLE public.job_batches OWNER TO termovault;
+
 --
--- Name: jobs; Type: TABLE; Schema: public; Owner: -
+-- Name: jobs; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.jobs (
@@ -338,8 +372,10 @@ CREATE TABLE public.jobs (
 );
 
 
+ALTER TABLE public.jobs OWNER TO termovault;
+
 --
--- Name: jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.jobs_id_seq
@@ -350,15 +386,17 @@ CREATE SEQUENCE public.jobs_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.jobs_id_seq OWNER TO termovault;
+
 --
--- Name: jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.jobs_id_seq OWNED BY public.jobs.id;
 
 
 --
--- Name: migrations; Type: TABLE; Schema: public; Owner: -
+-- Name: migrations; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.migrations (
@@ -368,8 +406,10 @@ CREATE TABLE public.migrations (
 );
 
 
+ALTER TABLE public.migrations OWNER TO termovault;
+
 --
--- Name: migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.migrations_id_seq
@@ -381,15 +421,17 @@ CREATE SEQUENCE public.migrations_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.migrations_id_seq OWNER TO termovault;
+
 --
--- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;
 
 
 --
--- Name: niveles_tension; Type: TABLE; Schema: public; Owner: -
+-- Name: niveles_tension; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.niveles_tension (
@@ -400,8 +442,10 @@ CREATE TABLE public.niveles_tension (
 );
 
 
+ALTER TABLE public.niveles_tension OWNER TO termovault;
+
 --
--- Name: niveles_tension_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: niveles_tension_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.niveles_tension_id_seq
@@ -412,15 +456,17 @@ CREATE SEQUENCE public.niveles_tension_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.niveles_tension_id_seq OWNER TO termovault;
+
 --
--- Name: niveles_tension_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: niveles_tension_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.niveles_tension_id_seq OWNED BY public.niveles_tension.id;
 
 
 --
--- Name: novedades; Type: TABLE; Schema: public; Owner: -
+-- Name: novedades; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.novedades (
@@ -439,8 +485,10 @@ CREATE TABLE public.novedades (
 );
 
 
+ALTER TABLE public.novedades OWNER TO termovault;
+
 --
--- Name: novedades_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: novedades_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.novedades_id_seq
@@ -451,15 +499,17 @@ CREATE SEQUENCE public.novedades_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.novedades_id_seq OWNER TO termovault;
+
 --
--- Name: novedades_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: novedades_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.novedades_id_seq OWNED BY public.novedades.id;
 
 
 --
--- Name: roles; Type: TABLE; Schema: public; Owner: -
+-- Name: roles; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.roles (
@@ -469,8 +519,10 @@ CREATE TABLE public.roles (
 );
 
 
+ALTER TABLE public.roles OWNER TO termovault;
+
 --
--- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.roles_id_seq
@@ -481,15 +533,17 @@ CREATE SEQUENCE public.roles_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.roles_id_seq OWNER TO termovault;
+
 --
--- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 
 
 --
--- Name: tipos_elemento; Type: TABLE; Schema: public; Owner: -
+-- Name: tipos_elemento; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.tipos_elemento (
@@ -502,8 +556,10 @@ CREATE TABLE public.tipos_elemento (
 );
 
 
+ALTER TABLE public.tipos_elemento OWNER TO termovault;
+
 --
--- Name: tipos_elemento_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: tipos_elemento_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.tipos_elemento_id_seq
@@ -514,15 +570,17 @@ CREATE SEQUENCE public.tipos_elemento_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.tipos_elemento_id_seq OWNER TO termovault;
+
 --
--- Name: tipos_elemento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: tipos_elemento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.tipos_elemento_id_seq OWNED BY public.tipos_elemento.id;
 
 
 --
--- Name: usuario_yacimientos; Type: TABLE; Schema: public; Owner: -
+-- Name: usuario_yacimientos; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.usuario_yacimientos (
@@ -531,8 +589,10 @@ CREATE TABLE public.usuario_yacimientos (
 );
 
 
+ALTER TABLE public.usuario_yacimientos OWNER TO termovault;
+
 --
--- Name: usuarios; Type: TABLE; Schema: public; Owner: -
+-- Name: usuarios; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.usuarios (
@@ -548,8 +608,10 @@ CREATE TABLE public.usuarios (
 );
 
 
+ALTER TABLE public.usuarios OWNER TO termovault;
+
 --
--- Name: usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.usuarios_id_seq
@@ -560,15 +622,17 @@ CREATE SEQUENCE public.usuarios_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.usuarios_id_seq OWNER TO termovault;
+
 --
--- Name: usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.usuarios_id_seq OWNED BY public.usuarios.id;
 
 
 --
--- Name: yacimientos; Type: TABLE; Schema: public; Owner: -
+-- Name: yacimientos; Type: TABLE; Schema: public; Owner: termovault
 --
 
 CREATE TABLE public.yacimientos (
@@ -582,8 +646,10 @@ CREATE TABLE public.yacimientos (
 );
 
 
+ALTER TABLE public.yacimientos OWNER TO termovault;
+
 --
--- Name: yacimientos_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: yacimientos_id_seq; Type: SEQUENCE; Schema: public; Owner: termovault
 --
 
 CREATE SEQUENCE public.yacimientos_id_seq
@@ -594,120 +660,122 @@ CREATE SEQUENCE public.yacimientos_id_seq
     CACHE 1;
 
 
+ALTER SEQUENCE public.yacimientos_id_seq OWNER TO termovault;
+
 --
--- Name: yacimientos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: yacimientos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: termovault
 --
 
 ALTER SEQUENCE public.yacimientos_id_seq OWNED BY public.yacimientos.id;
 
 
 --
--- Name: archivos id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: archivos id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.archivos ALTER COLUMN id SET DEFAULT nextval('public.archivos_id_seq'::regclass);
 
 
 --
--- Name: auditoria_descargas_archivos id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.auditoria_descargas_archivos ALTER COLUMN id SET DEFAULT nextval('public.auditoria_descargas_archivos_id_seq'::regclass);
 
 
 --
--- Name: criticidades id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: criticidades id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.criticidades ALTER COLUMN id SET DEFAULT nextval('public.criticidades_id_seq'::regclass);
 
 
 --
--- Name: elementos id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: elementos id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos ALTER COLUMN id SET DEFAULT nextval('public.elementos_id_seq'::regclass);
 
 
 --
--- Name: empresas id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: empresas id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.empresas ALTER COLUMN id SET DEFAULT nextval('public.empresas_id_seq'::regclass);
 
 
 --
--- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.failed_jobs ALTER COLUMN id SET DEFAULT nextval('public.failed_jobs_id_seq'::regclass);
 
 
 --
--- Name: inspecciones id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: inspecciones id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones ALTER COLUMN id SET DEFAULT nextval('public.inspecciones_id_seq'::regclass);
 
 
 --
--- Name: jobs id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: jobs id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.jobs ALTER COLUMN id SET DEFAULT nextval('public.jobs_id_seq'::regclass);
 
 
 --
--- Name: migrations id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: migrations id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.migrations ALTER COLUMN id SET DEFAULT nextval('public.migrations_id_seq'::regclass);
 
 
 --
--- Name: niveles_tension id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: niveles_tension id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.niveles_tension ALTER COLUMN id SET DEFAULT nextval('public.niveles_tension_id_seq'::regclass);
 
 
 --
--- Name: novedades id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: novedades id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.novedades ALTER COLUMN id SET DEFAULT nextval('public.novedades_id_seq'::regclass);
 
 
 --
--- Name: roles id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: roles id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
 
 
 --
--- Name: tipos_elemento id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: tipos_elemento id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.tipos_elemento ALTER COLUMN id SET DEFAULT nextval('public.tipos_elemento_id_seq'::regclass);
 
 
 --
--- Name: usuarios id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: usuarios id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usuarios_id_seq'::regclass);
 
 
 --
--- Name: yacimientos id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: yacimientos id; Type: DEFAULT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.yacimientos ALTER COLUMN id SET DEFAULT nextval('public.yacimientos_id_seq'::regclass);
 
 
 --
--- Name: archivos archivos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: archivos archivos_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.archivos
@@ -715,7 +783,7 @@ ALTER TABLE ONLY public.archivos
 
 
 --
--- Name: auditoria_descargas_archivos auditoria_descargas_archivos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.auditoria_descargas_archivos
@@ -723,7 +791,7 @@ ALTER TABLE ONLY public.auditoria_descargas_archivos
 
 
 --
--- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.cache_locks
@@ -731,7 +799,7 @@ ALTER TABLE ONLY public.cache_locks
 
 
 --
--- Name: cache cache_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: cache cache_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.cache
@@ -739,7 +807,7 @@ ALTER TABLE ONLY public.cache
 
 
 --
--- Name: criticidades criticidades_nivel_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: criticidades criticidades_nivel_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.criticidades
@@ -747,7 +815,7 @@ ALTER TABLE ONLY public.criticidades
 
 
 --
--- Name: criticidades criticidades_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: criticidades criticidades_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.criticidades
@@ -755,7 +823,7 @@ ALTER TABLE ONLY public.criticidades
 
 
 --
--- Name: elementos elementos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -763,7 +831,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_yacimiento_id_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_yacimiento_id_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -771,7 +839,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: empresas empresas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: empresas empresas_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.empresas
@@ -779,7 +847,7 @@ ALTER TABLE ONLY public.empresas
 
 
 --
--- Name: failed_jobs failed_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: failed_jobs failed_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.failed_jobs
@@ -787,7 +855,7 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- Name: failed_jobs failed_jobs_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: failed_jobs failed_jobs_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.failed_jobs
@@ -795,7 +863,7 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- Name: inspecciones inspecciones_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -803,7 +871,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: job_batches job_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: job_batches job_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.job_batches
@@ -811,7 +879,7 @@ ALTER TABLE ONLY public.job_batches
 
 
 --
--- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.jobs
@@ -819,7 +887,7 @@ ALTER TABLE ONLY public.jobs
 
 
 --
--- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.migrations
@@ -827,7 +895,7 @@ ALTER TABLE ONLY public.migrations
 
 
 --
--- Name: niveles_tension niveles_tension_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: niveles_tension niveles_tension_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.niveles_tension
@@ -835,7 +903,7 @@ ALTER TABLE ONLY public.niveles_tension
 
 
 --
--- Name: novedades novedades_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: novedades novedades_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.novedades
@@ -843,7 +911,7 @@ ALTER TABLE ONLY public.novedades
 
 
 --
--- Name: roles roles_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: roles roles_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.roles
@@ -851,7 +919,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.roles
@@ -859,7 +927,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- Name: tipos_elemento tipos_elemento_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tipos_elemento tipos_elemento_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.tipos_elemento
@@ -867,7 +935,7 @@ ALTER TABLE ONLY public.tipos_elemento
 
 
 --
--- Name: tipos_elemento tipos_elemento_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: tipos_elemento tipos_elemento_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.tipos_elemento
@@ -875,7 +943,7 @@ ALTER TABLE ONLY public.tipos_elemento
 
 
 --
--- Name: usuario_yacimientos usuario_yacimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: usuario_yacimientos usuario_yacimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuario_yacimientos
@@ -883,7 +951,7 @@ ALTER TABLE ONLY public.usuario_yacimientos
 
 
 --
--- Name: usuarios usuarios_email_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: usuarios usuarios_email_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuarios
@@ -891,7 +959,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuarios
@@ -899,7 +967,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- Name: yacimientos yacimientos_empresa_id_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: yacimientos yacimientos_empresa_id_codigo_unique; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.yacimientos
@@ -907,7 +975,7 @@ ALTER TABLE ONLY public.yacimientos
 
 
 --
--- Name: yacimientos yacimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: yacimientos yacimientos_pkey; Type: CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.yacimientos
@@ -915,168 +983,210 @@ ALTER TABLE ONLY public.yacimientos
 
 
 --
--- Name: cache_expiration_index; Type: INDEX; Schema: public; Owner: -
+-- Name: cache_expiration_index; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX cache_expiration_index ON public.cache USING btree (expiration);
 
 
 --
--- Name: cache_locks_expiration_index; Type: INDEX; Schema: public; Owner: -
+-- Name: cache_locks_expiration_index; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX cache_locks_expiration_index ON public.cache_locks USING btree (expiration);
 
 
 --
--- Name: idx_archivos_inspeccion; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_archivos_inspeccion; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_archivos_inspeccion ON public.archivos USING btree (inspeccion_id);
 
 
 --
--- Name: idx_aud_desc_archivo_fecha; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_archivos_subido_por; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_archivos_subido_por ON public.archivos USING btree (subido_por);
+
+
+--
+-- Name: idx_aud_desc_archivo_fecha; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_aud_desc_archivo_fecha ON public.auditoria_descargas_archivos USING btree (archivo_id, descargado_en);
 
 
 --
--- Name: idx_aud_desc_usuario_fecha; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_aud_desc_usuario_fecha; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_aud_desc_usuario_fecha ON public.auditoria_descargas_archivos USING btree (usuario_id, descargado_en);
 
 
 --
--- Name: idx_elementos_funcion; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_elementos_criticidad; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_elementos_criticidad ON public.elementos USING btree (criticidad_id);
+
+
+--
+-- Name: idx_elementos_funcion; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_elementos_funcion ON public.elementos USING btree (funcion);
 
 
 --
--- Name: idx_elementos_tension; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_elementos_tension; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_elementos_tension ON public.elementos USING btree (nivel_tension_id);
 
 
 --
--- Name: idx_elementos_tipo; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_elementos_tipo; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_elementos_tipo ON public.elementos USING btree (tipo_elemento_id);
 
 
 --
--- Name: idx_elementos_yacimiento; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_elementos_yacimiento; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_elementos_yacimiento ON public.elementos USING btree (yacimiento_id);
 
 
 --
--- Name: idx_elementos_yacimiento_tipo; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_elementos_yacimiento_tipo; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_elementos_yacimiento_tipo ON public.elementos USING btree (yacimiento_id, tipo_elemento_id);
 
 
 --
--- Name: idx_inspecciones_elemento; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_inspecciones_cerrada_por; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_inspecciones_cerrada_por ON public.inspecciones USING btree (cerrada_por);
+
+
+--
+-- Name: idx_inspecciones_elemento; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_inspecciones_elemento ON public.inspecciones USING btree (elemento_id);
 
 
 --
--- Name: idx_inspecciones_estado_fecha; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_inspecciones_estado; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_inspecciones_estado ON public.inspecciones USING btree (estado);
+
+
+--
+-- Name: idx_inspecciones_estado_fecha; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_inspecciones_estado_fecha ON public.inspecciones USING btree (estado, fecha_inspeccion);
 
 
 --
--- Name: idx_inspecciones_fecha; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_inspecciones_fecha; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_inspecciones_fecha ON public.inspecciones USING btree (fecha_inspeccion);
 
 
 --
--- Name: idx_inspecciones_tecnico; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_inspecciones_revisada_por; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_inspecciones_revisada_por ON public.inspecciones USING btree (revisada_por);
+
+
+--
+-- Name: idx_inspecciones_tecnico; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_inspecciones_tecnico ON public.inspecciones USING btree (tecnico_id);
 
 
 --
--- Name: idx_inspecciones_tecnico_fecha; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_inspecciones_tecnico_fecha; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_inspecciones_tecnico_fecha ON public.inspecciones USING btree (tecnico_id, fecha_inspeccion);
 
 
 --
--- Name: idx_novedades_criticidad; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_novedades_criticidad; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_novedades_criticidad ON public.novedades USING btree (criticidad_id);
 
 
 --
--- Name: idx_novedades_estado; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_novedades_estado; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_novedades_estado ON public.novedades USING btree (estado);
 
 
 --
--- Name: idx_novedades_inspeccion; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_novedades_inspeccion; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_novedades_inspeccion ON public.novedades USING btree (inspeccion_id);
 
 
 --
--- Name: idx_novedades_inspeccion_criticidad; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_novedades_inspeccion_criticidad; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_novedades_inspeccion_criticidad ON public.novedades USING btree (inspeccion_id, criticidad_id);
 
 
 --
--- Name: idx_usuarios_email_lower_unique; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_usuarios_email_lower_unique; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE UNIQUE INDEX idx_usuarios_email_lower_unique ON public.usuarios USING btree (lower((email)::text));
 
 
 --
--- Name: idx_usuarios_empresa; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_usuarios_empresa; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_usuarios_empresa ON public.usuarios USING btree (empresa_id);
 
 
 --
--- Name: idx_yacimientos_empresa; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_usuarios_rol; Type: INDEX; Schema: public; Owner: termovault
+--
+
+CREATE INDEX idx_usuarios_rol ON public.usuarios USING btree (rol_id);
+
+
+--
+-- Name: idx_yacimientos_empresa; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX idx_yacimientos_empresa ON public.yacimientos USING btree (empresa_id);
 
 
 --
--- Name: jobs_queue_index; Type: INDEX; Schema: public; Owner: -
+-- Name: jobs_queue_index; Type: INDEX; Schema: public; Owner: termovault
 --
 
 CREATE INDEX jobs_queue_index ON public.jobs USING btree (queue);
 
 
 --
--- Name: archivos archivos_inspeccion_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: archivos archivos_inspeccion_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.archivos
@@ -1084,7 +1194,7 @@ ALTER TABLE ONLY public.archivos
 
 
 --
--- Name: archivos archivos_subido_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: archivos archivos_subido_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.archivos
@@ -1092,7 +1202,7 @@ ALTER TABLE ONLY public.archivos
 
 
 --
--- Name: auditoria_descargas_archivos auditoria_descargas_archivos_archivo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_archivo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.auditoria_descargas_archivos
@@ -1100,7 +1210,7 @@ ALTER TABLE ONLY public.auditoria_descargas_archivos
 
 
 --
--- Name: auditoria_descargas_archivos auditoria_descargas_archivos_usuario_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_usuario_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.auditoria_descargas_archivos
@@ -1108,7 +1218,7 @@ ALTER TABLE ONLY public.auditoria_descargas_archivos
 
 
 --
--- Name: elementos elementos_created_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_created_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1116,7 +1226,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_criticidad_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_criticidad_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1124,7 +1234,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_nivel_tension_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_nivel_tension_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1132,7 +1242,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_tipo_elemento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_tipo_elemento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1140,7 +1250,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_updated_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_updated_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1148,7 +1258,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: elementos elementos_yacimiento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: elementos elementos_yacimiento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.elementos
@@ -1156,7 +1266,7 @@ ALTER TABLE ONLY public.elementos
 
 
 --
--- Name: inspecciones inspecciones_cerrada_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_cerrada_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1164,7 +1274,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: inspecciones inspecciones_created_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_created_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1172,7 +1282,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: inspecciones inspecciones_elemento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_elemento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1180,7 +1290,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: inspecciones inspecciones_revisada_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_revisada_por_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1188,7 +1298,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: inspecciones inspecciones_tecnico_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_tecnico_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1196,7 +1306,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: inspecciones inspecciones_updated_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: inspecciones inspecciones_updated_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.inspecciones
@@ -1204,7 +1314,7 @@ ALTER TABLE ONLY public.inspecciones
 
 
 --
--- Name: novedades novedades_criticidad_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: novedades novedades_criticidad_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.novedades
@@ -1212,7 +1322,7 @@ ALTER TABLE ONLY public.novedades
 
 
 --
--- Name: novedades novedades_inspeccion_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: novedades novedades_inspeccion_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.novedades
@@ -1220,7 +1330,7 @@ ALTER TABLE ONLY public.novedades
 
 
 --
--- Name: usuario_yacimientos usuario_yacimientos_usuario_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: usuario_yacimientos usuario_yacimientos_usuario_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuario_yacimientos
@@ -1228,7 +1338,7 @@ ALTER TABLE ONLY public.usuario_yacimientos
 
 
 --
--- Name: usuario_yacimientos usuario_yacimientos_yacimiento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: usuario_yacimientos usuario_yacimientos_yacimiento_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuario_yacimientos
@@ -1236,7 +1346,7 @@ ALTER TABLE ONLY public.usuario_yacimientos
 
 
 --
--- Name: usuarios usuarios_empresa_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: usuarios usuarios_empresa_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuarios
@@ -1244,7 +1354,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- Name: usuarios usuarios_rol_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: usuarios usuarios_rol_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.usuarios
@@ -1252,7 +1362,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- Name: yacimientos yacimientos_empresa_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: yacimientos yacimientos_empresa_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: termovault
 --
 
 ALTER TABLE ONLY public.yacimientos
@@ -1263,5 +1373,5 @@ ALTER TABLE ONLY public.yacimientos
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hWRFan5oh3gnqWdKhu80xAm8AiuSptiPtE4hE6czoi7QjqMX8JgHJvqXGcNH2by
+\unrestrict TXiiZ3J2wRx5uH0DQCfDMEdW7Qy9XaCEVCfMa1XCfats3bg1aU8qvvE5lAQcaD8
 
