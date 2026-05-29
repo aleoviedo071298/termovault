@@ -10,6 +10,7 @@ use App\Models\Yacimiento;
 use App\Services\CognitoJwtVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
@@ -406,6 +407,40 @@ class InspeccionManagementTest extends TestCase
         $this->assertLessThanOrEqual(500, strlen((string) $novedad->accion_recomendada));
         $this->assertEquals(500, strlen((string) $novedad->accion_recomendada)); // Should be exactly capped
         $this->assertFalse(str_contains($novedad->accion_recomendada, '  '));  // Trimmed
+    }
+
+    public function test_update_estado_writes_audit_trail_log(): void
+    {
+        config()->set('cognito.required', true);
+        Log::spy();
+        $this->mockVerifier($this->adminClaims);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Subestacion Audit Estado',
+            'codigo' => 'SET-AUD-EST',
+        ]);
+
+        $createResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+            ]);
+        $createResponse->assertStatus(201);
+        $inspeccionId = (int) $createResponse->json('inspeccion.id');
+
+        $updateResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'revisada',
+            ]);
+        $updateResponse->assertOk();
+
+        Log::shouldHaveReceived('info')
+            ->with('audit.trail', Mockery::on(function (array $context) use ($inspeccionId): bool {
+                return ($context['event'] ?? null) === 'inspeccion.estado.updated'
+                    && (int) ($context['inspeccion_id'] ?? 0) === $inspeccionId;
+            }));
     }
 
     public function test_arquivo_download_validates_magic_bytes(): void { /* MIME validation implemented; tested manually */ }
