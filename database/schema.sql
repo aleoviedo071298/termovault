@@ -1,8 +1,8 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
-\restrict termovaultschemasnapshot
+\restrict hWRFan5oh3gnqWdKhu80xAm8AiuSptiPtE4hE6czoi7QjqMX8JgHJvqXGcNH2by
 
 -- Dumped from database version 16.14
 -- Dumped by pg_dump version 16.14
@@ -58,6 +58,39 @@ CREATE SEQUENCE public.archivos_id_seq
 --
 
 ALTER SEQUENCE public.archivos_id_seq OWNED BY public.archivos.id;
+
+
+--
+-- Name: auditoria_descargas_archivos; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auditoria_descargas_archivos (
+    id bigint NOT NULL,
+    archivo_id bigint NOT NULL,
+    usuario_id bigint,
+    ip_address character varying(45),
+    user_agent text,
+    descargado_en timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.auditoria_descargas_archivos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: auditoria_descargas_archivos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.auditoria_descargas_archivos_id_seq OWNED BY public.auditoria_descargas_archivos.id;
 
 
 --
@@ -544,7 +577,8 @@ CREATE TABLE public.yacimientos (
     nombre character varying(150) NOT NULL,
     codigo character varying(50) NOT NULL,
     activo boolean DEFAULT true NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    permite_supervisor_elementos boolean DEFAULT false NOT NULL
 );
 
 
@@ -572,6 +606,13 @@ ALTER SEQUENCE public.yacimientos_id_seq OWNED BY public.yacimientos.id;
 --
 
 ALTER TABLE ONLY public.archivos ALTER COLUMN id SET DEFAULT nextval('public.archivos_id_seq'::regclass);
+
+
+--
+-- Name: auditoria_descargas_archivos id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria_descargas_archivos ALTER COLUMN id SET DEFAULT nextval('public.auditoria_descargas_archivos_id_seq'::regclass);
 
 
 --
@@ -671,6 +712,14 @@ ALTER TABLE ONLY public.yacimientos ALTER COLUMN id SET DEFAULT nextval('public.
 
 ALTER TABLE ONLY public.archivos
     ADD CONSTRAINT archivos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria_descargas_archivos
+    ADD CONSTRAINT auditoria_descargas_archivos_pkey PRIMARY KEY (id);
 
 
 --
@@ -887,6 +936,20 @@ CREATE INDEX idx_archivos_inspeccion ON public.archivos USING btree (inspeccion_
 
 
 --
+-- Name: idx_aud_desc_archivo_fecha; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_aud_desc_archivo_fecha ON public.auditoria_descargas_archivos USING btree (archivo_id, descargado_en);
+
+
+--
+-- Name: idx_aud_desc_usuario_fecha; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_aud_desc_usuario_fecha ON public.auditoria_descargas_archivos USING btree (usuario_id, descargado_en);
+
+
+--
 -- Name: idx_elementos_funcion; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1026,6 +1089,22 @@ ALTER TABLE ONLY public.archivos
 
 ALTER TABLE ONLY public.archivos
     ADD CONSTRAINT archivos_subido_por_foreign FOREIGN KEY (subido_por) REFERENCES public.usuarios(id);
+
+
+--
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_archivo_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria_descargas_archivos
+    ADD CONSTRAINT auditoria_descargas_archivos_archivo_id_foreign FOREIGN KEY (archivo_id) REFERENCES public.archivos(id) ON DELETE CASCADE;
+
+
+--
+-- Name: auditoria_descargas_archivos auditoria_descargas_archivos_usuario_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria_descargas_archivos
+    ADD CONSTRAINT auditoria_descargas_archivos_usuario_id_foreign FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE SET NULL;
 
 
 --
@@ -1184,4 +1263,5 @@ ALTER TABLE ONLY public.yacimientos
 -- PostgreSQL database dump complete
 --
 
-\unrestrict termovaultschemasnapshot
+\unrestrict hWRFan5oh3gnqWdKhu80xAm8AiuSptiPtE4hE6czoi7QjqMX8JgHJvqXGcNH2by
+

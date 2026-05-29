@@ -88,6 +88,7 @@ Implementado en `App\Services\Auth\AccessScopeResolver`.
 - Sanitizacion de nombres de archivo antes de guardar.
 - Descargas por endpoint backend autorizado: `/api/archivos/{id}/download`.
 - Bucket privado compatible con descargas desde plataforma.
+- Auditoria de descargas en DB (`auditoria_descargas_archivos`) con `archivo_id`, `usuario_id`, `ip_address`, `user_agent` y `descargado_en`.
 - CORS configurable por entorno.
 - Rate limit en `/api/auth/login`.
 
@@ -109,9 +110,10 @@ Implementado en `App\Services\Auth\AccessScopeResolver`.
 
 ### Medios
 
-1. ✅ Modelo `User.php`, `UserFactory.php` y tabla `users` no existen en el arbol/DB actual.
-2. ✅ `password_hash` no existe en la migracion base actual, en `database/schema.sql` ni en la DB local actual.
-3. Pendiente: comando de limpieza de archivos huerfanos en S3/MinIO.
+1. Modelo `User.php`, `UserFactory.php` y tabla `users` no existen en el arbol/DB actual.
+2. `password_hash` no existe en la migracion base actual, en `database/schema.sql` ni en la DB local actual.
+3. Trazabilidad de descargas implementada por API (tabla `auditoria_descargas_archivos`).
+4. Pendiente: comando de limpieza de archivos huerfanos en S3/MinIO.
 
 ## Checklist pre-deploy
 
