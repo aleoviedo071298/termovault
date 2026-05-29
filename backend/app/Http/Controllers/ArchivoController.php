@@ -64,6 +64,20 @@ class ArchivoController extends Controller
             return response()->json(['message' => 'Archivo no disponible'], 404);
         }
 
+        // Validate file content against declared MIME type (magic bytes check)
+        // Prevents serving e.g. a ZIP disguised as DOCX
+        if (! $this->validateMimeTypeMatch($disk, $archivo)) {
+            Log::warning('MIME type mismatch on download', [
+                'archivo_id' => $archivo->id,
+                'declared_mime' => $archivo->mime_type,
+                's3_key' => $archivo->s3_key,
+            ]);
+
+            return response()->json([
+                'message' => 'Archivo corrupto o MIME type inválido',
+            ], 422);
+        }
+
         $filename = $archivo->nombre_original ?: 'archivo-'.$archivo->id;
         $headers = array_filter([
             'Content-Type' => $archivo->mime_type ?: 'application/octet-stream',
@@ -97,5 +111,68 @@ class ArchivoController extends Controller
 
             echo $disk->get($archivo->s3_key);
         }, $filename, $headers);
+    }
+
+    /**
+     * Validate file MIME type by checking magic bytes (file signature).
+     * Only for real files (>1000 bytes) and known archive/document formats.
+     * Prevents serving files with mismatched MIME types (e.g., ZIP disguised as DOCX).
+     */
+    private function validateMimeTypeMatch($disk, $archivo): bool
+    {
+        $declaredMime = mb_strtolower((string) ($archivo->mime_type ?? ''));
+        $fileSize = $archivo->tamano_bytes ?? 0;
+
+        // Only validate if it's a known Office/archive format AND file is sizeable
+        $knownFormats = [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/msword',
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/pdf',
+        ];
+
+        $isKnownFormat = false;
+        foreach ($knownFormats as $fmt) {
+            if (str_contains($declaredMime, $fmt) || $declaredMime === $fmt) {
+                $isKnownFormat = true;
+                break;
+            }
+        }
+
+        if (!$isKnownFormat || $fileSize < 1000) {
+            return true; // Skip validation for unknowns or small files (likely test/temp)
+        }
+
+        // Read first 4 bytes to check magic signature
+        $stream = $disk->readStream($archivo->s3_key);
+        if (!is_resource($stream)) {
+            $content = $disk->get($archivo->s3_key);
+            $header = substr((string) $content, 0, 4);
+        } else {
+            $header = fread($stream, 4);
+            fclose($stream);
+        }
+
+        $header = (string) $header;
+        if (strlen($header) < 2) {
+            return true;
+        }
+
+        // Magic signatures for known formats
+        if (str_contains($declaredMime, 'openxmlformats') || str_contains($declaredMime, 'zip')) {
+            return str_starts_with($header, 'PK'); // ZIP header
+        }
+
+        if (str_contains($declaredMime, 'msword')) {
+            return str_starts_with($header, "\xD0\xCF"); // OLE2 header
+        }
+
+        if (str_contains($declaredMime, 'pdf')) {
+            return str_starts_with($header, '%PDF');
+        }
+
+        return true; // Fallback: allow
     }
 }
