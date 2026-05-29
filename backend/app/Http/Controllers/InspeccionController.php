@@ -262,7 +262,7 @@ class InspeccionController extends Controller
             'empresa_contratista' => 'nullable|string|max:150',
             'condiciones_clima' => 'nullable|string|max:50',
             'resumen' => 'nullable|string',
-            'estado' => 'nullable|in:' . implode(',', Inspeccion::getEstados()), // Enum: initial states only (técnico cannot set to 'cerrada')
+            'estado' => 'nullable|in:' . Inspeccion::ESTADO_ENVIADA, // Solo estado inicial al crear: revisar/cerrar va por PATCH /estado con control de rol
             'reporte' => 'nullable|file|mimes:doc,docx,xls,xlsx|max:10240', // Max 10MB, Word/Excel only
             'imagenes' => 'nullable|file|mimes:zip|max:51200', // Max 50MB, ZIP only
             'novedades' => 'nullable|string', // JSON string containing array of findings

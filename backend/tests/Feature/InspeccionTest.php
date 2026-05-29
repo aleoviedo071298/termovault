@@ -89,6 +89,34 @@ class InspeccionTest extends TestCase
     }
 
     /**
+     * Test: Técnico NO puede crear una inspección ya cerrada
+     *
+     * CRÍTICO: Al crear, solo se permite el estado inicial 'enviada'.
+     * Saltar el flujo enviada -> revisada -> cerrada debe rechazarse (422),
+     * forzando que revisión/cierre pase por PATCH /estado con control de rol.
+     */
+    public function test_tecnico_cannot_create_closed_inspeccion(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+
+        $response = $this->actingAs($tecnico)
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => now()->format('Y-m-d'),
+                'estado' => 'cerrada',  // ❌ No permitido al crear
+                'novedades' => json_encode([]),
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('estado');
+        $this->assertDatabaseMissing('inspecciones', [
+            'elemento_id' => $elemento->id,
+            'estado' => 'cerrada',
+        ]);
+    }
+
+    /**
      * Test: Solo técnico que creó puede ver su inspección
      */
     public function test_tecnico_can_only_see_own_inspecciones(): void

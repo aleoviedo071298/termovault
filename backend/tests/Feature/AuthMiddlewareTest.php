@@ -192,6 +192,184 @@ class AuthMiddlewareTest extends TestCase
             ]);
     }
 
+    public function test_preferred_username_matching_email_prefix_does_not_resolve_to_that_user(): void
+    {
+        config()->set('cognito.required', true);
+
+        $empresaId = DB::table('empresas')->insertGetId([
+            'nombre' => 'Empresa Test',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $rolId = DB::table('roles')->insertGetId([
+            'codigo' => 'tecnico',
+            'nombre' => 'Tecnico',
+        ]);
+
+        // Victim user whose email prefix ("alice") could be abused for impersonation.
+        $victimId = DB::table('usuarios')->insertGetId([
+            'empresa_id' => $empresaId,
+            'rol_id' => $rolId,
+            'nombre' => 'Alice',
+            'apellido' => 'Victim',
+            'email' => 'alice@example.com',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Attacker token: no email claim, only a preferred_username that matches the
+        // prefix of the victim's email. The old LIKE 'alice@%' lookup would have
+        // resolved this to alice@example.com.
+        $mockVerifier = Mockery::mock(CognitoJwtVerifier::class);
+        $mockVerifier->shouldReceive('verify')
+            ->once()
+            ->with('valid-token')
+            ->andReturn([
+                'sub' => 'attacker-999',
+                'preferred_username' => 'alice',
+                'token_use' => 'access',
+                'cognito:groups' => ['tecnico'],
+                'custom:empresa_id' => (string) $empresaId,
+            ]);
+        $this->app->instance(CognitoJwtVerifier::class, $mockVerifier);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/auth/me');
+
+        // Must NOT be resolved as the victim; identity is unresolvable -> 403.
+        $response
+            ->assertStatus(403)
+            ->assertJson([
+                'message' => 'Usuario no provisionado. Contacta a un administrador.',
+            ]);
+
+        // The victim record must be untouched and no impersonating user created.
+        $this->assertDatabaseHas('usuarios', [
+            'id' => $victimId,
+            'email' => 'alice@example.com',
+        ]);
+        $this->assertSame(1, DB::table('usuarios')->count());
+    }
+
+    public function test_access_token_username_email_resolves_via_exact_match(): void
+    {
+        config()->set('cognito.required', true);
+
+        $empresaId = DB::table('empresas')->insertGetId([
+            'nombre' => 'Empresa Test',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $rolId = DB::table('roles')->insertGetId([
+            'codigo' => 'tecnico',
+            'nombre' => 'Tecnico',
+        ]);
+
+        $bobId = DB::table('usuarios')->insertGetId([
+            'empresa_id' => $empresaId,
+            'rol_id' => $rolId,
+            'nombre' => 'Bob',
+            'apellido' => 'Tecnico',
+            'email' => 'bob@example.com',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Real Cognito ACCESS token: no email claim; identity is carried in the
+        // Cognito-assigned `username` (equals the login email in an email-alias pool).
+        // This must resolve to the existing user via an exact match.
+        $mockVerifier = Mockery::mock(CognitoJwtVerifier::class);
+        $mockVerifier->shouldReceive('verify')
+            ->once()
+            ->with('valid-token')
+            ->andReturn([
+                'sub' => 'bob-sub',
+                'username' => 'bob@example.com',
+                'token_use' => 'access',
+                'cognito:groups' => ['tecnico'],
+                'custom:empresa_id' => (string) $empresaId,
+            ]);
+        $this->app->instance(CognitoJwtVerifier::class, $mockVerifier);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/auth/me');
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'id' => $bobId,
+                'local_role' => 'tecnico',
+                'empresa_id' => $empresaId,
+            ]);
+
+        // Resolved the existing user exactly; no impersonating record created.
+        $this->assertSame(1, DB::table('usuarios')->count());
+    }
+
+    public function test_unverified_email_does_not_resolve_or_provision(): void
+    {
+        config()->set('cognito.required', true);
+
+        $empresaId = DB::table('empresas')->insertGetId([
+            'nombre' => 'Empresa Test',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $rolId = DB::table('roles')->insertGetId([
+            'codigo' => 'tecnico',
+            'nombre' => 'Tecnico',
+        ]);
+
+        $victimId = DB::table('usuarios')->insertGetId([
+            'empresa_id' => $empresaId,
+            'rol_id' => $rolId,
+            'nombre' => 'Carol',
+            'apellido' => 'Victim',
+            'email' => 'carol@example.com',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Email present but explicitly marked unverified: must not be trusted.
+        $mockVerifier = Mockery::mock(CognitoJwtVerifier::class);
+        $mockVerifier->shouldReceive('verify')
+            ->once()
+            ->with('valid-token')
+            ->andReturn([
+                'sub' => 'attacker-002',
+                'email' => 'carol@example.com',
+                'email_verified' => false,
+                'token_use' => 'access',
+                'cognito:groups' => ['tecnico'],
+                'custom:empresa_id' => (string) $empresaId,
+            ]);
+        $this->app->instance(CognitoJwtVerifier::class, $mockVerifier);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/auth/me');
+
+        $response
+            ->assertStatus(403)
+            ->assertJson([
+                'message' => 'Usuario no provisionado. Contacta a un administrador.',
+            ]);
+
+        $this->assertDatabaseHas('usuarios', [
+            'id' => $victimId,
+            'email' => 'carol@example.com',
+        ]);
+        $this->assertSame(1, DB::table('usuarios')->count());
+    }
+
     public function test_me_returns_local_role_as_effective_group_when_cognito_group_is_stale(): void
     {
         config()->set('cognito.required', true);

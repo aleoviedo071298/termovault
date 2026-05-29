@@ -324,4 +324,53 @@ class ElementoManagementTest extends TestCase
             'codigo' => 'CAPSA-NOOWN-1',
         ]);
     }
+
+    public function test_non_owner_supervisor_cannot_delete_element(): void
+    {
+        config()->set('cognito.required', true);
+
+        $capsa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-55667788-0']);
+        $capsaYacimiento = Yacimiento::create([
+            'empresa_id' => $capsa->id,
+            'nombre' => 'Yacimiento CAPSA Borrado',
+            'codigo' => 'YAC-CAPSA-3',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $capsa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'NoOwnerDelete',
+            'email' => 'supervisor.nodelete@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $capsaYacimiento->id,
+        ]);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $capsaYacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'Elemento CAPSA Protegido',
+            'codigo' => 'CAPSA-NODEL-1',
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-nodelete-123',
+            'email' => 'supervisor.nodelete@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $capsa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->deleteJson("/api/elementos/{$elemento->id}");
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('elementos', ['id' => $elemento->id]);
+    }
 }

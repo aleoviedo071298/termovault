@@ -220,6 +220,10 @@ class ElementoController extends Controller
             return response()->json(['message' => 'Elemento no encontrado'], 404);
         }
 
+        if (! $this->scopeResolver->canMutateElement($scope, (int) $elemento->yacimiento_id)) {
+            return response()->json(['message' => 'No tenes permisos para eliminar elementos en este yacimiento'], 403);
+        }
+
         // Prevent hard-delete if element has inspection history (audit trail protection)
         $inspeccionCount = $elemento->inspecciones()->count();
         if ($inspeccionCount > 0) {
