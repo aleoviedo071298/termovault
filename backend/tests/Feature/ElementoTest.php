@@ -108,9 +108,10 @@ class ElementoTest extends TestCase
     public function test_elemento_with_inspecciones_cannot_be_deleted(): void
     {
         $elemento = Elemento::factory()->create();
-        // Simular que tiene inspecciones
+        // Simular que tiene inspecciones (tecnico_id debe apuntar a un usuario real por la FK en Postgres)
+        $tecnico = Usuario::factory()->tecnico()->create();
         $elemento->inspecciones()->create([
-            'tecnico_id' => 1,
+            'tecnico_id' => $tecnico->id,
             'fecha_inspeccion' => now()
         ]);
 
@@ -176,8 +177,10 @@ class ElementoTest extends TestCase
             ->putJson("/api/elementos/{$elemento->id}", [
                 'nombre' => 'Updated',
                 'codigo' => 'UPD-001',
-                'yacimiento_id' => 1,
-                'tipo_elemento_id' => 1,
+                // Usar los IDs reales del elemento (en Postgres las secuencias no se resetean por test,
+                // así que no se puede asumir id=1).
+                'yacimiento_id' => $elemento->yacimiento_id,
+                'tipo_elemento_id' => $elemento->tipo_elemento_id,
                 'invalid_field' => 'should be ignored'
             ]);
 

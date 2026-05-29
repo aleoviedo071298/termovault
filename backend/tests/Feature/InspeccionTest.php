@@ -6,6 +6,7 @@ use App\Models\Usuario;
 use App\Models\Inspeccion;
 use App\Models\Elemento;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -27,6 +28,9 @@ class InspeccionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Adjuntos se guardan en disco S3/MinIO; en tests usamos un disco falso
+        // para no depender de un MinIO real (no disponible en CI).
+        Storage::fake('s3');
         // Create shared empresa and yacimiento for tests
         $this->empresa = \App\Models\Empresa::factory()->create(['nombre' => 'PAE']);
         $this->yacimiento = \App\Models\Yacimiento::factory()->create([
