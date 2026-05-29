@@ -41,7 +41,7 @@ Route::middleware('api')->group(function () {
             Route::get('/elementos', [ElementoController::class, 'listElements']);
             Route::get('/elementos/{id}', [ElementoController::class, 'show']);
             Route::get('/inspecciones/{id}', [\App\Http\Controllers\InspeccionController::class, 'show']);
-            Route::post('/inspecciones', [\App\Http\Controllers\InspeccionController::class, 'store']);
+            Route::post('/inspecciones', [\App\Http\Controllers\InspeccionController::class, 'store'])->middleware('throttle:5,60');
             Route::get('/archivos/{id}/download', [ArchivoController::class, 'download']);
         });
 
