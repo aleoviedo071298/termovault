@@ -1,92 +1,102 @@
-# TermoVault - Next Session (2026-05-28)
+# TermoVault Security Fixes — Next Session Roadmap
 
-Lee primero:
-1. `README.md`
-2. `backend/routes/api.php`
-3. `web/src/pages/Dashboard.tsx`
-4. `web/src/pages/ElementosGestion.tsx`
-5. `web/src/pages/AdminUsuariosPage.tsx`
+**Date:** 2026-05-29  
+**Branch:** `feature/security-etapa1-etapa2`  
+**Status:** Etapa 1 + Etapa 2 ✅ Complete and tested (53 passed)
 
-## Estado operativo actual
+## What was done
 
-- Auth Cognito JWT + provision local de usuario (`LocalUserProvisioner`).
-- Seguridad por rol validada en backend (`AccessScopeResolver`).
-- Storage local migrado a MinIO/S3 usando bucket `termovault-dev`.
-- Archivos historicos migrados a keys legibles:
-  - `inspecciones/{inspeccion_id}/reports/{archivo_id}-{nombre-original}`
-  - `inspecciones/{inspeccion_id}/images/{archivo_id}-{nombre-original}`
-- La API devuelve `download_url` por archivo; el frontend descarga por endpoint autorizado y ya no construye `/storage/...`.
-- Dashboard, gestion de elementos, admin usuarios y login redisenados con UI industrial SaaS premium.
-- Flujo de informe: `enviada -> revisada -> cerrada`.
-- Cierre de informe resuelve novedades abiertas (`abierta -> resuelta`).
-- Trazabilidad de auditoria en inspecciones:
-  - `created_by`, `updated_by`
-  - `revisada_por`, `fecha_revision`
-  - `cerrada_por`, `fecha_cierre`
-- Usuario inactivo queda bloqueado al ingresar.
+### Etapa 1 (3 critical authorization & flow fixes)
+1. **ElementoController::destroy** — Added `canMutateElement` check (like store/update)
+   - Non-owner supervisors now get 403 instead of bypassing authorization
+   - Test: `test_non_owner_supervisor_cannot_delete_element` ✅
 
-## Reglas funcionales clave
+2. **InspeccionController::store** — Restrict `estado` to `'enviada'` at creation
+   - Cannot bypass review/closure flow by upfront setting `estado='cerrada'`
+   - Only supervisors/admins advance estado via `PATCH /estado` with role checks
+   - Test: `test_tecnico_cannot_create_closed_inspeccion` ✅
 
-- Admin: alcance global.
-- Tecnico: solo sus informes/alcance.
-- Supervisor contratista: solo informes de su empresa en yacimientos asignados.
-- Supervisor PAE: alcance por yacimiento asignado, puede revisar/cerrar y gestionar elementos del yacimiento.
-- Caso Axel Elgueta validado:
-  - `aelgueta@pae-energy.com`
-  - empresa usuario: `PAE`
-  - yacimiento asignado: `PAE`
-  - empresa del yacimiento: `PAE`
+3. **EnsureCognitoJwt** — Cognito-assigned claims only, exact match (no LIKE, no `preferred_username`)
+   - `email`: only if `email_verified` is absent or truthy (ID tokens)
+   - `cognito:username`/`username`: Cognito-assigned, immutable; matched exactly
+   - `preferred_username`: removed (user-editable, hijackable)
+   - Test: `test_preferred_username_matching_email_prefix_does_not_resolve_to_that_user` ✅
 
-## UX/UI actual
+### Etapa 2 (Identity validation consistency)
+- **LocalUserProvisioner::resolveEmail** — Same policy as middleware (end-to-end consistency)
+  - `email` (if verified) → `cognito:username`/`username` (if contains @) → none
+  - Tests: `test_access_token_username_email_resolves_via_exact_match` ✅
+           `test_unverified_email_does_not_resolve_or_provision` ✅
 
-- Dashboard:
-  - hero enterprise por rol
-  - KPIs compactos
-  - filtro por criticidad
-  - tabla operacional con badges y acciones discretas
-- Elementos:
-  - pantalla de inventario tecnico
-  - filtro por tipo
-  - criticidad removida de la tabla, queda solo como extra en detalle/formulario
-- Admin usuarios:
-  - consola de identidad y organizacion
-  - metricas de usuarios, activos, supervisores y empresas
-  - paneles para alta rapida, empresas y yacimientos
-- Login:
-  - redisenado como acceso industrial premium
-  - errores de Cognito normalizados al espanol
-  - primer ingreso muestra panel separado para nueva contrasena
+**Security guarantees achieved:**
+- ✅ No LIKE-prefix matching ("alice" cannot resolve to "alice@example.com")
+- ✅ No user-editable claims as identity
+- ✅ Exact match on Cognito-assigned, immutable claims
+- ✅ end-to-end validation in middleware + provisioner fallback
 
-## Convenciones de criticidad
+**Test coverage:** 53 passed (161 assertions)
 
-- DB: `Baja`, `Media`, `Alta`, `Critica`.
-- Dashboard:
-  - sin hallazgos: `Normal`
-  - con hallazgos: segun maximo nivel detectado.
+## What's in the audit pipeline (NOT STARTED)
 
-## Validaciones rapidas al retomar
+From the original 19-section security audit (read-only, completed 2026-05-27), these are the **remaining findings** to address:
 
+### Medium severity (consider next)
+- **M1:** SQL injection risk in `Elemento::scopeBy` (dynamic `whereIn` without validation)
+- **M2:** Missing rate limiting on `/api/inspecciones/` POST (file upload endpoint)
+- **M3:** No input sanitization for `Novedad::accion_recomendada` (free text, audit trail)
+- **M4:** `ArchivoController::download` should validate `mime_type` against actual file content
+- **M5:** Missing CSRF token validation on state-changing endpoints (form-based flows)
+- **M6:** `AccessScopeResolver::applyElementScope` allows admin to bypass yacimiento filtering (by design, but document it)
+
+### Low severity (polish, edge cases)
+- **L1-L5:** Various logging improvements, error message consistency, header timing attacks, cache headers, audit trail completeness
+
+### Not applicable / By design
+- **C1-C5, A1-A7:** Already hardened in prior sessions (authentication, MIME validation, rate limiting, CORS, etc.)
+
+## Next steps (recommended order)
+
+### Session 2 (Etapa 3: Medium-severity flow fixes)
+1. **M2 + M3:** Rate limit `/api/inspecciones` POST; sanitize `accion_recomendada` text
+2. **M4:** Add file content validation (`mime_type` vs. actual bytes) in `ArchivoController::download`
+3. **M5:** Document CSRF token handling (may already be in place via Laravel; verify)
+
+### Session 3 (Etapa 4: Edge cases & consistency)
+1. **M1:** Validate `Elemento::scopeBy` inputs (or rewrite to parameterized query)
+2. **L1-L5:** Logging, error messages, cache headers, timing attack mitigation
+
+## Important notes for continuity
+
+### Current state
+- **Branch:** `feature/security-etapa1-etapa2` (not yet merged to main)
+- **No database migrations**, no `.env` changes
+- **All tests green** — safe to build on
+
+### Key files modified
+- Backend auth/controllers: `EnsureCognitoJwt.php`, `LocalUserProvisioner.php`, `ElementoController.php`, `InspeccionController.php`
+- Tests: `AuthMiddlewareTest.php`, `ElementoManagementTest.php`, `InspeccionTest.php`
+- **No schema changes** — the 3 fixes work entirely on validation logic
+
+### Architecture reminders
+- **Roles:** `admin`, `supervisor`, `tecnico` (supervisor split: owner vs. contractor via `yacimientos.permite_supervisor_elementos`)
+- **Identity source:** Local DB email (source of truth), Cognito JWT for auth
+- **Scope resolution:** `AccessScopeResolver` enforces read/write permissions; always consulted in controllers
+- **Inspection flow:** `enviada` → `revisada` → `cerrada` (only supervisors/admin can advance state)
+
+### Testing quick reference
 ```bash
-git status
-cd backend && php artisan test
-cd ../web && npm run build
+cd backend
+php artisan test tests/Feature/AuthMiddlewareTest.php          # Auth identity validation
+php artisan test tests/Feature/ElementoManagementTest.php      # Element CRUD + scope
+php artisan test tests/Feature/InspeccionTest.php             # Inspection flow
+php artisan test                                               # Full suite (53 tests)
 ```
 
-## Servicios locales
+### When ready to merge
+- Create PR from `feature/security-etapa1-etapa2` → `main`
+- Verify CI/CD pipeline passes
+- Merge only after code review
 
-```bash
-docker compose up -d
-cd backend && php artisan serve --host=127.0.0.1 --port=8000
-cd web && npm run dev -- --host 127.0.0.1 --port 5173
-```
+---
 
-- Frontend: `http://127.0.0.1:5173`
-- Backend: `http://127.0.0.1:8000/api`
-- MinIO Console: `http://localhost:9001`
-- Adminer: `http://localhost:8080`
-
-## Nota de mantenimiento
-
-- No volver a guardar archivos en el disco `public` para inspecciones; usar `s3`.
-- Si se resetea la DB, `database/seed-empresas.sql` ya crea `PAE` y asocia `YAC-PAE` a `PAE`.
-- La advertencia local `Module "openssl" is already loaded` viene del PHP local y no bloquea tests.
+**Next session:** Start with reading the audit findings in `README.md` (sections M1-M5, L1-L5) and decide which Etapa 3 fixes to prioritize.

@@ -62,23 +62,33 @@ class EnsureCognitoJwt
             ?? $claims['empresa_id']
             ?? null;
 
+        // Resolve identity using EXACT email matching against Cognito-assigned claims.
+        //  - email: trusted only when verified (present in id tokens).
+        //  - cognito:username / username: Cognito-assigned, immutable and unique, so
+        //    matching them exactly is safe. Access tokens carry identity here, not in
+        //    an email claim, so we accept them when they look like an email.
+        // We deliberately EXCLUDE preferred_username (user-settable) and never use
+        // prefix/LIKE matching, which previously let "alice" resolve to "alice@x.com".
+        $identityCandidates = [];
+        if ($this->emailClaimIsVerified($claims)) {
+            $identityCandidates[] = (string) $claims['email'];
+        }
+        foreach (['cognito:username', 'username'] as $claimKey) {
+            $value = $claims[$claimKey] ?? null;
+            if (is_string($value) && str_contains($value, '@')) {
+                $identityCandidates[] = $value;
+            }
+        }
+        $identityCandidates = array_values(array_unique(array_filter(
+            array_map(fn (string $value): string => mb_strtolower(trim($value)), $identityCandidates),
+            fn (string $value): bool => $value !== ''
+        )));
+
         $dbUser = null;
-        $identityCandidates = array_values(array_unique(array_filter([
-            $claims['email'] ?? null,
-            $claims['cognito:username'] ?? null,
-            $claims['username'] ?? null,
-            $claims['preferred_username'] ?? null,
-        ], fn ($value): bool => is_string($value) && trim($value) !== '')));
-
-        foreach ($identityCandidates as $identity) {
-            $normalized = mb_strtolower(trim($identity));
+        foreach ($identityCandidates as $normalized) {
             $dbUser = DB::table('usuarios')
-                ->where(function ($query) use ($normalized): void {
-                    $query->whereRaw('LOWER(email) = ?', [$normalized])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$normalized . '@%']);
-                })
+                ->whereRaw('LOWER(email) = ?', [$normalized])
                 ->first();
-
             if ($dbUser) {
                 break;
             }
@@ -119,5 +129,30 @@ class EnsureCognitoJwt
         }
 
         return $next($request);
+    }
+
+    /**
+     * The email claim is usable for identity resolution only when it is present
+     * and not explicitly flagged as unverified. Cognito sends email_verified as a
+     * boolean true (ID tokens) or the string "true"; access tokens may omit it
+     * entirely, in which case the email claim is accepted as-is.
+     */
+    private function emailClaimIsVerified(array $claims): bool
+    {
+        $email = $claims['email'] ?? null;
+        if (! is_string($email) || trim($email) === '') {
+            return false;
+        }
+
+        if (! array_key_exists('email_verified', $claims)) {
+            return true;
+        }
+
+        $verified = $claims['email_verified'];
+
+        return $verified === true
+            || $verified === 1
+            || $verified === '1'
+            || (is_string($verified) && mb_strtolower(trim($verified)) === 'true');
     }
 }
