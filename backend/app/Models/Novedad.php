@@ -39,6 +39,25 @@ class Novedad extends Model
         ];
     }
 
+    /**
+     * Sanitize accion_recomendada: trim and cap at 500 chars.
+     * Prevents storing malformed or excessively long recommendation text.
+     */
+    protected function setAccionRecomendadaAttribute(?string $value): void
+    {
+        if ($value === null) {
+            $this->attributes['accion_recomendada'] = null;
+            return;
+        }
+
+        $sanitized = trim((string) $value);
+        if (strlen($sanitized) > 500) {
+            $sanitized = substr($sanitized, 0, 500);
+        }
+
+        $this->attributes['accion_recomendada'] = $sanitized ?: null;
+    }
+
     public function scopeForEmpresa(Builder $query, int|string|null $empresaId): Builder
     {
         return $query->whereHas('inspeccion', fn (Builder $query) => $query->forEmpresa($empresaId));
