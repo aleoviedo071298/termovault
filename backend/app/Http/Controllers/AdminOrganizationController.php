@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditTrail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminOrganizationController extends Controller
 {
+    public function __construct(private readonly AuditTrail $auditTrail) {}
+
     public function createEmpresa(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -22,6 +25,10 @@ class AdminOrganizationController extends Controller
         ]);
 
         $empresa = DB::table('empresas')->where('id', $id)->first(['id', 'nombre']);
+        $this->auditTrail->record('empresa.created', [
+            'actor_user_id' => $request->attributes->get('auth.user_id'),
+            'empresa_id' => $id,
+        ]);
         return response()->json($empresa, 201);
     }
 
@@ -52,6 +59,12 @@ class AdminOrganizationController extends Controller
         ]);
 
         $yac = DB::table('yacimientos')->where('id', $id)->first(['id', 'nombre', 'codigo', 'empresa_id', 'permite_supervisor_elementos']);
+        $this->auditTrail->record('yacimiento.created', [
+            'actor_user_id' => $request->attributes->get('auth.user_id'),
+            'yacimiento_id' => $id,
+            'empresa_id' => (int) $data['empresa_id'],
+            'permite_supervisor_elementos' => (bool) ($data['permite_supervisor_elementos'] ?? false),
+        ]);
         return response()->json($yac, 201);
     }
 }

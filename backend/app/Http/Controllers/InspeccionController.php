@@ -6,16 +6,21 @@ use App\Models\Archivo;
 use App\Models\Elemento;
 use App\Models\Inspeccion;
 use App\Models\Novedad;
+use App\Services\AuditTrail;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class InspeccionController extends Controller
 {
-    public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+    public function __construct(
+        private readonly AccessScopeResolver $scopeResolver,
+        private readonly AuditTrail $auditTrail,
+    ) {}
 
     private function archivoPayload(Archivo $archivo): array
     {
@@ -173,6 +178,11 @@ class InspeccionController extends Controller
 
         // Solo admin o supervisor owner pueden revisar/cerrar.
         if (! $scope['is_admin'] && ! ($scope['is_owner_supervisor'] ?? false)) {
+            Log::notice('authz.denied.inspeccion.estado', [
+                'user_id' => $scope['user_id'] ?? null,
+                'inspeccion_id' => $id,
+                'roles' => $scope['roles'] ?? [],
+            ]);
             return response()->json(['message' => 'No tenes permisos para revisar o cerrar informes'], 403);
         }
 
@@ -232,11 +242,24 @@ class InspeccionController extends Controller
 
         $inspeccion->save();
 
+        $this->auditTrail->record('inspeccion.estado.updated', [
+            'actor_user_id' => $scope['user_id'] ?? null,
+            'inspeccion_id' => $inspeccion->id,
+            'estado' => $inspeccion->estado,
+            'revisada_por' => $inspeccion->revisada_por,
+            'cerrada_por' => $inspeccion->cerrada_por,
+        ]);
+
         if ($data['estado'] === Inspeccion::ESTADO_CERRADA) {
             Novedad::query()
                 ->where('inspeccion_id', $inspeccion->id)
                 ->where('estado', Novedad::ESTADO_ABIERTA)
                 ->update(['estado' => Novedad::ESTADO_RESUELTA]);
+
+            $this->auditTrail->record('novedades.bulk_resolved_on_close', [
+                'actor_user_id' => $scope['user_id'] ?? null,
+                'inspeccion_id' => $inspeccion->id,
+            ]);
         }
 
         return response()->json([
@@ -269,6 +292,11 @@ class InspeccionController extends Controller
         ]);
 
         if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
+            Log::notice('authz.denied.inspeccion.create', [
+                'user_id' => $scope['user_id'] ?? null,
+                'target_elemento_id' => (int) $data['elemento_id'],
+                'roles' => $scope['roles'] ?? [],
+            ]);
             return response()->json(['message' => 'Elemento fuera de alcance para tu perfil'], 422);
         }
 
@@ -301,6 +329,12 @@ class InspeccionController extends Controller
                 'updated_by' => $userId,
             ]);
 
+            $this->auditTrail->record('inspeccion.created', [
+                'actor_user_id' => $userId,
+                'inspeccion_id' => $inspeccion->id,
+                'elemento_id' => $elemento->id,
+            ]);
+
             // 2. Handle Reporte File
             if ($request->hasFile('reporte')) {
                 $reportFile = $request->file('reporte');
@@ -321,7 +355,7 @@ class InspeccionController extends Controller
                 $findings = json_decode($data['novedades'], true);
                 if (is_array($findings)) {
                     foreach ($findings as $finding) {
-                        Novedad::create([
+                        $novedad = Novedad::create([
                             'inspeccion_id' => $inspeccion->id,
                             'criticidad_id' => !empty($finding['criticidad_id']) ? (int) $finding['criticidad_id'] : null,
                             'titulo' => $finding['titulo'] ?? 'Hallazgo sin título',
@@ -330,6 +364,11 @@ class InspeccionController extends Controller
                             'temperatura_detectada' => isset($finding['temperatura_detectada']) && $finding['temperatura_detectada'] !== '' ? (float) $finding['temperatura_detectada'] : null,
                             'accion_recomendada' => $finding['accion_recomendada'] ?? null,
                             'estado' => Novedad::ESTADO_ABIERTA,
+                        ]);
+                        $this->auditTrail->record('novedad.created', [
+                            'actor_user_id' => $userId,
+                            'inspeccion_id' => $inspeccion->id,
+                            'novedad_id' => $novedad->id,
                         ]);
                     }
                 }

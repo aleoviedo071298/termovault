@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Services\CognitoJwtVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
 
@@ -22,12 +23,16 @@ class AuthMiddlewareTest extends TestCase
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
-            ->assertHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+            ->assertHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+            ->assertHeader('Cache-Control', 'max-age=0, must-revalidate, no-cache, no-store, private')
+            ->assertHeader('Pragma', 'no-cache')
+            ->assertHeader('Expires', '0');
     }
 
     public function test_it_returns_401_when_token_is_required_and_missing(): void
     {
         config()->set('cognito.required', true);
+        Log::spy();
 
         $response = $this->getJson('/api/auth/me');
 
@@ -36,11 +41,16 @@ class AuthMiddlewareTest extends TestCase
             ->assertJson([
                 'message' => 'Missing Bearer token',
             ]);
+
+        Log::shouldHaveReceived('notice')
+            ->once()
+            ->with('auth.jwt.missing_token', Mockery::on(fn (array $context): bool => isset($context['ip'])));
     }
 
     public function test_it_returns_401_with_invalid_bearer_token(): void
     {
         config()->set('cognito.required', true);
+        Log::spy();
 
         $response = $this->withHeader('Authorization', 'Bearer invalid-token')
             ->getJson('/api/auth/me');
@@ -51,6 +61,10 @@ class AuthMiddlewareTest extends TestCase
                 'message' => 'Invalid token',
             ])
             ->assertJsonMissingPath('error');
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->with('Cognito JWT verification failed', Mockery::on(fn (array $context): bool => ($context['event'] ?? null) === 'auth.jwt.invalid_token'));
     }
 
     public function test_it_returns_me_payload_when_token_is_valid(): void

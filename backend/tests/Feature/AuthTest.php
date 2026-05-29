@@ -61,7 +61,8 @@ class AuthTest extends TestCase
 
         // Cognito devuelve NotAuthorizedException
         $response->assertStatus(400);
-        $response->assertJsonPath('error', 'NotAuthorizedException');
+        $response->assertJsonPath('message', 'Email o contraseña incorrectos.');
+        $response->assertJsonMissingPath('error');
     }
 
     /**

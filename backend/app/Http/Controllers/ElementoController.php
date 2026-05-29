@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Elemento;
+use App\Services\AuditTrail;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ElementoController extends Controller
 {
-    public function __construct(private readonly AccessScopeResolver $scopeResolver) {}
+    public function __construct(
+        private readonly AccessScopeResolver $scopeResolver,
+        private readonly AuditTrail $auditTrail,
+    ) {}
 
     private function archivoPayload($archivo): array
     {
@@ -161,6 +166,11 @@ class ElementoController extends Controller
         ]);
 
         if (! $this->scopeResolver->canMutateElement($scope, (int) $data['yacimiento_id'])) {
+            Log::notice('authz.denied.element.create', [
+                'user_id' => $scope['user_id'] ?? null,
+                'target_yacimiento_id' => (int) $data['yacimiento_id'],
+                'roles' => $scope['roles'] ?? [],
+            ]);
             return response()->json(['message' => 'No tenes permisos para crear elementos en este yacimiento'], 403);
         }
 
@@ -168,6 +178,12 @@ class ElementoController extends Controller
             ...$data,
             'created_by' => $actorId,
             'updated_by' => $actorId,
+        ]);
+
+        $this->auditTrail->record('elemento.created', [
+            'actor_user_id' => $actorId,
+            'elemento_id' => $elemento->id,
+            'yacimiento_id' => $elemento->yacimiento_id,
         ]);
 
         return response()->json($elemento, 201);
@@ -200,12 +216,24 @@ class ElementoController extends Controller
         ]);
 
         if (! $this->scopeResolver->canMutateElement($scope, (int) $data['yacimiento_id'])) {
+            Log::notice('authz.denied.element.update', [
+                'user_id' => $scope['user_id'] ?? null,
+                'elemento_id' => (int) $id,
+                'target_yacimiento_id' => (int) $data['yacimiento_id'],
+                'roles' => $scope['roles'] ?? [],
+            ]);
             return response()->json(['message' => 'No tenes permisos para editar elementos en este yacimiento'], 403);
         }
 
         $elemento->update([
             ...$data,
             'updated_by' => $actorId,
+        ]);
+
+        $this->auditTrail->record('elemento.updated', [
+            'actor_user_id' => $actorId,
+            'elemento_id' => $elemento->id,
+            'yacimiento_id' => $elemento->yacimiento_id,
         ]);
 
         return response()->json($elemento);
@@ -234,6 +262,12 @@ class ElementoController extends Controller
         }
 
         $elemento->delete();
+
+        $this->auditTrail->record('elemento.deleted', [
+            'actor_user_id' => $scope['user_id'] ?? null,
+            'elemento_id' => (int) $id,
+            'yacimiento_id' => $elemento->yacimiento_id,
+        ]);
 
         return response()->json(['message' => 'Elemento eliminado correctamente']);
     }

@@ -40,6 +40,14 @@ class EnsureCognitoJwt
         }
 
         if (! $header) {
+            Log::notice('auth.jwt.missing_token', [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'ip' => $request->ip(),
+                'ua' => $request->userAgent(),
+                'required' => $required,
+            ]);
+
             return response()->json([
                 'message' => 'Missing Bearer token',
             ], 401);
@@ -49,8 +57,13 @@ class EnsureCognitoJwt
             $claims = $this->verifier->verify($header);
         } catch (Throwable $exception) {
             Log::warning('Cognito JWT verification failed', [
+                'event' => 'auth.jwt.invalid_token',
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'ip' => $request->ip(),
+                'ua' => $request->userAgent(),
             ]);
 
             return response()->json([
@@ -101,8 +114,13 @@ class EnsureCognitoJwt
 
         if (! $dbUser) {
             Log::warning('Cognito user could not be resolved locally', [
+                'event' => 'auth.jwt.user_unresolved',
                 'email' => $claims['email'] ?? $claims['cognito:username'] ?? null,
                 'has_empresa_claim' => isset($claims['custom:empresa_id']) || isset($claims['empresa_id']),
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'ip' => $request->ip(),
+                'ua' => $request->userAgent(),
             ]);
 
             return response()->json([
@@ -111,6 +129,14 @@ class EnsureCognitoJwt
         }
 
         if ($dbUser && ! (bool) ($dbUser->activo ?? true)) {
+            Log::notice('auth.jwt.inactive_user', [
+                'event' => 'auth.jwt.user_inactive',
+                'user_id' => $dbUser->id ?? null,
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Usuario inactivo. Contacta a un administrador.',
             ], 403);

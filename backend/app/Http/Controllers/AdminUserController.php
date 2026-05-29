@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditTrail;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class AdminUserController extends Controller
 {
+    public function __construct(private readonly AuditTrail $auditTrail) {}
+
     public function index(): JsonResponse
     {
         $users = Usuario::query()
@@ -73,6 +76,13 @@ class AdminUserController extends Controller
             return $user->load(['rol:id,codigo,nombre', 'empresa:id,nombre', 'yacimientos:id,nombre,codigo']);
         });
 
+        $this->auditTrail->record('usuario.created', [
+            'actor_user_id' => $request->attributes->get('auth.user_id'),
+            'usuario_id' => $user->id,
+            'rol' => $user->rol?->codigo,
+            'empresa_id' => $user->empresa_id,
+        ]);
+
         return response()->json([
             'id' => $user->id,
             'nombre' => $user->nombre,
@@ -116,6 +126,14 @@ class AdminUserController extends Controller
         });
 
         $fresh = $user->load(['rol:id,codigo,nombre', 'empresa:id,nombre', 'yacimientos:id,nombre,codigo']);
+
+        $this->auditTrail->record('usuario.updated', [
+            'actor_user_id' => $request->attributes->get('auth.user_id'),
+            'usuario_id' => $fresh->id,
+            'rol' => $fresh->rol?->codigo,
+            'empresa_id' => $fresh->empresa_id,
+            'activo' => (bool) $fresh->activo,
+        ]);
 
         return response()->json([
             'id' => $fresh->id,

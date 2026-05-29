@@ -28,7 +28,7 @@ class AuthController extends Controller
 
         if ($region === '' || $clientId === '') {
             return response()->json([
-                'message' => 'Cognito is not configured on the server.',
+                'message' => 'Servicio de autenticacion no disponible temporalmente.',
             ], 500);
         }
 
@@ -69,7 +69,6 @@ class AuthController extends Controller
             if (! $challengeResponse->successful()) {
                 return response()->json([
                     'message' => $this->translateCognitoError($challengeData['__type'] ?? null, $challengeData['message'] ?? null),
-                    'error' => $challengeData['__type'] ?? 'UnknownError',
                 ], 401);
             }
 
@@ -123,7 +122,6 @@ class AuthController extends Controller
             $message = $this->translateCognitoError($data['__type'] ?? null, $data['message'] ?? null);
             return response()->json([
                 'message' => $message,
-                'error' => $data['__type'] ?? 'UnknownError',
             ], $response->status() >= 400 && $response->status() < 500 ? $response->status() : 401);
         }
 

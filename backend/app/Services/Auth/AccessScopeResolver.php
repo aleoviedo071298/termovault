@@ -6,6 +6,7 @@ use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AccessScopeResolver
 {
@@ -121,11 +122,22 @@ class AccessScopeResolver
         }
 
         if (! $scope['is_supervisor']) {
+            $this->logScopeViolation('element.mutate.denied.non_supervisor', $scope, [
+                'target_yacimiento_id' => $yacimientoId,
+            ]);
             return false;
         }
 
-        return ($scope['is_owner_supervisor'] ?? false)
+        $allowed = ($scope['is_owner_supervisor'] ?? false)
             && in_array($yacimientoId, $scope['owner_yacimiento_ids'] ?? [], true);
+
+        if (! $allowed) {
+            $this->logScopeViolation('element.mutate.denied.out_of_scope', $scope, [
+                'target_yacimiento_id' => $yacimientoId,
+            ]);
+        }
+
+        return $allowed;
     }
 
     public function canCreateInspectionForElement(array $scope, int $elementId): bool
@@ -136,6 +148,9 @@ class AccessScopeResolver
             ->where('e.id', $elementId)
             ->first();
         if (! $element) {
+            $this->logScopeViolation('inspection.create.denied.element_not_found', $scope, [
+                'target_element_id' => $elementId,
+            ]);
             return false;
         }
 
@@ -145,19 +160,62 @@ class AccessScopeResolver
 
         if ($scope['is_tecnico']) {
             if ($scope['assigned_yacimiento_ids'] === []) {
-                return (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+                $allowed = (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+                if (! $allowed) {
+                    $this->logScopeViolation('inspection.create.denied.empresa_mismatch', $scope, [
+                        'target_element_id' => $elementId,
+                        'target_empresa_id' => (int) $element->empresa_id,
+                    ]);
+                }
+                return $allowed;
             }
-            return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
+            $allowed = in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
+            if (! $allowed) {
+                $this->logScopeViolation('inspection.create.denied.yacimiento_unassigned', $scope, [
+                    'target_element_id' => $elementId,
+                    'target_yacimiento_id' => (int) $element->yacimiento_id,
+                ]);
+            }
+            return $allowed;
         }
 
         if ($scope['is_supervisor']) {
             if ($scope['assigned_yacimiento_ids'] === []) {
-                return (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+                $allowed = (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
+                if (! $allowed) {
+                    $this->logScopeViolation('inspection.create.denied.empresa_mismatch', $scope, [
+                        'target_element_id' => $elementId,
+                        'target_empresa_id' => (int) $element->empresa_id,
+                    ]);
+                }
+                return $allowed;
             }
-            return in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
+            $allowed = in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
+            if (! $allowed) {
+                $this->logScopeViolation('inspection.create.denied.yacimiento_unassigned', $scope, [
+                    'target_element_id' => $elementId,
+                    'target_yacimiento_id' => (int) $element->yacimiento_id,
+                ]);
+            }
+            return $allowed;
         }
 
+        $this->logScopeViolation('inspection.create.denied.role_not_allowed', $scope, [
+            'target_element_id' => $elementId,
+        ]);
         return false;
+    }
+
+    private function logScopeViolation(string $event, array $scope, array $extra = []): void
+    {
+        Log::notice('auth.scope.violation', array_merge([
+            'event' => $event,
+            'user_id' => $scope['user_id'] ?? null,
+            'empresa_id' => $scope['empresa_id'] ?? null,
+            'roles' => $scope['roles'] ?? [],
+            'assigned_yacimiento_ids' => $scope['assigned_yacimiento_ids'] ?? [],
+            'owner_yacimiento_ids' => $scope['owner_yacimiento_ids'] ?? [],
+        ], $extra));
     }
 
     private function extractRoles(array $claims, ?Usuario $dbUser = null): array

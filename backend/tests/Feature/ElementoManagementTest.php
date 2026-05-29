@@ -9,6 +9,7 @@ use App\Models\TipoElemento;
 use App\Models\Yacimiento;
 use App\Services\CognitoJwtVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
 
@@ -450,5 +451,29 @@ class ElementoManagementTest extends TestCase
 
         $deleteResponse->assertOk();
         $this->assertDatabaseMissing('elementos', ['id' => $elemento->id]);
+    }
+
+    public function test_create_element_writes_audit_trail_log(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->adminClaims);
+        Log::spy();
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/elementos', [
+                'yacimiento_id' => $this->yacimiento->id,
+                'tipo_elemento_id' => $this->tipo->id,
+                'nombre' => 'Elemento Audit',
+                'codigo' => 'SET-AUD-01',
+            ]);
+
+        $response->assertStatus(201);
+
+        Log::shouldHaveReceived('info')
+            ->with('audit.trail', Mockery::on(function (array $context): bool {
+                return ($context['event'] ?? null) === 'elemento.created'
+                    && isset($context['elemento_id'])
+                    && isset($context['actor_user_id']);
+            }));
     }
 }
