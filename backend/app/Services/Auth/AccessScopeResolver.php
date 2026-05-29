@@ -73,9 +73,27 @@ class AccessScopeResolver
         ];
     }
 
+    /**
+     * Apply yacimiento scope filtering to elemento query.
+     *
+     * M6 Design Decision: Admins intentionally bypass yacimiento filtering.
+     * This allows admins to perform enterprise-wide operations without being restricted
+     * by yacimiento assignment. Non-admin roles are restricted to their assigned yacimientos.
+     *
+     * Authorization checks in controllers (canMutateElement, canCreateInspectionForElement)
+     * still apply at the business logic level, ensuring:
+     * - Supervisors can only mutate elements in their assigned yacimientos
+     * - Tecnicos can only create inspections for their assigned elements
+     * - Admins can perform any operation
+     *
+     * @param Builder $query
+     * @param array $scope Access scope from AccessScopeResolver::resolve()
+     * @return Builder Modified query with yacimiento scope applied
+     */
     public function applyElementScope(Builder $query, array $scope): Builder
     {
         if ($scope['is_admin']) {
+            // Admin bypass: intentional design decision for enterprise operations
             return $query;
         }
 

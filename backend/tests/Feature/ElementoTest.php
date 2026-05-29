@@ -33,7 +33,7 @@ class ElementoTest extends TestCase
         Yacimiento::factory()->create(['nombre' => 'PAE']);
         Yacimiento::factory()->create(['nombre' => 'OTRO']);
         TipoElemento::factory()->create(['codigo' => 'subestacion']);
-        Criticidad::factory()->create(['nivel' => 1, 'nombre' => 'Baja']);
+        // Criticidad is created by tests that need it to avoid unique constraint collisions
     }
 
     /**
@@ -44,7 +44,7 @@ class ElementoTest extends TestCase
         $usuario = Usuario::factory()->tecnico()->create();
         $yacimiento = Yacimiento::first();
         $tipoElemento = TipoElemento::first();
-        $criticidad = Criticidad::first();
+        $criticidad = Criticidad::factory()->create(['nivel' => 1, 'nombre' => 'Baja']);
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
@@ -67,7 +67,7 @@ class ElementoTest extends TestCase
         $usuario = Usuario::factory()->admin()->create();
         $yacimiento = Yacimiento::first();
         $tipoElemento = TipoElemento::first();
-        $criticidad = Criticidad::first();
+        $criticidad = Criticidad::factory()->create(['nivel' => 2, 'nombre' => 'Media']);
 
         $response = $this->actingAs($usuario)
             ->postJson('/api/elementos', [
@@ -183,5 +183,66 @@ class ElementoTest extends TestCase
 
         // Debe actualizar exitosamente (campos extra se ignoran)
         $response->assertStatus(200);
+    }
+
+    /**
+     * Test: byYacimientoIds scope validates input to prevent SQL injection (M1)
+     */
+    public function test_by_yacimiento_ids_scope_accepts_valid_integers(): void
+    {
+        $yac1 = Yacimiento::first();
+        $yac2 = Yacimiento::where('nombre', 'OTRO')->first();
+
+        Elemento::factory()->create(['yacimiento_id' => $yac1->id]);
+        Elemento::factory()->create(['yacimiento_id' => $yac2->id]);
+
+        $elementos = Elemento::query()
+            ->byYacimientoIds([(int) $yac1->id])
+            ->get();
+
+        $this->assertCount(1, $elementos);
+        $this->assertEquals($yac1->id, $elementos->first()->yacimiento_id);
+    }
+
+    /**
+     * Test: byYacimientoIds scope rejects non-integer IDs to prevent SQL injection (M1)
+     */
+    public function test_by_yacimiento_ids_scope_rejects_non_integers(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('All yacimiento IDs must be positive integers.');
+
+        Elemento::query()
+            ->byYacimientoIds(['1', '2']) // String IDs should be rejected
+            ->get();
+    }
+
+    /**
+     * Test: byYacimientoIds scope rejects non-positive integers to prevent SQL injection (M1)
+     */
+    public function test_by_yacimiento_ids_scope_rejects_negative_ids(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('All yacimiento IDs must be positive integers.');
+
+        Elemento::query()
+            ->byYacimientoIds([1, -5, 3]) // Negative ID should be rejected
+            ->get();
+    }
+
+    /**
+     * Test: byYacimientoIds scope handles empty array gracefully (M1)
+     */
+    public function test_by_yacimiento_ids_scope_handles_empty_array(): void
+    {
+        $yac1 = Yacimiento::first();
+        Elemento::factory()->create(['yacimiento_id' => $yac1->id]);
+
+        // Empty array should return all (no filtering applied)
+        $elementos = Elemento::query()
+            ->byYacimientoIds([])
+            ->get();
+
+        $this->assertGreaterThanOrEqual(1, $elementos->count());
     }
 }
