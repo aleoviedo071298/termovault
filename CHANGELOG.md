@@ -7,6 +7,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 ## [Unreleased]
 
 ### Added
+- Carga de múltiples archivos térmicos por inspección (`.is2` y/o `.zip`), con drag & drop y lista de archivos seleccionados (nombre, tamaño y quitar).
+- Toggle "Incluir informe formal" en la carga de inspección: el informe (PDF / Word / Excel) ahora es opcional; el caso de campo (seccionadores, transformadores) puede guardarse solo con termografías y hallazgos.
+- Nombre de descarga normalizado y legible, calculado desde la DB: `{id}_{elemento}_{dd-mm-aaaa}_{tipo}.{ext}` (aplica también a archivos ya cargados, sin renombrar nada en MinIO).
 - Rediseño UX/UI premium industrial para dashboard, gestion de elementos, admin usuarios y login.
 - Componentes reutilizables de dashboard: `DashboardHero`, `ActionToolbar`, `RoleBadge`, `KPIGrid`, `StatsCard`, `FilterBar`, `ReportTable`.
 - Filtro por criticidad en dashboard.
@@ -32,6 +35,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `Makefile` con comandos comunes (`make up`, `make psql`, `make reset`, etc.).
 
 ### Changed
+- `POST /api/inspecciones` acepta `termografias[]` (múltiples archivos) y `reporte` opcional; las termografías `.is2` se validan por extensión (formato propietario sin MIME confiable) y el informe admite PDF/Word/Excel.
+- Detalle de inspección e historial de elemento ahora separan "Informe formal" de "Archivos térmicos", mostrando "Sin informe formal" cuando no hay informe (compatible con archivos viejos).
+- Nuevos `tipo` de archivo reutilizando la tabla `archivos` existente: `termografia_is2`, `termografia_zip`, `informe_pdf` (sin migración ni cambios destructivos).
+- Copy de títulos simplificado en dashboard, elementos, administración y login (tono más sobrio, menos grandilocuente).
+- `SecurityHeaders` expone `Access-Control-Expose-Headers: Content-Disposition` para que el frontend pueda leer el nombre de archivo en descargas cross-origin.
 - Inspecciones ahora guardan adjuntos en MinIO/S3 en vez de `storage/app/public`.
 - Keys de archivos migradas a formato legible: `inspecciones/{inspeccion_id}/{reports|images}/{archivo_id}-{nombre-original}`.
 - Gestion de elementos ya no muestra criticidad en tabla principal; queda como dato extra en detalle/formulario.
@@ -44,6 +52,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Flicker de rol en dashboard al volver desde gestion de elementos.
 
 ### Removed
+- Badge "Portal Técnico" del login; el texto del panel quedó centrado.
 - Descargas simuladas del panel de detalle de elementos.
 
 ---

@@ -87,10 +87,10 @@ export default function ElementosGestion({ onBack }: Props) {
         <div className="element-hero-main">
           <div className="hero-kicker">
             <span className="system-dot" />
-            Inventario tecnico / activos termograficos
+            Inventario
           </div>
-          <h1>Gestion de elementos</h1>
-          <p>Catalogo operativo de subestaciones, transformadores y activos inspeccionables por alcance.</p>
+          <h1>Elementos</h1>
+          <p>Subestaciones, transformadores y demás equipos que podés inspeccionar.</p>
           <div className="element-scope-row">
             <span><Factory size={14} /> {scopeLabel}</span>
             <span><Settings2 size={14} /> {canManage ? "Edicion habilitada" : "Solo consulta"}</span>
@@ -174,8 +174,8 @@ export default function ElementosGestion({ onBack }: Props) {
       <section className="dashboard-section element-table-panel">
         <div className="section-heading report-heading">
           <div>
-            <span>Inventario de elementos</span>
-            <small>Tabla compacta para exploracion y apertura de ficha tecnica</small>
+            <span>Listado</span>
+            <small>Hacé clic en un elemento para ver su ficha</small>
           </div>
           <strong>{filtered.length}</strong>
         </div>

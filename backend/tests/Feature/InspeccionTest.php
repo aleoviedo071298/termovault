@@ -53,6 +53,7 @@ class InspeccionTest extends TestCase
                 'condiciones_clima' => 'Despejado',
                 'resumen' => 'Inspección rutinaria',
                 'estado' => 'enviada',
+                'termografias' => [UploadedFile::fake()->create('termo.is2', 50)],
                 'novedades' => json_encode([])
             ]);
 
@@ -274,6 +275,7 @@ class InspeccionTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [UploadedFile::fake()->create('termo.is2', 50)],
                 'novedades' => json_encode([
                     [
                         'criticidad_id' => $criticidad->id,

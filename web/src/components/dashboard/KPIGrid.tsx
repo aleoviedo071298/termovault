@@ -9,8 +9,8 @@ export function KPIGrid({ cards }: KPIGridProps) {
   return (
     <section className="dashboard-section kpi-section">
       <div className="section-heading">
-        <span>Telemetria operativa</span>
-        <small>Indicadores principales del alcance activo</small>
+        <span>Indicadores</span>
+        <small>Resumen de tu alcance actual</small>
       </div>
       <div className="kpi-grid">
         {cards.map((card) => (

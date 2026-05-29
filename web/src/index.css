@@ -480,6 +480,9 @@ tbody tr:hover {
   max-width: 650px;
   margin-top: auto;
   margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 .login-headline h1 {
@@ -492,7 +495,7 @@ tbody tr:hover {
 
 .login-headline p {
   max-width: 560px;
-  margin: 16px 0 0;
+  margin: 16px auto 0;
   color: rgba(246, 242, 223, 0.78);
   font-size: 1.02rem;
   line-height: 1.48;

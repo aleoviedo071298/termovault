@@ -1,4 +1,4 @@
-import { Download, FileText, FolderArchive, X } from "lucide-react";
+import { Download, FileText, FolderArchive, Thermometer, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { apiDownload } from "../api/client";
 import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado } from "../api/inspecciones";
@@ -161,27 +161,53 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
                 )}
               </div>
 
-              <div>
-                <strong>Archivos y fotos</strong>
-                <div className="files-list" style={{ marginTop: 8 }}>
-                  {data.archivos.length === 0 ? (
-                    <p>Sin archivos adjuntos.</p>
-                  ) : (
-                    data.archivos.map((file) => {
-                      return (
-                        <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
-                          {file.tipo.includes("zip") ? <FolderArchive size={18} className="icon-zip" /> : <FileText size={18} className="icon-word" />}
-                          <div className="file-info">
-                            <span className="file-name">{file.nombre}</span>
-                            <span className="file-size">{fmtBytes(file.tamano)}</span>
-                          </div>
-                          <Download size={16} style={{ marginLeft: "auto" }} />
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+              {(() => {
+                const informes = data.archivos.filter((f) => f.tipo.startsWith("informe"));
+                const termografias = data.archivos.filter((f) => !f.tipo.startsWith("informe"));
+                return (
+                  <>
+                    <div>
+                      <strong>Informe formal</strong>
+                      <div className="files-list" style={{ marginTop: 8 }}>
+                        {informes.length === 0 ? (
+                          <p style={{ fontStyle: "italic", color: "#59645e" }}>Sin informe formal.</p>
+                        ) : (
+                          informes.map((file) => (
+                            <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
+                              <FileText size={18} className="icon-word" />
+                              <div className="file-info">
+                                <span className="file-name">{file.nombre}</span>
+                                <span className="file-size">{fmtBytes(file.tamano)}</span>
+                              </div>
+                              <Download size={16} style={{ marginLeft: "auto" }} />
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <strong>Archivos térmicos</strong>
+                      <div className="files-list" style={{ marginTop: 8 }}>
+                        {termografias.length === 0 ? (
+                          <p style={{ fontStyle: "italic", color: "#59645e" }}>Sin archivos térmicos.</p>
+                        ) : (
+                          termografias.map((file) => (
+                            <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
+                              {file.tipo.includes("zip") ? <FolderArchive size={18} className="icon-zip" /> : <Thermometer size={18} className="icon-zip" />}
+                              <div className="file-info">
+                                <span className="file-name">{file.nombre}</span>
+                                <span className="file-size">{fmtBytes(file.tamano)}</span>
+                              </div>
+                              <Download size={16} style={{ marginLeft: "auto" }} />
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </>
           ) : null}
         </div>

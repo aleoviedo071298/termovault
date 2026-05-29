@@ -6,9 +6,11 @@ use App\Models\Archivo;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -21,7 +23,7 @@ class ArchivoController extends Controller
         $scope = $this->scopeResolver->resolve($request);
 
         $archivo = Archivo::query()
-            ->select('archivos.*')
+            ->select('archivos.*', 'e.nombre as elemento_nombre', 'e.codigo as elemento_codigo', 'i.fecha_inspeccion as inspeccion_fecha')
             ->join('inspecciones as i', 'i.id', '=', 'archivos.inspeccion_id')
             ->join('elementos as e', 'e.id', '=', 'i.elemento_id')
             ->join('yacimientos as y', 'y.id', '=', 'e.yacimiento_id')
@@ -78,7 +80,7 @@ class ArchivoController extends Controller
             ], 422);
         }
 
-        $filename = $archivo->nombre_original ?: 'archivo-'.$archivo->id;
+        $filename = $this->buildDownloadFilename($archivo);
         $headers = array_filter([
             'Content-Type' => $archivo->mime_type ?: 'application/octet-stream',
             'Content-Length' => $archivo->tamano_bytes ? (string) $archivo->tamano_bytes : null,
@@ -111,6 +113,70 @@ class ArchivoController extends Controller
 
             echo $disk->get($archivo->s3_key);
         }, $filename, $headers);
+    }
+
+    /**
+     * Build a normalized, human-friendly download filename:
+     *   {archivo_id}_{nombreElemento}_{dd-mm-aaaa}_{tipo}.{ext}
+     *
+     * Examples:
+     *   137_Trafo-Principal_29-05-2026_termografia.is2
+     *   138_Trafo-Principal_29-05-2026_informe.pdf
+     *
+     * Computed at download time from DB data, so it also applies to files
+     * uploaded before this convention existed. The physical s3_key is untouched.
+     */
+    private function buildDownloadFilename(Archivo $archivo): string
+    {
+        $elemento = $this->sanitizeSegment(
+            (string) ($archivo->elemento_nombre ?? $archivo->elemento_codigo ?? 'elemento')
+        );
+
+        $fecha = 'sin-fecha';
+        if (! empty($archivo->inspeccion_fecha)) {
+            try {
+                $fecha = Carbon::parse($archivo->inspeccion_fecha)->format('d-m-Y');
+            } catch (Throwable) {
+                $fecha = 'sin-fecha';
+            }
+        }
+
+        $tipo = $this->downloadTipoLabel((string) $archivo->tipo);
+
+        // Extensión original (desde el nombre original o, en su defecto, desde la s3_key).
+        $ext = strtolower(pathinfo((string) ($archivo->nombre_original ?: $archivo->s3_key), PATHINFO_EXTENSION));
+
+        $base = "{$archivo->id}_{$elemento}_{$fecha}_{$tipo}";
+
+        return $ext !== '' ? "{$base}.{$ext}" : $base;
+    }
+
+    /**
+     * Map the internal `tipo` to a short user-facing label.
+     */
+    private function downloadTipoLabel(string $tipo): string
+    {
+        if (str_starts_with($tipo, 'informe')) {
+            return 'informe';
+        }
+
+        if (str_starts_with($tipo, 'termografia') || $tipo === 'pack_imagenes_zip') {
+            return 'termografia';
+        }
+
+        return 'adjunto';
+    }
+
+    /**
+     * Sanitize a name segment for safe use in a filename (ASCII, no spaces/specials).
+     */
+    private function sanitizeSegment(string $value): string
+    {
+        $value = Str::ascii($value);
+        $value = preg_replace('/[^A-Za-z0-9]+/', '-', $value) ?? '';
+        $value = trim($value, '-');
+
+        return $value !== '' ? $value : 'sin-nombre';
     }
 
     /**

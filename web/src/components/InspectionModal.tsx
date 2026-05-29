@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, AlertCircle, Plus, Trash2, Upload, FileCheck, CheckCircle } from "lucide-react";
+import { X, AlertCircle, Plus, Trash2, Upload, FileCheck, CheckCircle, Thermometer, FileText, FolderArchive } from "lucide-react";
 import { getCatalogos, listElementos, type Catalogos } from "../api/elementos";
 import type { Elemento } from "../types/elemento";
 import { createInspeccion } from "../api/inspecciones";
@@ -47,8 +47,11 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   const [resumen, setResumen] = useState("");
 
   // Files
+  const [termografiaFiles, setTermografiaFiles] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [incluirInforme, setIncluirInforme] = useState(false);
   const [reporteFile, setReporteFile] = useState<File | null>(null);
-  const [imagenesFile, setImagenesFile] = useState<File | null>(null);
+  const [draggingInforme, setDraggingInforme] = useState(false);
 
   // Findings list
   const [novedades, setNovedades] = useState<FindingTemp[]>([]);
@@ -96,8 +99,11 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         setIntegrantes("");
         setCondicionesClima("Despejado");
         setResumen("");
+        setTermografiaFiles([]);
+        setDragging(false);
+        setIncluirInforme(false);
         setReporteFile(null);
-        setImagenesFile(null);
+        setDraggingInforme(false);
         setNovedades([]);
         setShowFindingForm(false);
       } catch (err) {
@@ -148,10 +154,71 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
     setNovedades(novedades.filter(n => n.id !== id));
   }
 
+  function formatBytes(bytes: number): string {
+    if (!bytes) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    let value = bytes;
+    let idx = 0;
+    while (value >= 1024 && idx < units.length - 1) {
+      value /= 1024;
+      idx += 1;
+    }
+    return `${value.toFixed(1)} ${units[idx]}`;
+  }
+
+  function handleAddTermografias(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const incoming = Array.from(fileList);
+    const allowed = incoming.filter(f => {
+      const ext = f.name.split(".").pop()?.toLowerCase();
+      return ext === "is2" || ext === "zip";
+    });
+    if (allowed.length !== incoming.length) {
+      setError("Solo se permiten archivos térmicos .is2 o paquetes .zip.");
+    }
+    // Evitar duplicados por nombre + tamaño
+    setTermografiaFiles(prev => {
+      const key = (f: File) => `${f.name}::${f.size}`;
+      const seen = new Set(prev.map(key));
+      const merged = [...prev];
+      for (const f of allowed) {
+        if (!seen.has(key(f))) merged.push(f);
+      }
+      return merged;
+    });
+  }
+
+  function handleRemoveTermografia(index: number) {
+    setTermografiaFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function handleSetInforme(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const allowed = ["pdf", "doc", "docx", "xls", "xlsx"];
+    if (!ext || !allowed.includes(ext)) {
+      setError("El informe formal debe ser .pdf, .docx o .xlsx.");
+      return;
+    }
+    setError(null);
+    setReporteFile(file);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!elementoId || !fechaInspeccion) {
       setError("Por favor completa los campos obligatorios (*)");
+      return;
+    }
+
+    if (termografiaFiles.length === 0) {
+      setError("Adjuntá al menos un archivo térmico (.is2 o .zip).");
+      return;
+    }
+
+    if (incluirInforme && !reporteFile) {
+      setError("Activaste 'Incluir informe formal' pero no seleccionaste el archivo del informe.");
       return;
     }
 
@@ -168,11 +235,12 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       formData.append("condiciones_clima", condicionesClima);
       formData.append("resumen", resumen.trim());
 
-      if (reporteFile) {
+      termografiaFiles.forEach(file => {
+        formData.append("termografias[]", file);
+      });
+
+      if (incluirInforme && reporteFile) {
         formData.append("reporte", reporteFile);
-      }
-      if (imagenesFile) {
-        formData.append("imagenes", imagenesFile);
       }
 
       // Map findings to backend structure
@@ -280,59 +348,144 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 </select>
               </div>
 
-              {/* Carga de Archivos */}
-              <div className="form-group">
-                <label>Informe Técnico (Word o Excel) *</label>
-                <div className={`file-upload-box ${reporteFile ? "has-file" : ""}`}>
+              {/* Carga de Archivos Térmicos (múltiples) */}
+              <div className="form-group col-span-2">
+                <label>Archivos Térmicos *</label>
+                <div
+                  className={`file-upload-box ${termografiaFiles.length > 0 ? "has-file" : ""} ${dragging ? "is-dragging" : ""}`}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(false); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDragging(false);
+                    handleAddTermografias(e.dataTransfer.files);
+                  }}
+                  style={dragging ? { borderColor: "#1d5c46", background: "#eef5ee" } : undefined}
+                >
                   <input
                     type="file"
-                    accept=".doc,.docx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    onChange={(e) => setReporteFile(e.target.files?.[0] ?? null)}
-                    id="file-report"
+                    accept=".is2,.zip,application/zip,application/x-zip-compressed,application/octet-stream"
+                    multiple
+                    onChange={(e) => {
+                      handleAddTermografias(e.target.files);
+                      e.target.value = ""; // permite re-seleccionar el mismo archivo
+                    }}
+                    id="file-termografias"
                     className="sr-only"
-                    required
                   />
-                  <label htmlFor="file-report" className="file-label-box">
-                    {reporteFile ? (
-                      <>
-                        <FileCheck size={24} className="text-sage" />
-                        <span>{reporteFile.name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={24} />
-                        <span>Seleccionar .docx / .xlsx</span>
-                      </>
-                    )}
+                  <label htmlFor="file-termografias" className="file-label-box">
+                    <Upload size={24} />
+                    <span>
+                      {dragging
+                        ? "Soltá los archivos acá"
+                        : "Arrastrá archivos térmicos Fluke (.is2) o paquetes ZIP, o hacé clic para elegir"}
+                    </span>
                   </label>
                 </div>
+
+                {termografiaFiles.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
+                    {termografiaFiles.map((file, idx) => {
+                      const ext = file.name.split(".").pop()?.toLowerCase();
+                      const Icon = ext === "zip" ? FolderArchive : Thermometer;
+                      return (
+                        <div
+                          key={`${file.name}-${file.size}-${idx}`}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            background: "#f6f8ee",
+                            border: "1px solid #cbd5c4",
+                            borderRadius: "8px",
+                            padding: "8px 12px"
+                          }}
+                        >
+                          <Icon size={18} className="text-sage" />
+                          <span style={{ flex: 1, fontSize: "0.82rem", color: "#17201a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {file.name}
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "#59645e" }}>{formatBytes(file.size)}</span>
+                          <button
+                            type="button"
+                            aria-label={`Quitar ${file.name}`}
+                            style={{ background: "transparent", border: 0, color: "#e53e3e", cursor: "pointer", padding: "2px", display: "flex" }}
+                            onClick={() => handleRemoveTermografia(idx)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              <div className="form-group">
-                <label>Fotos Termográficas (ZIP) *</label>
-                <div className={`file-upload-box ${imagenesFile ? "has-file" : ""}`}>
+              {/* Toggle: informe formal opcional */}
+              <div className="form-group col-span-2">
+                <label
+                  htmlFor="toggle-informe"
+                  style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", userSelect: "none" }}
+                >
                   <input
-                    type="file"
-                    accept=".zip,application/zip,application/x-zip-compressed"
-                    onChange={(e) => setImagenesFile(e.target.files?.[0] ?? null)}
-                    id="file-zip"
-                    className="sr-only"
-                    required
+                    id="toggle-informe"
+                    type="checkbox"
+                    checked={incluirInforme}
+                    onChange={(e) => {
+                      setIncluirInforme(e.target.checked);
+                      if (!e.target.checked) setReporteFile(null);
+                    }}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
                   />
-                  <label htmlFor="file-zip" className="file-label-box">
-                    {imagenesFile ? (
-                      <>
-                        <FileCheck size={24} className="text-sage" />
-                        <span>{imagenesFile.name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={24} />
-                        <span>Seleccionar archivo .zip</span>
-                      </>
-                    )}
-                  </label>
-                </div>
+                  <span style={{ fontWeight: 700, color: "#1d5c46" }}>Incluir informe formal</span>
+                </label>
+
+                {incluirInforme && (
+                  <div
+                    className={`file-upload-box ${reporteFile ? "has-file" : ""} ${draggingInforme ? "is-dragging" : ""}`}
+                    style={{ marginTop: "10px", ...(draggingInforme ? { borderColor: "#1d5c46", background: "#eef5ee" } : {}) }}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDraggingInforme(true); }}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggingInforme(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDraggingInforme(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDraggingInforme(false);
+                      handleSetInforme(e.dataTransfer.files);
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      onChange={(e) => {
+                        handleSetInforme(e.target.files);
+                        e.target.value = "";
+                      }}
+                      id="file-report"
+                      className="sr-only"
+                    />
+                    <label htmlFor="file-report" className="file-label-box">
+                      {draggingInforme ? (
+                        <>
+                          <FileText size={24} />
+                          <span>Soltá el informe acá</span>
+                        </>
+                      ) : reporteFile ? (
+                        <>
+                          <FileCheck size={24} className="text-sage" />
+                          <span>{reporteFile.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={24} />
+                          <span>Arrastrá el informe (.pdf / .docx / .xlsx) o hacé clic para elegir</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="form-group col-span-2">
