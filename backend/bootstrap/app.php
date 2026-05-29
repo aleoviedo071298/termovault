@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->remove(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([

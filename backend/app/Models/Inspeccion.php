@@ -99,4 +99,11 @@ class Inspeccion extends Model
     {
         return $this->hasMany(Novedad::class);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::saved(fn() => \Illuminate\Support\Facades\Cache::forever('dashboard.version', microtime(true)));
+        static::deleted(fn() => \Illuminate\Support\Facades\Cache::forever('dashboard.version', microtime(true)));
+    }
 }

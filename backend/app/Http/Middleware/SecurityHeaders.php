@@ -10,17 +10,64 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        $allowedOrigins = [
+            'https://app.example.com',
+            'https://app.staging.example.com',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+        ];
+        $origin = $request->headers->get('Origin');
 
-        if (! (bool) config('security.headers.enabled', true)) {
+        if ($request->isMethod('OPTIONS')) {
+            $response = response()->noContent(204);
+            if (in_array($origin, $allowedOrigins, true)) {
+                $response->headers->set('Access-Control-Allow-Origin', $origin);
+                $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+                $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                $response->headers->set('Access-Control-Allow-Credentials', 'false');
+                $response->headers->set('Access-Control-Max-Age', '3600');
+            }
             return $response;
         }
 
-        foreach (config('security.headers.values', []) as $header => $value) {
-            if (is_string($value) && trim($value) !== '') {
-                $response->headers->set($header, $value);
-            }
+        $response = $next($request);
+
+        if (in_array($origin, $allowedOrigins, true)) {
+            $response->headers->set('Access-Control-Allow-Origin', $origin);
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            $response->headers->set('Access-Control-Allow-Credentials', 'false');
+            $response->headers->set('Access-Control-Max-Age', '3600');
         }
+
+        // Prevent MIME-type sniffing
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+        // Disable framing (prevent clickjacking)
+        $response->headers->set('X-Frame-Options', 'DENY');
+
+        // Enable XSS protection (older browsers)
+        $response->headers->set('X-XSS-Protection', '1; mode=block');
+
+        // CSP Header
+        $response->headers->set('Content-Security-Policy', 
+            "default-src 'self'; " .
+            "script-src 'self' https://cdn.jsdelivr.net; " .
+            "style-src 'self' 'unsafe-inline'; " .
+            "img-src 'self' data: https:; " .
+            "connect-src 'self' https://cognito-idp.*.amazonaws.com http://localhost:8000 http://127.0.0.1:8000; " .
+            "frame-ancestors 'none'; " .
+            "base-uri 'self'; " .
+            "form-action 'self'"
+        );
+
+        // Referrer Policy
+        $response->headers->set('Referrer-Policy', 'no-referrer');
+
+        // Permissions Policy
+        $response->headers->set('Permissions-Policy', 
+            'geolocation=(), microphone=(), camera=(), payment=()'
+        );
 
         $this->applyCacheHeaders($request, $response);
 
@@ -29,7 +76,19 @@ class SecurityHeaders
 
     private function applyCacheHeaders(Request $request, Response $response): void
     {
-        // API responses include auth context and user-sensitive data.
+        // Static assets or public files from backend
+        if ($request->is('public/*') || $request->is('*.js') || $request->is('*.css') || $request->is('*.png') || $request->is('*.jpg') || $request->is('*.gif') || $request->is('*.svg') || $request->is('*.woff2')) {
+            $response->headers->set('Cache-Control', 'public, max-age=2592000, immutable');
+            return;
+        }
+
+        // API responses with cacheable static data: 1 hour
+        if ($request->is('api/catalogos')) {
+            $response->headers->set('Cache-Control', 'public, max-age=3600');
+            return;
+        }
+
+        // User-specific or sensitive API data: Don't cache
         if ($request->is('api/*')) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
             $response->headers->set('Pragma', 'no-cache');
@@ -37,7 +96,7 @@ class SecurityHeaders
             return;
         }
 
-        // Non-API responses from backend are safe to cache aggressively.
+        // Default Cache-Control for backend HTML or non-API responses
         $response->headers->set('Cache-Control', 'public, max-age=2592000, immutable');
     }
 }

@@ -2,80 +2,76 @@
 
 **Date:** 2026-05-29  
 **Branch baseline:** `main`  
-**Status:** Etapa 1-5 completed in code branch `feature/etapa-5-security-polish` (pending merge in this session)
+**Status:** Etapa 7 (Frontend Security Hardening) completed successfully.
 
-## Completed security stages
+## Completed Stages
 
-### Etapa 1-3 (already merged previously)
-- Auth identity hardening (exact match, no preferred_username abuse)
-- Inspection flow hardening
-- Upload rate-limit and MIME controls
+### Etapa 1-6 (already merged/completed)
+- Hardening of auth identity, rate limiting, logging, audit trails, database indexing, eager loading query tuning, and caching strategies.
 
-### Etapa 4 (already merged previously)
-- Medium findings addressed (M1-M6 scope completed)
+### Etapa 7 (this session)
+- **Content Security Policy (CSP)**:
+  - Added CSP meta tag in [index.html](file:///C:/Users/Alejandro/Desktop/local/termovault/web/index.html) allowing Cognito connect endpoints, style/script whitelists, and local dev server WebSocket connections.
+- **Secure Token Management (Memory-Only)**:
+  - Implemented [TokenManager.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/auth/TokenManager.ts) to store `access_token` and `id_token` strictly in RAM (cleared on tab reload or tab close).
+  - Modified Axios/Fetch client [client.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/api/client.ts) to read from `TokenManager` and globally intercept `401 Unauthorized` responses to trigger redirects.
+  - Refactored [AuthContext.tsx](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/auth/AuthContext.tsx) to get/set tokens using `TokenManager` instead of `localStorage`.
+- **XSS Prevention (DOMPurify)**:
+  - Installed `dompurify` and `@types/dompurify` for frontend sanitization.
+  - Created [DomSanitizer.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/utils/DomSanitizer.ts) with `sanitizeHtml` (tag whitelisting) and `sanitizeUserInput` (HTML striping).
+  - Created [FormFields.tsx](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/components/FormFields.tsx) introducing `<SanitizedInput>` and `<SafeHtmlContent>` components.
+- **CORS & Preflight Interception**:
+  - Removed standard Laravel `HandleCors` middleware in [app.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/bootstrap/app.php).
+  - Handled CORS whitelist origins checking dynamically in [SecurityHeaders.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/app/Http/Middleware/SecurityHeaders.php) and handled preflight `OPTIONS` requests returning 204.
+- **Automated Verification**:
+  - Installed `vitest` and `jsdom` inside the `web` folder.
+  - Added unit tests [TokenManager.test.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/__tests__/security/TokenManager.test.ts) and [DomSanitizer.test.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/__tests__/security/DomSanitizer.test.ts).
+  - Updated backend integration tests [SecurityHeadersTest.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/tests/Feature/SecurityHeadersTest.php) and [AuthMiddlewareTest.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/tests/Feature/AuthMiddlewareTest.php).
 
-### Etapa 5 (this session)
-- L1 Logging improvements:
-  - structured auth failure logs in `EnsureCognitoJwt`
-  - structured scope violation logs in `AccessScopeResolver`
-  - authorization deny logs in controllers
-- L2 Error message consistency:
-  - removed implementation-leaking `error` field from auth responses
-  - generic server auth unavailability response
-- L3 Cache header optimization:
-  - API responses: no-store/no-cache policy
-  - non-API backend responses: long-lived public cache policy
-- L4 Timing attack review:
-  - JWT verification path unchanged and safe
-  - identity resolution remains exact-match and non-prefix
-- L5 Audit trail completeness:
-  - added `AuditTrail` service for state-changing operations
-  - users, org entities, elementos, inspecciones and novedades operations now log audit events
+## New/updated files in Etapa 7
 
-## New/updated files in Etapa 5
-
-### Backend code
-- `backend/app/Services/AuditTrail.php` (new)
-- `backend/app/Http/Middleware/EnsureCognitoJwt.php`
-- `backend/app/Services/Auth/AccessScopeResolver.php`
-- `backend/app/Http/Middleware/SecurityHeaders.php`
-- `backend/app/Http/Controllers/AuthController.php`
-- `backend/app/Http/Controllers/ElementoController.php`
-- `backend/app/Http/Controllers/InspeccionController.php`
-- `backend/app/Http/Controllers/AdminUserController.php`
-- `backend/app/Http/Controllers/AdminOrganizationController.php`
+### Frontend code
+- `web/index.html` (updated)
+- `web/package.json` (updated with `vitest` and `jsdom`)
+- `web/src/auth/TokenManager.ts` (new)
+- `web/src/api/client.ts` (updated)
+- `web/src/auth/AuthContext.tsx` (updated)
+- `web/src/utils/DomSanitizer.ts` (new)
+- `web/src/components/FormFields.tsx` (new)
 
 ### Tests
-- `backend/tests/Feature/AuthMiddlewareTest.php`
-- `backend/tests/Feature/SecurityHeadersTest.php` (new)
-- `backend/tests/Feature/AuthTest.php`
-- `backend/tests/Feature/ElementoManagementTest.php`
-- `backend/tests/Feature/InspeccionManagementTest.php`
+- `web/src/__tests__/security/TokenManager.test.ts` (new)
+- `web/src/__tests__/security/DomSanitizer.test.ts` (new)
+- `backend/tests/Feature/SecurityHeadersTest.php` (updated)
+- `backend/tests/Feature/AuthMiddlewareTest.php` (updated)
 
 ### Documentation
-- `docs/SECURITY.md` (new)
-- `docs/THREAT_MODEL.md` (new)
-- `docs/INCIDENT_RESPONSE.md` (new)
+- `docs/FRONTEND_SECURITY.md` (new)
 - `docs/README.md` (updated index)
+
+---
 
 ## Validation checklist for next run
 
+### 1. Frontend tests
+```bash
+cd web
+npx vitest run src/__tests__/security
+```
+Expected: 11 tests passing.
+
+### 2. Backend tests
 ```bash
 cd backend
-php artisan test
+$env:DB_PORT="5433"; php artisan test
 ```
+Expected: 77 tests passing.
 
-Expected:
-- all feature tests passing
-- no auth response leaks (`error` field absent)
-- cache headers validated by tests
+---
 
-## Suggested next stage (Etapa 6)
+## Suggested next stage (Etapa 8)
 
-1. Performance profiling with realistic dataset:
-   - scope-heavy queries
-   - download endpoint under load
-2. Query optimization pass (indexes + eager loading audit).
-3. Frontend hardening follow-up:
-   - evaluate migration from localStorage tokens to safer strategy.
-
+**Etapa 8: Deployment Hardening & Environment Isolation**
+1. Review secret management (e.g. AWS Secrets Manager or secure SSM parameter store for production configs).
+2. Configure environment isolation (restrict debug mode and Telescope/Pulse outputs in production).
+3. Setup audit logs aggregation (forwarding backend logs and system access trail into AWS CloudWatch or structured logs files).

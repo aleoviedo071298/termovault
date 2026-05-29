@@ -213,22 +213,30 @@ Usar `NEXT_SESSION.md` como prompt base.
 
 - Se eliminaron migraciones SQL legacy vacias en `database/migrations/`.
 - Se movio helper sensible de Cognito a `backend/scripts/internal/auth_login.php` (fuera de `public/`).
-- Se eliminaron tablas legacy no usadas:
-  - `comentarios`
-  - `historial_cambios`
-  - `sesiones`
-- Se eliminaron columnas no usadas:
-  - `inspecciones`: `temperatura_ambiente`, `humedad_relativa`, `carga_pct`
-  - `empresas`: `cuit`, `logo_url`
-  - `yacimientos`: `zona`, `descripcion`
-  - `usuarios`: `legajo`, `telefono`, `ultimo_login`
-  - `novedades`: `fecha_resolucion`, `resuelta_en_inspeccion_id`
-- Se unifico la autoprovision de usuario Cognito en un unico servicio:
-  - `App\Services\Auth\LocalUserProvisioner`
-- Se agregaron indices y constraints de integridad para mejorar performance/consistencia.
-- Se realizo backfill de auditoria historica en `inspecciones`:
-  - `created_by`, `updated_by`, `cerrada_por`, `fecha_cierre`
-- Se guardaron respaldos de auditoria en:
-  - `backups/termovault_2026-05-27.dump`
-  - `backups/termovault_schema_2026-05-27.sql`
-  - `backups/audit/*`
+- Se eliminaron tablas legacy no usadas (`comentarios`, `historial_cambios`, `sesiones`).
+- Se eliminaron columnas no usadas de `inspecciones`, `empresas`, `yacimientos`, `usuarios` y `novedades`.
+- Se unifico la autoprovision de usuario Cognito en `App\Services\Auth\LocalUserProvisioner`.
+- Se guardaron respaldos de auditoria en `backups/`.
+
+---
+
+## Optimización de Rendimiento y Caching (Etapa 6 - 2026-05-29)
+
+Se implementaron estrategias avanzadas para garantizar tiempos de respuesta rápidos y menor carga de base de datos:
+- **Indexación de Base de Datos**: Creación e inserción de índices clave en PostgreSQL (`idx_usuarios_rol`, `idx_elementos_criticidad`, `idx_inspecciones_estado`, `idx_inspecciones_revisada_por`, `idx_inspecciones_cerrada_por`, `idx_archivos_subido_por`) para optimizar accesos frecuentes.
+- **Evitado de N+1 Queries**: Auditoría y carga ansiosa selectiva (`with`) de relaciones complejas en listados de elementos y dashboard.
+- **Result Caching (Catálogos)**: Los catálogos estáticos de criticidades, niveles de tensión y tipos se cachean globalmente por 1 hora con invalidación inmediata al editar.
+- **Cache de Dashboard por Versión**: Se cachea la agregación JSON del dashboard por 5 minutos usando un timestamp de alta resolución en RAM. La clave se invalida de forma atómica en O(1) ante cualquier guardado o borrado en inspecciones, elementos o novedades.
+- **Pruebas de Performance**: Validadas mediante pruebas integradas en [PerformanceTest.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/tests/Feature/PerformanceTest.php).
+
+---
+
+## Hardening de Seguridad del Frontend (Etapa 7 - 2026-05-29)
+
+Se endureció la seguridad de la interfaz frente a ataques de inyección y Clickjacking:
+- **Content Security Policy (CSP)**: Implementación de cabeceras estrictas de CSP tanto en meta-tags de index.html como desde el backend Laravel, permitiendo orígenes seguros de API/Cognito y bloqueando inyección de scripts/marcos no confiables.
+- **Manejo de Tokens en Memoria RAM**: Se eliminó la persistencia de tokens JWT en `localStorage`. Ahora se gestionan de forma segura en memoria mediante [TokenManager.ts](file:///C:/Users/Alejandro/Desktop/local/termovault/web/src/auth/TokenManager.ts), provocando logout automático al cerrar/refrescar la pestaña.
+- **Sanitización de Contenido (XSS)**: Integración de **DOMPurify** en utilidades de frontend para sanitizar marcado HTML dinámico y sanear entradas mediante los componentes reutilizables `<SanitizedInput>` y `<SafeHtmlContent>`.
+- **CORS de Servidor**: Desactivación del CORS predeterminado y manejo robusto y manual de whitelistings de origen y respuestas preflight `OPTIONS` con código 204.
+- **Pruebas Unitarias y de Integración**: Pruebas de seguridad del frontend implementadas con Vitest y JSDOM en `web/src/__tests__/security/`.
+

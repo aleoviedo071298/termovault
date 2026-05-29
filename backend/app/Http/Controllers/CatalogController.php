@@ -39,25 +39,33 @@ class CatalogController extends Controller
                 ->get(['id', 'nombre', 'codigo']);
         }
 
-        $tipos = TipoElemento::query()
-            ->where('activo', true)
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo', 'requiere_tension']);
+        $catalogs = \Illuminate\Support\Facades\Cache::remember('catalogs.static', 3600, function () {
+            $tipos = TipoElemento::query()
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'codigo', 'requiere_tension']);
 
-        $tensiones = NivelTension::query()
-            ->where('activo', true)
-            ->orderBy('kv')
-            ->get(['id', 'kv', 'etiqueta']);
+            $tensiones = NivelTension::query()
+                ->where('activo', true)
+                ->orderBy('kv')
+                ->get(['id', 'kv', 'etiqueta']);
 
-        $criticidades = Criticidad::query()
-            ->orderBy('nivel')
-            ->get(['id', 'nivel', 'nombre', 'color']);
+            $criticidades = Criticidad::query()
+                ->orderBy('nivel')
+                ->get(['id', 'nivel', 'nombre', 'color']);
+
+            return [
+                'tipos_elemento' => $tipos,
+                'niveles_tension' => $tensiones,
+                'criticidades' => $criticidades,
+            ];
+        });
 
         return response()->json([
             'yacimientos' => $yacimientos,
-            'tipos_elemento' => $tipos,
-            'niveles_tension' => $tensiones,
-            'criticidades' => $criticidades,
+            'tipos_elemento' => $catalogs['tipos_elemento'],
+            'niveles_tension' => $catalogs['niveles_tension'],
+            'criticidades' => $catalogs['criticidades'],
         ]);
     }
 }
