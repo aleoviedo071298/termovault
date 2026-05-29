@@ -1,143 +1,88 @@
-# Arquitectura — TermoVault
+# Arquitectura - TermoVault
 
-> Plataforma interna multi-tenant para gestión de informes de termografía en Oil & Gas.
+Plataforma interna multi-tenant para gestion de informes de termografia en Oil and Gas.
 
-## Visión de alto nivel
+## Vision de alto nivel
 
 TermoVault es un sistema cliente-servidor:
 
-- **Web app (React)** que consume una **API REST (Laravel)**.
-- **PostgreSQL** como sistema de registro.
-- **S3/MinIO** como storage de archivos pesados (Word, Excel, ZIP de imágenes).
-- **AWS Cognito** como proveedor de identidad. La app **no almacena contraseñas**.
-
-```
-          ┌──────────────┐         JWT          ┌──────────────┐
-          │   Browser    │ ───── Bearer ──────▶ │ Backend API  │
-          │  (React app) │                      │  (Laravel)   │
-          └──────┬───────┘                      └──────┬───────┘
-                 │                                     │
-                 │ Login (email+password)              │ Verifica JWT
-                 ▼                                     │ vía JWKS
-          ┌──────────────┐ ◀──── id_token ──────┐      ▼
-          │ AWS Cognito  │                      │  ┌─────────┐
-          │  user pool   │                      │  │   DB    │
-          └──────────────┘                      │  │ Postgres│
-                                                │  └─────────┘
-                                                │
-                                                │  ┌─────────┐
-                                                └─▶│  S3 /   │
-                                                   │  MinIO  │
-                                                   └─────────┘
-```
+- Web app (React) que consume una API REST (Laravel).
+- PostgreSQL como sistema de registro.
+- S3/MinIO como storage de archivos pesados (Word, Excel, ZIP de imagenes).
+- AWS Cognito como proveedor de identidad. La app no almacena contrasenas.
 
 ## Componentes
 
 ### Backend (`backend/`)
 
-- **Framework**: Laravel 12 (PHP 8.3+).
-- **Auth**: middleware `EnsureCognitoJwt` valida el JWT contra JWKS de Cognito. `EnsureRoleFromClaims` valida que el rol del token (o del usuario local como fallback) esté entre los permitidos por la ruta.
-- **Storage**: filesystem `s3` apuntando a MinIO en local, a S3 real en producción.
-- **DB**: PostgreSQL 16, conexión `pgsql`.
-- **Tests**: PHPUnit; suite `tests/Feature/` cubre middlewares + endpoints principales.
+- Framework: Laravel 12 (PHP 8.3+).
+- Auth: middleware JWT Cognito + validacion de rol.
+- Storage: filesystem `s3` (MinIO en local, S3 en produccion).
+- DB: PostgreSQL.
+- Tests: PHPUnit (`tests/Feature`).
 
 Capas:
 
-```
+```txt
 routes/api.php
-   └─▶ Middleware (cognito.auth, role.claim)
-        └─▶ Controllers (Http/Controllers/*)
-             ├─▶ Services (Services/Auth/AccessScopeResolver, etc.)
-             ├─▶ Models (Eloquent) ──▶ PostgreSQL
-             └─▶ Storage Facade   ──▶ S3 / MinIO
+  -> Middleware (cognito.auth, role.claim)
+    -> Controllers
+      -> Services (scope y reglas)
+      -> Models (Eloquent) -> PostgreSQL
+      -> Storage Facade -> S3/MinIO
 ```
 
 ### Frontend (`web/`)
 
-- **Stack**: React 19 + Vite 7 + TypeScript.
-- **Estado de auth**: `AuthContext` guarda `access_token` e `id_token` en `localStorage`.
-- **HTTP**: cliente fetch envuelto en `api/client.ts` que inyecta el `Authorization: Bearer …` automáticamente.
-- **Ruteo**: `react-router-dom` con rutas explícitas para dashboard, gestión de elementos y administración de usuarios.
-- **Vistas activas**:
-  - `Login` — login Cognito + challenge de NEW_PASSWORD_REQUIRED.
-  - `Dashboard` — KPIs y tabla de informes según rol.
-  - `ElementosGestion` — CRUD de elementos (solo admin / supervisor PAE).
-  - `AdminUsuariosPage` — gestión de usuarios, empresas y yacimientos (solo admin).
+- Stack: React + Vite + TypeScript.
+- Auth: tokens Cognito en `AuthContext`.
+- HTTP: cliente API con `Authorization: Bearer`.
+- Rutas: dashboard, elementos, admin usuarios.
 
 ### Database (`database/`)
 
-- `schema.sql` - snapshot DDL generado desde la DB local actual para arranque rapido del container Postgres.
-- `seed-*.sql` — datos mínimos: roles, tipos, niveles de tensión, criticidades, empresa PAE y usuarios pivote.
-- Para temas de DB, la estructura actual de Postgres es la primera referencia; las migraciones de Laravel explican la evolucion y `schema.sql` se regenera desde la DB.
+- `schema.sql`: snapshot DDL generado desde la DB real local.
+- `seed-*.sql`: catalogos y datos base operativos.
+- Regla: para decisiones de datos manda la estructura real de DB y la carpeta `database/` de raiz.
 
 ### Infra local (`docker-compose.yml`)
 
-Tres servicios + un sidecar:
+- `postgres` en `localhost:5433`
+- `adminer` en `localhost:8080`
+- `minio` en `localhost:9000` (consola `9001`)
+- `minio-init` para crear bucket inicial
 
-- `postgres` — Postgres 16 en `localhost:5433`.
-- `adminer` — UI DB en `localhost:8080`.
-- `minio` — S3 compatible en `localhost:9000` (consola en `9001`).
-- `minio-init` — sidecar que crea el bucket inicial y se apaga.
+## Infra produccion (decision vigente)
 
-### Infra producción
+Primera etapa en AWS con costo controlado:
 
-Pensada para AWS:
-
-- Backend: EC2 o ECS detrás de ALB.
-- Frontend: build estático servido por S3 + CloudFront.
-- DB: RDS Postgres.
-- Storage: S3 con CloudFront opcional.
-- Identidad: Cognito User Pool real (la app ya está integrada).
+- Una sola instancia EC2 con Docker Compose:
+  - backend Laravel
+  - frontend build estatico
+  - Nginx reverse proxy
+  - PostgreSQL
+- Adjuntos en S3 privado.
+- Identidad con Cognito User Pool.
+- DNS con Route53 o proveedor externo (Route53 no es obligatorio).
+- TLS con Nginx + Let's Encrypt (ACM opcional para migraciones futuras a ALB/CloudFront).
 
 Ver `docs/07-deploy-aws.md`.
 
-## Flujo de una request autenticada
+## Flujo de request autenticada
 
-```
-1. Frontend hace fetch a /api/elementos con Authorization: Bearer <access_token>
-2. Middleware EnsureCognitoJwt:
-     a) Si COGNITO_AUTH_REQUIRED=false y no hay token → continúa (modo dev)
-     b) Si hay token:
-        - Verifica firma RSA contra JWKS cacheado (6h)
-        - Verifica iss, aud, exp, iat
-        - Busca/provisiona Usuario local con LocalUserProvisioner
-        - Bloquea si usuario está inactivo
-        - Setea en request.attributes:
-            auth.claims, auth.empresa_id, auth.user_id
-3. Middleware EnsureRoleFromClaims:role1,role2:
-     - Extrae roles de cognito:groups o custom:role
-     - Fallback: consulta tabla usuarios + roles si no vinieron en el token
-     - Valida que el usuario tenga al menos uno de los roles requeridos
-4. Controller resuelve el AccessScopeResolver para limitar la query por:
-     - empresa_id del usuario
-     - yacimientos asignados en usuario_yacimientos
-     - flags is_admin / is_supervisor / is_pae_supervisor / is_tecnico
-5. Eloquent ejecuta la query con el scope aplicado
-6. Response JSON
+```txt
+1) Frontend llama /api/* con Bearer token.
+2) Backend valida JWT Cognito (firma, iss, aud, exp).
+3) Backend resuelve usuario local y scope por rol/empresa/yacimiento.
+4) Controller ejecuta query con restricciones de scope.
+5) Respuesta JSON.
 ```
 
-## Convenciones de código
+## ADRs relacionadas
 
-### Backend
-
-- Controllers delgados; lógica de scope va en `Services/Auth/AccessScopeResolver`.
-- Models con `scope*` para filtros reutilizables (`forEmpresa`).
-- Migraciones reversibles cuando es razonable (los `dropColumn` lo son; los backfill no).
-- Validación en cada `store/update` con `$request->validate(...)`.
-
-### Frontend
-
-- Tipos compartidos en `types/` (cuando estén implementados; hoy hay placeholders).
-- Llamadas API agrupadas en `api/*.ts` por dominio (`elementos`, `inspecciones`, `dashboard`, `adminUsuarios`).
-- Componentes "tontos" en `components/dashboard/`; vistas con estado en `pages/`.
-
-## Decisiones arquitectónicas relevantes
-
-Ver `docs/04-decisiones.md` para el detalle de cada ADR:
-
-- **ADR-001** — Multi-tenant por columna `empresa_id`.
-- **ADR-002** — Auth con Cognito como SSO, no contraseñas locales.
-- **ADR-003** — Una sola tabla `elementos` con tipo + función.
-- **ADR-004** — Archivos en S3/MinIO, no en DB.
-- **ADR-005** — Carpeta `database/` (raiz) como referencia operativa de DB.
-- **ADR-006** — Audit fields en `inspecciones` (created_by/updated_by/cerrada_por/fecha_cierre).
+- ADR-001: multi-tenant por `empresa_id`.
+- ADR-002: auth con Cognito (sin password local).
+- ADR-003: modelo unificado de elementos.
+- ADR-004: archivos en S3/MinIO.
+- ADR-005: `database/` raiz como referencia operativa.
+- ADR-006: campos de auditoria en inspecciones.
