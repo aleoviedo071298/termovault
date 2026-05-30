@@ -15,8 +15,8 @@
 |-----------|----------|
 | Crítico | 0 |
 | Alto | 2 |
-| Medio | 5 |
-| Bajo | 5 |
+| Medio | 5 (M3 y M4 ya resueltos) |
+| Bajo | 4 (B3 descartado como falso positivo) |
 | Informativo / mitigado | 14 |
 
 **Veredicto general:** El sistema tiene una base de seguridad **bien diseñada**: verificación criptográfica completa del JWT, resolución de identidad por match exacto, autorización por scope aplicada en la propia query (mitiga IDOR), descargas siempre por backend con auditoría y validación de magic-bytes, y sin almacenamiento de contraseñas locales. **No se detectaron vulnerabilidades críticas ni vías de escalación de privilegios explotables** en el código actual.
@@ -158,12 +158,15 @@ Ninguno bloquea el desarrollo actual, pero **H1, H2 y M2 deben resolverse antes 
 - **Evidencia:** `SecurityHeaders.php:50` setea `X-XSS-Protection: 1; mode=block`. Header deprecado (los navegadores modernos lo ignoran o puede causar efectos no deseados).
 - **Recomendación:** Eliminarlo y confiar en CSP. Inocuo, baja prioridad.
 
-### B3 — Admin puede asignar yacimientos de otra empresa a un usuario
-- **Severidad:** Bajo
-- **Evidencia:** `AdminUserController::validatePayload` valida `yacimientos.*` solo con `exists:yacimientos,id` (`AdminUserController.php:160`), sin verificar que el yacimiento pertenezca al `empresa_id` del usuario.
-- **Impacto:** Inconsistencia de datos (un usuario de empresa A asignado a yacimiento de empresa B). El admin es un rol confiable, por eso es Bajo.
-- **Recomendación:** Validar que cada `yacimiento_id` pertenezca a `empresa_id`.
-- **Archivos:** `app/Http/Controllers/AdminUserController.php`.
+### B3 — ❌ DESCARTADO (falso positivo) — asignación cross-empresa es by-design
+- **Severidad:** N/A — comportamiento intencional, no es un hallazgo.
+- **Aclaración:** Originalmente se marcó que un admin puede asignar a un usuario yacimientos de otra empresa (`AdminUserController::validatePayload` valida `yacimientos.*` solo con `exists:yacimientos,id`). **Esto es correcto y necesario** por el modelo operador↔contratista (ver nota arquitectónica abajo): el personal de una empresa **contratista** debe poder asignarse a yacimientos de la empresa **operadora** que es dueña de esos activos. Forzar `yacimiento.empresa_id === usuario.empresa_id` rompería el flujo de contratistas.
+- **Validación del modelo de scope:** el acceso del contratista funciona por **asignación de yacimiento** (`assigned_yacimiento_ids`), no por empresa, así que `applyElementScope` y `canCreateInspectionForElement` lo manejan correctamente. La **mutación** de elementos sí exige empresa propia (`owner_yacimiento_ids` con `empresa_id` igual), por lo que el contratista solo inspecciona y el operador administra. El admin es el gatekeeper de las asignaciones.
+
+> **Nota arquitectónica (modelo multi-tenant operador ↔ contratista):**
+> - **Empresa operadora** (ej. PAE): dueña de yacimientos y elementos; sus supervisores "owner" administran elementos.
+> - **Empresa contratista** (ej. PECOM): aporta técnicos/supervisores que **inspeccionan** los yacimientos del operador a los que un admin los asigna.
+> - Por eso un usuario puede pertenecer a una empresa y estar asignado a yacimientos de **otra**. El control de acceso es **por asignación de yacimiento**, no por igualdad de empresa.
 
 ### B4 — Rate limit de login solo por IP, sin bloqueo por cuenta
 - **Severidad:** Bajo
@@ -236,8 +239,7 @@ Ninguno bloquea el desarrollo actual, pero **H1, H2 y M2 deben resolverse antes 
 | 4 | CSP del SPA en el host frontend | Medio | Bajo |
 | 5 | Loggear descargas denegadas + persistir auditoría en tabla | Medio | Medio |
 | 6 | Definir y unificar default de scope (fail-closed) | Medio | Bajo |
-| 7 | Validar yacimiento↔empresa en alta de usuarios | Bajo | Bajo |
-| 8 | Quitar `X-XSS-Protection`; `.env.production.example` | Bajo | Bajo |
+| 7 | Quitar `X-XSS-Protection`; `.env.production.example` | Bajo | Bajo |
 
 ---
 
@@ -250,7 +252,7 @@ Ninguno bloquea el desarrollo actual, pero **H1, H2 y M2 deben resolverse antes 
 ### 🟡 Corto plazo (próximas iteraciones)
 - ✅ M3: log de descargas denegadas (alineado con `auth.scope.violation`). **Hecho 2026-05-29.**
 - ✅ M4: default de scope unificado fail-closed para técnico. **Hecho 2026-05-29.**
-- B3: validar yacimiento↔empresa.
+- ~~B3: validar yacimiento↔empresa~~ → **descartado (falso positivo)**: la asignación cross-empresa es intencional (modelo operador↔contratista).
 
 ### 🟢 Antes de producción (Etapas 8-9-10)
 - M5: secretos en SSM + rotación.
@@ -274,6 +276,7 @@ Ninguno bloquea el desarrollo actual, pero **H1, H2 y M2 deben resolverse antes 
 - **"Escalación por `cognito:groups`"** → mitigado: el rol efectivo se toma de la DB local, no del claim.
 - **"Archivos `.sql` en el repo"** → no es fuga: son `schema.sql` + seeds de catálogos (sin credenciales).
 - **"`alg:none` / confusión de algoritmo"** → mitigado: el verificador exige `RS256` explícitamente.
+- **"Admin asigna yacimientos de otra empresa (B3)"** → by-design: el modelo operador↔contratista requiere que el personal de una contratista se asigne a yacimientos de la operadora; el control de acceso es por asignación de yacimiento, no por igualdad de empresa.
 
 ---
 
