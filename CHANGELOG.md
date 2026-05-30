@@ -55,6 +55,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Badge "Portal Técnico" del login; el texto del panel quedó centrado.
 - Descargas simuladas del panel de detalle de elementos.
 
+### Security
+- Auditoría de seguridad defensiva completa documentada en `SECURITY_AUDIT_REPORT.md` (0 críticos; hallazgos altos/medios/bajos con plan de remediación).
+- M3: los intentos de descarga fuera de scope ahora se registran (`auth.scope.violation` / `archivo.download.denied.out_of_scope`) en vez de devolver 404 en silencio.
+- M4: scope del técnico ahora es fail-closed — un técnico sin yacimiento asignado no puede leer elementos ni crear inspecciones hasta que un admin lo asigne (antes tenía acceso a nivel empresa). Lectura y escritura quedaron alineadas.
+
 ---
 
 ## Convenciones
