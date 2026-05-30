@@ -46,6 +46,7 @@ class InspeccionTest extends TestCase
     public function test_tecnico_can_create_inspeccion(): void
     {
         $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id); // M4: técnico asignado a su yacimiento
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
 
         $response = $this->actingAs($tecnico)
@@ -272,6 +273,7 @@ class InspeccionTest extends TestCase
     public function test_inspeccion_novedades_created_as_abierta(): void
     {
         $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id); // M4: técnico asignado a su yacimiento
         $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
         $criticidad = \App\Models\Criticidad::factory()->create();
 

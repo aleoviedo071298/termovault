@@ -58,6 +58,21 @@ class ArchivoController extends Controller
             ->first();
 
         if (! $archivo) {
+            // M3: si el archivo existe pero quedó fuera de scope, es un intento de acceso
+            // no autorizado y debe registrarse (mismo patrón que AccessScopeResolver).
+            // No se revela al cliente la diferencia entre "no existe" y "sin permiso".
+            if (Archivo::whereKey($id)->exists()) {
+                Log::notice('auth.scope.violation', [
+                    'event' => 'archivo.download.denied.out_of_scope',
+                    'user_id' => $scope['user_id'] ?? null,
+                    'empresa_id' => $scope['empresa_id'] ?? null,
+                    'roles' => $scope['roles'] ?? [],
+                    'archivo_id' => $id,
+                    'ip' => $request->ip(),
+                    'ua' => $request->userAgent(),
+                ]);
+            }
+
             return response()->json(['message' => 'Archivo no encontrado'], 404);
         }
 

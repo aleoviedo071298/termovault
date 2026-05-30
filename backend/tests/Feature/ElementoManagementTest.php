@@ -204,6 +204,7 @@ class ElementoManagementTest extends TestCase
 
         // Add inspection to elemento1 authored by technician
         $techUser = \App\Models\Usuario::where('email', 'tech@example.com')->first();
+        $techUser->yacimientos()->attach($this->yacimiento->id); // M4: técnico asignado a su yacimiento
         \App\Models\Inspeccion::create([
             'elemento_id' => $elemento1->id,
             'tecnico_id' => $techUser->id,

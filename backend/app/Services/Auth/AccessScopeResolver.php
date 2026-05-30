@@ -98,7 +98,19 @@ class AccessScopeResolver
             return $query;
         }
 
-        if ($scope['is_tecnico'] || $scope['is_supervisor']) {
+        // Técnico: fail-closed (M4, Opción A). Sin yacimientos asignados no ve nada;
+        // un admin debe asignarlo explícitamente. Lectura y escritura quedan alineadas.
+        if ($scope['is_tecnico'] && ! $scope['is_supervisor']) {
+            if ($scope['assigned_yacimiento_ids'] !== []) {
+                return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
+            }
+
+            return $query->whereRaw('1 = 0');
+        }
+
+        // Supervisor: por yacimientos asignados o, en su defecto, por empresa
+        // (un supervisor de contratista sin asignación puntual ve los de su empresa).
+        if ($scope['is_supervisor']) {
             if ($scope['assigned_yacimiento_ids'] !== []) {
                 return $query->whereIn('yacimiento_id', $scope['assigned_yacimiento_ids']);
             }
@@ -158,16 +170,13 @@ class AccessScopeResolver
             return true;
         }
 
-        if ($scope['is_tecnico']) {
+        if ($scope['is_tecnico'] && ! $scope['is_supervisor']) {
+            // M4, Opción A: técnico sin yacimientos asignados no puede crear inspecciones.
             if ($scope['assigned_yacimiento_ids'] === []) {
-                $allowed = (int) ($scope['empresa_id'] ?? 0) === (int) $element->empresa_id;
-                if (! $allowed) {
-                    $this->logScopeViolation('inspection.create.denied.empresa_mismatch', $scope, [
-                        'target_element_id' => $elementId,
-                        'target_empresa_id' => (int) $element->empresa_id,
-                    ]);
-                }
-                return $allowed;
+                $this->logScopeViolation('inspection.create.denied.tecnico_unassigned', $scope, [
+                    'target_element_id' => $elementId,
+                ]);
+                return false;
             }
             $allowed = in_array((int) $element->yacimiento_id, $scope['assigned_yacimiento_ids'], true);
             if (! $allowed) {

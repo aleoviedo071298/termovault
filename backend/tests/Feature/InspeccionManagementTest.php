@@ -69,7 +69,7 @@ class InspeccionManagementTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        \DB::table('usuarios')->insert([
+        $techId = \DB::table('usuarios')->insertGetId([
             'empresa_id' => $this->empresa->id,
             'rol_id' => $techRole->id,
             'nombre' => 'Tech',
@@ -78,6 +78,8 @@ class InspeccionManagementTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        // Técnico asignado a su yacimiento (M4: el técnico sin asignación es fail-closed).
+        \App\Models\Usuario::find($techId)->yacimientos()->attach($this->yacimiento->id);
 
         $this->adminClaims = [
             'sub' => 'admin-123',
@@ -316,6 +318,45 @@ class InspeccionManagementTest extends TestCase
             ]);
 
         // Should fail due to multi-tenant scoping check in InspeccionController
+        $response->assertStatus(422);
+    }
+
+    public function test_unassigned_tecnico_cannot_create_inspection(): void
+    {
+        // M4 (Opción A, fail-closed): un técnico de la empresa pero SIN yacimiento
+        // asignado no puede crear inspecciones hasta que un admin lo asigne.
+        config()->set('cognito.required', true);
+
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => \DB::table('roles')->where('codigo', 'tecnico')->value('id'),
+            'nombre' => 'Tech',
+            'apellido' => 'Sin Asignacion',
+            'email' => 'tech-unassigned@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->mockVerifier([
+            'sub' => 'tech-unassigned',
+            'email' => 'tech-unassigned@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['tecnico'],
+        ]);
+
+        $elemento = Elemento::create([
+            'yacimiento_id' => $this->yacimiento->id,
+            'tipo_elemento_id' => $this->tipo->id,
+            'nombre' => 'SET Unassigned',
+            'codigo' => 'SET-UNASSIGNED',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => '2026-05-26',
+                'termografias' => [UploadedFile::fake()->create('captura.is2', 40)],
+            ]);
+
         $response->assertStatus(422);
     }
 
