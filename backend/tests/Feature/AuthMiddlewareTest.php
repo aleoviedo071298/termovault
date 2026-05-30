@@ -23,7 +23,7 @@ class AuthMiddlewareTest extends TestCase
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()')
-            ->assertHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cognito-idp.*.amazonaws.com http://localhost:8000 http://127.0.0.1:8000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+            ->assertHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cognito-idp.us-east-2.amazonaws.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
             ->assertHeader('Cache-Control', 'max-age=0, must-revalidate, no-cache, no-store, private')
             ->assertHeader('Pragma', 'no-cache')
             ->assertHeader('Expires', '0');

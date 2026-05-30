@@ -49,16 +49,15 @@ class SecurityHeaders
         // Disable framing (prevent clickjacking)
         $response->headers->set('X-Frame-Options', 'DENY');
 
-        // Enable XSS protection (older browsers)
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
-
-        // CSP Header
-        $response->headers->set('Content-Security-Policy', 
+        // CSP Header (producción, sin orígenes de desarrollo).
+        // Nota: estas respuestas son JSON de la API; la CSP relevante para XSS es
+        // la del documento HTML (servida por Nginx en el frontend).
+        $response->headers->set('Content-Security-Policy',
             "default-src 'self'; " .
-            "script-src 'self' https://cdn.jsdelivr.net; " .
+            "script-src 'self'; " .
             "style-src 'self' 'unsafe-inline'; " .
             "img-src 'self' data: https:; " .
-            "connect-src 'self' https://cognito-idp.*.amazonaws.com http://localhost:8000 http://127.0.0.1:8000; " .
+            "connect-src 'self' https://cognito-idp.us-east-2.amazonaws.com; " .
             "frame-ancestors 'none'; " .
             "base-uri 'self'; " .
             "form-action 'self'"
