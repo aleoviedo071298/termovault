@@ -125,7 +125,7 @@ class ElementoManagementTest extends TestCase
             ->assertJsonFragment(['id' => $otherYacimiento->id, 'codigo' => 'YAC-CAPSA']);
     }
 
-    public function test_owner_supervisor_catalog_only_includes_owner_yacimientos(): void
+    public function test_owner_supervisor_catalog_only_includes_company_yacimientos(): void
     {
         config()->set('cognito.required', true);
 
@@ -169,9 +169,10 @@ class ElementoManagementTest extends TestCase
             ->getJson('/api/catalogos');
 
         $response->assertOk()
-            ->assertJsonCount(1, 'yacimientos')
+            ->assertJsonCount(3, 'yacimientos')
+            ->assertJsonFragment(['id' => $this->yacimiento->id, 'codigo' => 'YAC-PAE'])
             ->assertJsonFragment(['id' => $ownerYacimiento->id, 'codigo' => 'YAC-PAE-OWNER'])
-            ->assertJsonMissing(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-CONTR']);
+            ->assertJsonFragment(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-CONTR']);
     }
 
     public function test_owner_supervisor_catalog_uses_company_owner_yacimiento_without_assignment(): void
@@ -183,13 +184,13 @@ class ElementoManagementTest extends TestCase
             'empresa_id' => $capsa->id,
             'nombre' => 'Yacimiento CAPSA',
             'codigo' => 'YAC-CAPSA',
-            'permite_supervisor_elementos' => true,
+            'permite_supervisor_elementos' => false,
         ]);
         $paeYacimiento = Yacimiento::create([
             'empresa_id' => $this->empresa->id,
             'nombre' => 'Yacimiento PAE Owner',
             'codigo' => 'YAC-PAE-OWNER',
-            'permite_supervisor_elementos' => true,
+            'permite_supervisor_elementos' => false,
         ]);
 
         $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
