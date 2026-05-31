@@ -9,7 +9,6 @@ export interface InspeccionDetalle {
   id: number;
   fecha_inspeccion: string;
   estado: string;
-  cuadrilla: string | null;
   integrantes: string | null;
   empresa_contratista: string | null;
   condiciones_clima: string | null;

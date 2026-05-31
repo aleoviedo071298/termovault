@@ -209,7 +209,6 @@ class ElementoManagementTest extends TestCase
             'elemento_id' => $elemento1->id,
             'tecnico_id' => $techUser->id,
             'fecha_inspeccion' => now(),
-            'cuadrilla' => '625',
             'empresa_contratista' => 'PECOM'
         ]);
 

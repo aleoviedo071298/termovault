@@ -3,7 +3,6 @@ import { X, AlertCircle, Plus, Trash2, Upload, FileCheck, CheckCircle, Thermomet
 import { getCatalogos, listElementos, type Catalogos } from "../api/elementos";
 import type { Elemento } from "../types/elemento";
 import { createInspeccion } from "../api/inspecciones";
-import { useAuth } from "../auth/useAuth";
 
 interface FindingTemp {
   id: string; // client-side temporary ID
@@ -30,7 +29,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   preSelectedElementId,
   onSuccess
 }) => {
-  const { user } = useAuth();
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [elementosList, setElementosList] = useState<Elemento[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +38,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   // Form states
   const [elementoId, setElementoId] = useState<number | "">("");
   const [fechaInspeccion, setFechaInspeccion] = useState("");
-  const [cuadrilla, setCuadrilla] = useState("");
   const [integrantes, setIntegrantes] = useState("");
   const [empresaContratista, setEmpresaContratista] = useState("PECOM S.A.");
   const [condicionesClima, setCondicionesClima] = useState("Despejado");
@@ -93,8 +90,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         }
 
         // Reset other states
-        const isTestUser = user?.email === "marijo006@gmail.com";
-        setCuadrilla(isTestUser ? "625" : "625");
         setEmpresaContratista("PECOM");
         setIntegrantes("");
         setCondicionesClima("Despejado");
@@ -229,7 +224,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       const formData = new FormData();
       formData.append("elemento_id", String(elementoId));
       formData.append("fecha_inspeccion", fechaInspeccion);
-      formData.append("cuadrilla", cuadrilla.trim());
       formData.append("integrantes", integrantes.trim());
       formData.append("empresa_contratista", empresaContratista.trim());
       formData.append("condiciones_clima", condicionesClima);

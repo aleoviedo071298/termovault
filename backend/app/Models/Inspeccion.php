@@ -31,7 +31,6 @@ class Inspeccion extends Model
         'elemento_id',
         'tecnico_id',
         'fecha_inspeccion',
-        'cuadrilla',
         'integrantes',
         'empresa_contratista',
         'condiciones_clima',

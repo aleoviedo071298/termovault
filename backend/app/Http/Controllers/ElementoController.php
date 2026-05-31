@@ -98,7 +98,6 @@ class ElementoController extends Controller
             ->map(fn ($inspeccion) => [
                 'id' => $inspeccion->id,
                 'fecha_inspeccion' => $inspeccion->fecha_inspeccion,
-                'cuadrilla' => $inspeccion->cuadrilla,
                 'integrantes' => $inspeccion->integrantes,
                 'empresa_contratista' => $inspeccion->empresa_contratista,
                 'condiciones_clima' => $inspeccion->condiciones_clima,

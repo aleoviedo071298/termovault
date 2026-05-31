@@ -127,7 +127,6 @@ class InspeccionController extends Controller
             'id' => $inspeccion->id,
             'fecha_inspeccion' => $inspeccion->fecha_inspeccion,
             'estado' => $inspeccion->estado,
-            'cuadrilla' => $inspeccion->cuadrilla,
             'integrantes' => $inspeccion->integrantes,
             'empresa_contratista' => $inspeccion->empresa_contratista,
             'condiciones_clima' => $inspeccion->condiciones_clima,
@@ -280,7 +279,6 @@ class InspeccionController extends Controller
         $data = $request->validate([
             'elemento_id' => 'required|exists:elementos,id',
             'fecha_inspeccion' => 'required|date',
-            'cuadrilla' => 'nullable|string|max:100',
             'integrantes' => 'nullable|string',
             'empresa_contratista' => 'nullable|string|max:150',
             'condiciones_clima' => 'nullable|string|max:50',
@@ -342,7 +340,6 @@ class InspeccionController extends Controller
                 'elemento_id' => $elemento->id,
                 'tecnico_id' => $userId,
                 'fecha_inspeccion' => $data['fecha_inspeccion'],
-                'cuadrilla' => $data['cuadrilla'] ?? null,
                 'integrantes' => $data['integrantes'] ?? null,
                 'empresa_contratista' => $empresaSnapshot,
                 'condiciones_clima' => $data['condiciones_clima'] ?? null,

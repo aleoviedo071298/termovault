@@ -37,7 +37,6 @@ export interface InspeccionNovedad {
 export interface InspeccionDetail {
   id: number;
   fecha_inspeccion: string;
-  cuadrilla: string | null;
   integrantes: string | null;
   empresa_contratista: string | null;
   condiciones_clima: string | null;
