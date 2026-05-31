@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Elemento;
+use App\Models\Yacimiento;
 use App\Services\AuditTrail;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,30 @@ class ElementoController extends Controller
             'download_url' => "/archivos/{$archivo->id}/download",
             'tamano' => $archivo->tamano_bytes,
         ];
+    }
+
+    public function listElementYacimientoOptions(Request $request): JsonResponse
+    {
+        $scope = $this->scopeResolver->resolve($request);
+
+        if ($scope['is_admin']) {
+            $yacimientos = Yacimiento::query()
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'codigo']);
+
+            return response()->json($yacimientos);
+        }
+
+        $yacimientoIds = ($scope['is_owner_supervisor'] ?? false)
+            ? ($scope['owner_yacimiento_ids'] ?? [])
+            : [];
+
+        $yacimientos = Yacimiento::query()
+            ->whereIn('id', $yacimientoIds !== [] ? $yacimientoIds : [-1])
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'codigo']);
+
+        return response()->json($yacimientos);
     }
 
     public function listElements(Request $request): JsonResponse

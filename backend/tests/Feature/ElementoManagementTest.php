@@ -125,6 +125,117 @@ class ElementoManagementTest extends TestCase
             ->assertJsonFragment(['id' => $otherYacimiento->id, 'codigo' => 'YAC-CAPSA']);
     }
 
+    public function test_admin_element_yacimiento_options_include_all_yacimientos(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->adminClaims);
+
+        $otherEmpresa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-99887766-0']);
+        $otherYacimiento = Yacimiento::create([
+            'empresa_id' => $otherEmpresa->id,
+            'nombre' => 'CAPSA',
+            'codigo' => 'YAC-CAPSA',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/elementos/yacimientos');
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $this->yacimiento->id, 'codigo' => 'YAC-PAE'])
+            ->assertJsonFragment(['id' => $otherYacimiento->id, 'codigo' => 'YAC-CAPSA']);
+    }
+
+    public function test_owner_supervisor_element_yacimiento_options_include_only_mutable_yacimientos(): void
+    {
+        config()->set('cognito.required', true);
+
+        $ownerYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Owner',
+            'codigo' => 'YAC-PAE-OWNER',
+            'permite_supervisor_elementos' => true,
+        ]);
+        $assignedNonOwnerYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Solo Inspeccion',
+            'codigo' => 'YAC-PAE-LECTURA',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'Owner',
+            'email' => 'supervisor.owner.options@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            ['usuario_id' => $supervisorId, 'yacimiento_id' => $ownerYacimiento->id],
+            ['usuario_id' => $supervisorId, 'yacimiento_id' => $assignedNonOwnerYacimiento->id],
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-owner-options-123',
+            'email' => 'supervisor.owner.options@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $this->empresa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/elementos/yacimientos');
+
+        $response->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['id' => $ownerYacimiento->id, 'codigo' => 'YAC-PAE-OWNER'])
+            ->assertJsonMissing(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-LECTURA'])
+            ->assertJsonMissing(['id' => $this->yacimiento->id, 'codigo' => 'YAC-PAE']);
+    }
+
+    public function test_non_owner_supervisor_element_yacimiento_options_are_empty(): void
+    {
+        config()->set('cognito.required', true);
+
+        $assignedNonOwnerYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Solo Inspeccion',
+            'codigo' => 'YAC-PAE-LECTURA',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'Contratista',
+            'email' => 'supervisor.readonly.options@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $assignedNonOwnerYacimiento->id,
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-readonly-options-123',
+            'email' => 'supervisor.readonly.options@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $this->empresa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/elementos/yacimientos');
+
+        $response->assertOk()
+            ->assertJsonCount(0);
+    }
+
     public function test_supervisor_catalog_uses_assigned_yacimientos_before_company_fallback(): void
     {
         config()->set('cognito.required', true);

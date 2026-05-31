@@ -99,6 +99,10 @@ export function getCatalogos(): Promise<Catalogos> {
   return apiGet<Catalogos>("/catalogos");
 }
 
+export function getElementoYacimientos(): Promise<CatalogYacimiento[]> {
+  return apiGet<CatalogYacimiento[]>("/elementos/yacimientos");
+}
+
 export function createElemento(data: Partial<ElementoDetail>): Promise<ElementoDetail> {
   return apiPost<ElementoDetail>("/elementos", data);
 }

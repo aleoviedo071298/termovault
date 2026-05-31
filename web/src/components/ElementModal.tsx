@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, AlertCircle, Save, Loader2 } from "lucide-react";
 import {
   getCatalogos,
+  getElementoYacimientos,
   getElemento,
   createElemento,
   updateElemento,
@@ -59,8 +60,12 @@ export const ElementModal: React.FC<ElementModalProps> = ({
       try {
         setLoading(true);
         setError(null);
-        const cats = await getCatalogos();
-        setCatalogos(cats);
+        const [cats, yacimientos] = await Promise.all([
+          getCatalogos(),
+          getElementoYacimientos(),
+        ]);
+        const formCatalogos: Catalogos = { ...cats, yacimientos };
+        setCatalogos(formCatalogos);
 
         if (elementId) {
           const { elemento } = await getElemento(elementId);
@@ -90,8 +95,8 @@ export const ElementModal: React.FC<ElementModalProps> = ({
           setNSerie("");
           setEstadoOperativo("operativo");
           setObservacionesGenerales("");
-          if (!isAdmin && cats.yacimientos.length === 1) {
-            setYacimientoId(cats.yacimientos[0].id);
+          if (!isAdmin && formCatalogos.yacimientos.length === 1) {
+            setYacimientoId(formCatalogos.yacimientos[0].id);
           }
         }
       } catch (err) {
@@ -102,7 +107,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     }
 
     void loadData();
-  }, [isOpen, elementId]);
+  }, [isOpen, elementId, isAdmin]);
 
   // Reset tension field if the selected element type no longer requires it
   useEffect(() => {
