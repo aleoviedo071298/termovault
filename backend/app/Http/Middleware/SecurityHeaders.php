@@ -90,9 +90,13 @@ class SecurityHeaders
             return;
         }
 
-        // API responses with cacheable static data: 1 hour
+        // Catalogos includes yacimientos scoped by the authenticated user.
+        // Static sub-catalogs are cached server-side inside CatalogController.
         if ($request->is('api/catalogos')) {
-            $response->headers->set('Cache-Control', 'public, max-age=3600');
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+            $response->headers->set('Vary', trim($response->headers->get('Vary') . ', Authorization', ', '));
             return;
         }
 
