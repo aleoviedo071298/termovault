@@ -11,7 +11,7 @@ export function RoleBadge({ role, label }: RoleBadgeProps) {
     ? ShieldCheck
     : role === "tecnico"
       ? Wrench
-      : role === "supervisor-pae"
+      : role === "supervisor-owner"
         ? HardHat
         : UserCog;
 

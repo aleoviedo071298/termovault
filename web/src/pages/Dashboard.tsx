@@ -17,12 +17,12 @@ interface Props {
 
 function resolveRole(groups: string[], isOwnerSupervisor: boolean): DashboardRole {
   if (groups.includes("admin")) return "admin";
-  if (groups.includes("supervisor")) return isOwnerSupervisor ? "supervisor-pae" : "supervisor-contratista";
+  if (groups.includes("supervisor")) return isOwnerSupervisor ? "supervisor-owner" : "supervisor-contratista";
   return "tecnico";
 }
 
 function isDashboardRole(value: string | null): value is DashboardRole {
-  return value === "admin" || value === "supervisor-pae" || value === "supervisor-contratista" || value === "tecnico";
+  return value === "admin" || value === "supervisor-owner" || value === "supervisor-contratista" || value === "tecnico";
 }
 
 function normalizeCriticidad(value: string): string {
@@ -56,9 +56,9 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
 
   const resolvedRole = data ? resolveRole(groups, Boolean(data.scope.is_owner_supervisor)) : null;
   const role = resolvedRole ?? cachedRole ?? resolveRole(groups, false);
-  const canManageElements = role === "admin" || role === "supervisor-pae";
+  const canManageElements = role === "admin" || role === "supervisor-owner";
   const canManageUsers = role === "admin";
-  const canReviewReports = role === "admin" || role === "supervisor-pae";
+  const canReviewReports = role === "admin" || role === "supervisor-owner";
 
   async function loadDashboard() {
     try {
@@ -88,8 +88,8 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
 
   const roleLabel = role === "admin"
     ? "Panel Administrador"
-    : role === "supervisor-pae"
-      ? "Panel Supervisor PAE"
+    : role === "supervisor-owner"
+      ? `Panel Supervisor${data?.scope.assigned_yacimiento_names?.length ? `: ${data.scope.assigned_yacimiento_names[0]}` : ""}`
       : role === "supervisor-contratista"
         ? "Panel Supervisor Contratista"
         : "Panel Tecnico";
@@ -100,7 +100,7 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
       title: "Panel general",
       subtitle: "Informes, criticidad, usuarios y cobertura en un solo lugar.",
     },
-    "supervisor-pae": {
+    "supervisor-owner": {
       eyebrow: "Supervisión",
       title: "Panel de yacimiento",
       subtitle: "Informes recibidos, pendientes de revisión y novedades a seguir.",
@@ -135,7 +135,7 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
         { label: "Elementos termografiados", value: data.stats.elementos_termografiados, tone: "operativo", trend: "Cobertura operativa" },
       ];
     }
-    if (role === "supervisor-pae") {
+    if (role === "supervisor-owner") {
       return [
         { label: "Informes recibidos", value: data.stats.total_informes, tone: "global", trend: "Vista de yacimiento" },
         { label: "Pendientes", value: data.stats.pendientes, tone: "critico", trend: "Cola de revision" },
