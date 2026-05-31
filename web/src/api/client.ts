@@ -1,6 +1,8 @@
 import { tokenManager } from "../auth/TokenManager";
 
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+// Default prod-safe: mismo origen (/api). En desarrollo, .env.development.local
+// define VITE_API_URL=http://localhost:8000/api para apuntar al backend local.
+export const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 /**
  * Common fetch helper that injects Authorization token and intercepts 401 errors.
