@@ -125,7 +125,7 @@ class ElementoManagementTest extends TestCase
             ->assertJsonFragment(['id' => $otherYacimiento->id, 'codigo' => 'YAC-CAPSA']);
     }
 
-    public function test_owner_supervisor_catalog_only_includes_company_yacimientos(): void
+    public function test_supervisor_catalog_uses_assigned_yacimientos_before_company_fallback(): void
     {
         config()->set('cognito.required', true);
 
@@ -168,11 +168,59 @@ class ElementoManagementTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer valid-token')
             ->getJson('/api/catalogos');
 
+        $yacimientoCodes = collect($response->json('yacimientos'))->pluck('codigo')->all();
+
         $response->assertOk()
-            ->assertJsonCount(3, 'yacimientos')
-            ->assertJsonFragment(['id' => $this->yacimiento->id, 'codigo' => 'YAC-PAE'])
+            ->assertJsonCount(2, 'yacimientos')
             ->assertJsonFragment(['id' => $ownerYacimiento->id, 'codigo' => 'YAC-PAE-OWNER'])
             ->assertJsonFragment(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-CONTR']);
+        $this->assertNotContains('YAC-PAE', $yacimientoCodes);
+    }
+
+    public function test_supervisor_catalog_matches_list_scope_when_assignment_differs_from_company(): void
+    {
+        config()->set('cognito.required', true);
+
+        $capsa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-99881122-0']);
+        $capsaYacimiento = Yacimiento::create([
+            'empresa_id' => $capsa->id,
+            'nombre' => 'Yacimiento CAPSA Asignado',
+            'codigo' => 'YAC-CAPSA-ASIG',
+            'permite_supervisor_elementos' => true,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'Asignado',
+            'email' => 'supervisor.asignado@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $capsaYacimiento->id,
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-asignado-catalog-123',
+            'email' => 'supervisor.asignado@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $this->empresa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/catalogos');
+
+        $yacimientoCodes = collect($response->json('yacimientos'))->pluck('codigo')->all();
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'yacimientos')
+            ->assertJsonFragment(['id' => $capsaYacimiento->id, 'codigo' => 'YAC-CAPSA-ASIG']);
+        $this->assertNotContains('YAC-PAE', $yacimientoCodes);
     }
 
     public function test_owner_supervisor_catalog_uses_company_owner_yacimiento_without_assignment(): void
