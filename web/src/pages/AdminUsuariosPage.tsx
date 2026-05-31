@@ -60,26 +60,28 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   useEffect(() => { void loadAll(); }, []);
 
   const allYacimientos = useMemo(() => meta?.yacimientos ?? [], [meta]);
-  // Multi-tenant: los yacimientos visibles dependen de la empresa elegida.
-  const yacimientosCreate = useMemo(
-    () => allYacimientos.filter((y) => empresaId !== "" && y.empresa_id === Number(empresaId)),
-    [allYacimientos, empresaId]
-  );
-  const yacimientosEdit = useMemo(
-    () => allYacimientos.filter((y) => editEmpresaId !== "" && y.empresa_id === Number(editEmpresaId)),
-    [allYacimientos, editEmpresaId]
-  );
+  const empresaNombreById = useMemo(() => {
+    const names = new Map<number, string>();
+    meta?.empresas.forEach((empresa) => names.set(empresa.id, empresa.nombre));
+    return names;
+  }, [meta]);
+  // Los tecnicos/contratistas pueden cargar informes en yacimientos de empresas owner.
+  const yacimientosCreate = allYacimientos;
+  const yacimientosEdit = allYacimientos;
   const activeUsers = useMemo(() => items.filter((u) => u.activo).length, [items]);
   const supervisorCount = useMemo(() => items.filter((u) => u.rol === "supervisor").length, [items]);
 
-  // Al cambiar la empresa, descarta yacimientos tildados que ya no pertenecen a ella.
   function changeEmpresaCreate(value: number | "") {
     setEmpresaId(value);
-    setYacimientos((prev) => prev.filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === value)));
   }
   function changeEmpresaEdit(value: number | "") {
     setEditEmpresaId(value);
-    setEditYacimientos((prev) => prev.filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === value)));
+  }
+  function yacimientoLabel(yacimiento: AdminUsuarioMeta["yacimientos"][number]): string {
+    const empresa = empresaNombreById.get(yacimiento.empresa_id);
+    return empresa
+      ? `${yacimiento.nombre} (${yacimiento.codigo}) - ${empresa}`
+      : `${yacimiento.nombre} (${yacimiento.codigo})`;
   }
 
   async function handleCreate() {
@@ -109,12 +111,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
     setEditEmail(user.email);
     setEditRol((user.rol as RoleCode) ?? "tecnico");
     setEditEmpresaId(empId);
-    // Auto-sanea asignaciones cruzadas: solo conserva yacimientos de la empresa del usuario.
-    setEditYacimientos(
-      user.yacimientos
-        .map((y) => y.id)
-        .filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === empId))
-    );
+    setEditYacimientos(user.yacimientos.map((y) => y.id));
     setEditActivo(Boolean(user.activo));
   }
 
@@ -202,7 +199,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                   <div className="check-grid">
                     {yacimientosCreate.length === 0 ? (
                       <p className="admin-rule-note" style={{ margin: 0 }}>
-                        La empresa seleccionada no tiene yacimientos. Creá uno en el panel de Organización.
+                        No hay yacimientos activos. Creá uno en el panel de Organización.
                       </p>
                     ) : yacimientosCreate.map((y) => (
                       <label key={y.id} className="check-row">
@@ -211,7 +208,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                           checked={yacimientos.includes(y.id)}
                           onChange={(e) => setYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
                         />
-                        {y.nombre} ({y.codigo})
+                        {yacimientoLabel(y)}
                       </label>
                     ))}
                   </div>
@@ -385,7 +382,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                     <div className="check-grid">
                       {yacimientosEdit.length === 0 ? (
                         <p className="admin-rule-note" style={{ margin: 0 }}>
-                          La empresa seleccionada no tiene yacimientos. Creá uno en el panel de Organización.
+                          No hay yacimientos activos. Creá uno en el panel de Organización.
                         </p>
                       ) : yacimientosEdit.map((y) => (
                         <label key={y.id} className="check-row">
@@ -394,7 +391,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                             checked={editYacimientos.includes(y.id)}
                             onChange={(e) => setEditYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
                           />
-                          {y.nombre} ({y.codigo})
+                          {yacimientoLabel(y)}
                         </label>
                       ))}
                     </div>
