@@ -9,7 +9,6 @@ use App\Models\Yacimiento;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CatalogController extends Controller
 {
@@ -18,27 +17,18 @@ class CatalogController extends Controller
     public function index(Request $request): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);
-        $userId = $request->attributes->get('auth.user_id');
 
         if ($scope['is_admin']) {
             $yacimientos = Yacimiento::query()
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'codigo']);
         } else {
-            $yacimientoIds = [];
+            $yacimientoIds = $scope['assigned_yacimiento_ids'] ?? [];
 
-            if ($scope['is_supervisor'] && $scope['empresa_id']) {
+            if ($yacimientoIds === [] && $scope['is_supervisor'] && $scope['empresa_id']) {
                 $yacimientoIds = Yacimiento::query()
                     ->where('empresa_id', (int) $scope['empresa_id'])
                     ->pluck('id')
-                    ->map(fn ($id) => (int) $id)
-                    ->all();
-            }
-
-            if ($yacimientoIds === [] && $userId) {
-                $yacimientoIds = DB::table('usuario_yacimientos')
-                    ->where('usuario_id', (int) $userId)
-                    ->pluck('yacimiento_id')
                     ->map(fn ($id) => (int) $id)
                     ->all();
             }
