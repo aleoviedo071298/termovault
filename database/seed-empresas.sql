@@ -1,13 +1,17 @@
 -- Empresas reales
 INSERT INTO empresas (nombre, plan) VALUES
   ('PECOM', 'basico'),
-  ('PAE', 'basico');
+  ('PAE', 'basico'),
+  ('CAPSA', 'basico');
 
--- Yacimiento real asociado a PAE
+-- Yacimientos reales asociados a empresas dueñas
 INSERT INTO yacimientos (empresa_id, nombre, codigo) VALUES
   ((SELECT id FROM empresas WHERE nombre = 'PAE'),
    'PAE',
-   'YAC-PAE');
+   'YAC-PAE'),
+  ((SELECT id FROM empresas WHERE nombre = 'CAPSA'),
+   'CAPSA',
+   'YAC-CAPSA');
 
 -- 1. Alejandro Oviedo (Admin PECOM)
 INSERT INTO usuarios (empresa_id, rol_id, nombre, apellido, email, created_at, updated_at) VALUES

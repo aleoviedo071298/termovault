@@ -20,7 +20,7 @@ function DashboardRoute() {
 function ElementosGestionRoute() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const groups = user?.groups ?? [];
+  const groups = (user?.groups ?? []).map((group) => group.toLowerCase());
 
   if (!groups.includes("admin") && !groups.includes("supervisor")) {
     return <Navigate to="/" replace />;
@@ -32,7 +32,7 @@ function ElementosGestionRoute() {
 function AdminUsuariosRoute() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const groups = user?.groups ?? [];
+  const groups = (user?.groups ?? []).map((group) => group.toLowerCase());
 
   if (!groups.includes("admin")) {
     return <Navigate to="/" replace />;

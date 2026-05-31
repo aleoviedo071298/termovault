@@ -23,6 +23,15 @@ type MePayload = {
   local_role?: string | null;
 };
 
+function normalizeGroups(groups: unknown): string[] {
+  if (!Array.isArray(groups)) return [];
+
+  return groups
+    .filter((group): group is string => typeof group === "string")
+    .map((group) => group.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function parseJwt(token: string) {
   try {
     const base64Url = token.split(".")[1];
@@ -56,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const claims = parseJwt(storedIdToken);
       if (claims && claims.exp * 1000 > Date.now()) {
-        let groups: string[] = claims["cognito:groups"] ?? [];
+        let groups = normalizeGroups(claims["cognito:groups"] ?? []);
         try {
           const res = await fetch(`${API_URL}/auth/me`, {
             headers: {
@@ -66,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           if (res.ok) {
             const me = await res.json() as MePayload;
-            groups = me.local_role ? [me.local_role] : (me.groups ?? groups);
+            groups = me.local_role ? normalizeGroups([me.local_role]) : normalizeGroups(me.groups ?? groups);
           }
         } catch {}
 
@@ -105,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tokenManager.setIdToken(response.id_token);
 
       const claims = parseJwt(response.id_token);
-      let groups: string[] = claims?.["cognito:groups"] ?? [];
+      let groups = normalizeGroups(claims?.["cognito:groups"] ?? []);
       try {
         const res = await fetch(`${API_URL}/auth/me`, {
           headers: {
@@ -124,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const me = await res.json() as MePayload;
-        groups = me.local_role ? [me.local_role] : (me.groups ?? groups);
+        groups = me.local_role ? normalizeGroups([me.local_role]) : normalizeGroups(me.groups ?? groups);
       } catch (err) {
         throw err instanceof Error ? err : new Error("No se pudo validar la sesión");
       }

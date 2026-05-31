@@ -14,7 +14,7 @@ interface Props {
 
 export default function ElementosGestion({ onBack }: Props) {
   const { user } = useAuth();
-  const groups = user?.groups ?? [];
+  const groups = (user?.groups ?? []).map((group) => group.toLowerCase());
   const isAdmin = groups.includes("admin");
   const [isOwnerSupervisor, setIsOwnerSupervisor] = useState(false);
   const [scopeLabel, setScopeLabel] = useState("Alcance operativo");
