@@ -60,8 +60,27 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   useEffect(() => { void loadAll(); }, []);
 
   const allYacimientos = useMemo(() => meta?.yacimientos ?? [], [meta]);
+  // Multi-tenant: los yacimientos visibles dependen de la empresa elegida.
+  const yacimientosCreate = useMemo(
+    () => allYacimientos.filter((y) => empresaId !== "" && y.empresa_id === Number(empresaId)),
+    [allYacimientos, empresaId]
+  );
+  const yacimientosEdit = useMemo(
+    () => allYacimientos.filter((y) => editEmpresaId !== "" && y.empresa_id === Number(editEmpresaId)),
+    [allYacimientos, editEmpresaId]
+  );
   const activeUsers = useMemo(() => items.filter((u) => u.activo).length, [items]);
   const supervisorCount = useMemo(() => items.filter((u) => u.rol === "supervisor").length, [items]);
+
+  // Al cambiar la empresa, descarta yacimientos tildados que ya no pertenecen a ella.
+  function changeEmpresaCreate(value: number | "") {
+    setEmpresaId(value);
+    setYacimientos((prev) => prev.filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === value)));
+  }
+  function changeEmpresaEdit(value: number | "") {
+    setEditEmpresaId(value);
+    setEditYacimientos((prev) => prev.filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === value)));
+  }
 
   async function handleCreate() {
     if (!empresaId) return;
@@ -83,13 +102,19 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   }
 
   function startEdit(user: AdminUsuario) {
+    const empId: number | "" = user.empresa_id ?? "";
     setEditingId(user.id);
     setEditNombre(user.nombre);
     setEditApellido(user.apellido);
     setEditEmail(user.email);
     setEditRol((user.rol as RoleCode) ?? "tecnico");
-    setEditEmpresaId(user.empresa_id ?? "");
-    setEditYacimientos(user.yacimientos.map((y) => y.id));
+    setEditEmpresaId(empId);
+    // Auto-sanea asignaciones cruzadas: solo conserva yacimientos de la empresa del usuario.
+    setEditYacimientos(
+      user.yacimientos
+        .map((y) => y.id)
+        .filter((id) => allYacimientos.some((y) => y.id === id && y.empresa_id === empId))
+    );
     setEditActivo(Boolean(user.activo));
   }
 
@@ -167,7 +192,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
               </div>
               <div className="form-group">
                 <label>Empresa / Contratista</label>
-                <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
+                <select value={empresaId} onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}>
                   {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
                 </select>
               </div>
@@ -175,7 +200,11 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                 <div className="form-group col-span-2">
                   <label>{rol === "supervisor" ? "Yacimientos que puede supervisar" : "Yacimientos habilitados para carga"}</label>
                   <div className="check-grid">
-                    {allYacimientos.map((y) => (
+                    {yacimientosCreate.length === 0 ? (
+                      <p className="admin-rule-note" style={{ margin: 0 }}>
+                        La empresa seleccionada no tiene yacimientos. Creá uno en el panel de Organización.
+                      </p>
+                    ) : yacimientosCreate.map((y) => (
                       <label key={y.id} className="check-row">
                         <input
                           type="checkbox"
@@ -187,7 +216,13 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                     ))}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="form-group col-span-2">
+                  <p className="admin-rule-note" style={{ margin: 0 }}>
+                    Los administradores acceden a todos los yacimientos; no requieren asignación.
+                  </p>
+                </div>
+              )}
             </div>
             <button className="primary-command admin-submit" type="button" disabled={saving || !nombre || !apellido || !email || !empresaId} onClick={() => void handleCreate()}>
               <Plus size={16} /> {saving ? "Creando..." : "Crear usuario local"}
@@ -221,7 +256,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
               <div className="organization-yacimiento-grid">
                 <div className="form-group">
                   <label>Empresa propietaria</label>
-                  <select value={empresaId} onChange={(e) => setEmpresaId(e.target.value ? Number(e.target.value) : "")}>
+                  <select value={empresaId} onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}>
                     {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
                   </select>
                 </div>
@@ -333,7 +368,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                 </div>
                 <div className="form-group">
                   <label>Empresa</label>
-                  <select value={editEmpresaId} onChange={(e) => setEditEmpresaId(e.target.value ? Number(e.target.value) : "")}>
+                  <select value={editEmpresaId} onChange={(e) => changeEmpresaEdit(e.target.value ? Number(e.target.value) : "")}>
                     {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
                   </select>
                 </div>
@@ -348,7 +383,11 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                   <div className="form-group col-span-2">
                     <label>{editRol === "supervisor" ? "Yacimientos del supervisor" : "Yacimientos del tecnico"}</label>
                     <div className="check-grid">
-                      {allYacimientos.map((y) => (
+                      {yacimientosEdit.length === 0 ? (
+                        <p className="admin-rule-note" style={{ margin: 0 }}>
+                          La empresa seleccionada no tiene yacimientos. Creá uno en el panel de Organización.
+                        </p>
+                      ) : yacimientosEdit.map((y) => (
                         <label key={y.id} className="check-row">
                           <input
                             type="checkbox"
@@ -360,7 +399,13 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                       ))}
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="form-group col-span-2">
+                    <p className="admin-rule-note" style={{ margin: 0 }}>
+                      Los administradores acceden a todos los yacimientos; no requieren asignación.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="modal-actions">
                 <button className="cancel-btn" type="button" onClick={() => setEditingId(null)}>Cancelar</button>
