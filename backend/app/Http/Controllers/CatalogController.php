@@ -30,7 +30,6 @@ class CatalogController extends Controller
             if ($scope['is_supervisor'] && $scope['empresa_id']) {
                 $yacimientoIds = Yacimiento::query()
                     ->where('empresa_id', (int) $scope['empresa_id'])
-                    ->where('permite_supervisor_elementos', true)
                     ->pluck('id')
                     ->map(fn ($id) => (int) $id)
                     ->all();
