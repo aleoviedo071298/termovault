@@ -25,11 +25,18 @@ class CatalogController extends Controller
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'codigo']);
         } else {
-            $yacimientoIds = $scope['is_owner_supervisor']
-                ? $scope['owner_yacimiento_ids']
-                : [];
+            $yacimientoIds = [];
 
-            if (! $scope['is_owner_supervisor'] && $userId) {
+            if ($scope['is_supervisor'] && $scope['empresa_id']) {
+                $yacimientoIds = Yacimiento::query()
+                    ->where('empresa_id', (int) $scope['empresa_id'])
+                    ->where('permite_supervisor_elementos', true)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+            }
+
+            if ($yacimientoIds === [] && $userId) {
                 $yacimientoIds = DB::table('usuario_yacimientos')
                     ->where('usuario_id', (int) $userId)
                     ->pluck('yacimiento_id')

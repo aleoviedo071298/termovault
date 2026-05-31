@@ -174,6 +174,52 @@ class ElementoManagementTest extends TestCase
             ->assertJsonMissing(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-CONTR']);
     }
 
+    public function test_owner_supervisor_catalog_uses_company_owner_yacimiento_without_assignment(): void
+    {
+        config()->set('cognito.required', true);
+
+        $capsa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-22334455-0']);
+        $capsaYacimiento = Yacimiento::create([
+            'empresa_id' => $capsa->id,
+            'nombre' => 'Yacimiento CAPSA',
+            'codigo' => 'YAC-CAPSA',
+            'permite_supervisor_elementos' => true,
+        ]);
+        $paeYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'Yacimiento PAE Owner',
+            'codigo' => 'YAC-PAE-OWNER',
+            'permite_supervisor_elementos' => true,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        \DB::table('usuarios')->insert([
+            'empresa_id' => $capsa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'CAPSA',
+            'email' => 'supervisor.capsa.catalog@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-capsa-catalog-123',
+            'email' => 'supervisor.capsa.catalog@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $capsa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/catalogos');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'yacimientos')
+            ->assertJsonFragment(['id' => $capsaYacimiento->id, 'codigo' => 'YAC-CAPSA'])
+            ->assertJsonMissing(['id' => $paeYacimiento->id, 'codigo' => 'YAC-PAE-OWNER']);
+    }
+
     public function test_non_owner_supervisor_catalog_still_includes_assigned_yacimientos(): void
     {
         config()->set('cognito.required', true);
