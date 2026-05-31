@@ -92,7 +92,6 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
                 <div><strong>Estado:</strong> {data.estado}</div>
                 <div><strong>Tecnico:</strong> {data.tecnico?.nombre ?? "-"}</div>
                 <div><strong>Empresa:</strong> {data.empresa_contratista ?? "-"}</div>
-                <div><strong>Cuadrilla:</strong> {data.cuadrilla ?? "-"}</div>
                 <div><strong>Integrantes:</strong> {data.integrantes ?? "-"}</div>
                 <div><strong>Yacimiento:</strong> {data.elemento?.yacimiento ?? "-"}</div>
                 <div><strong>Subestacion/Elemento:</strong> {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "-"}</div>

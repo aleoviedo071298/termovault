@@ -17,7 +17,6 @@ class InspeccionFactory extends Factory
             'elemento_id' => Elemento::factory(),
             'tecnico_id' => Usuario::factory()->tecnico(),
             'fecha_inspeccion' => $this->faker->dateTime(),
-            'cuadrilla' => 'Cuadrilla ' . $this->faker->word(),
             'integrantes' => $this->faker->numerify('##'),
             'empresa_contratista' => $this->faker->company(),
             'condiciones_clima' => $this->faker->word(),

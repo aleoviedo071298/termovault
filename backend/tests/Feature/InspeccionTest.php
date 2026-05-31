@@ -53,7 +53,6 @@ class InspeccionTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => now()->format('Y-m-d'),  // Use date format instead of datetime
-                'cuadrilla' => 'Cuadrilla A',
                 'empresa_contratista' => 'PECOM',
                 'condiciones_clima' => 'Despejado',
                 'resumen' => 'Inspección rutinaria',

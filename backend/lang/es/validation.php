@@ -166,7 +166,6 @@ return [
         'password' => 'contraseña',
         'elemento_id' => 'elemento',
         'fecha_inspeccion' => 'fecha de inspección',
-        'cuadrilla' => 'cuadrilla',
         'integrantes' => 'integrantes',
         'empresa_contratista' => 'empresa contratista',
         'condiciones_clima' => 'condiciones climáticas',

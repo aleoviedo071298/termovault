@@ -160,7 +160,6 @@ class InspeccionManagementTest extends TestCase
             ->postJson('/api/inspecciones', [
                 'elemento_id' => $elemento->id,
                 'fecha_inspeccion' => '2026-05-26',
-                'cuadrilla' => 'Cuadrilla 1',
                 'integrantes' => 'A. Perez',
                 'reporte' => $reporte,
                 'termografias' => [$termoIs2, $termoZip],
@@ -170,7 +169,7 @@ class InspeccionManagementTest extends TestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('inspecciones', [
             'elemento_id' => $elemento->id,
-            'cuadrilla' => 'Cuadrilla 1',
+            'integrantes' => 'A. Perez',
         ]);
 
         $this->assertDatabaseHas('novedades', [
