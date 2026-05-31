@@ -6,6 +6,9 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,5 +40,42 @@ return Application::configure(basePath: dirname(__DIR__))
         // POST/PUT/PATCH/DELETE require Authorization header with valid JWT.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Respuestas de error genéricas para la API: no revelar el framework
+        // (Laravel) ni la ruta solicitada. Aplica solo a /api/* o peticiones
+        // que esperan JSON; el resto conserva el comportamiento por defecto.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null; // comportamiento por defecto (no-API)
+            }
+
+            // 404: ruta o recurso inexistente.
+            if ($e instanceof NotFoundHttpException) {
+                return response()->json(['error' => 'Recurso no encontrado'], 404);
+            }
+
+            // Otras HttpException (405, 403 lanzadas como abort, etc.):
+            // respetar el status pero con mensaje neutro y sin detalle interno.
+            if ($e instanceof HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+                $generic = [
+                    400 => 'Solicitud inválida',
+                    401 => 'No autenticado',
+                    403 => 'Acceso denegado',
+                    405 => 'Método no permitido',
+                    429 => 'Demasiadas solicitudes',
+                ];
+
+                // No interceptar errores de validación (422): el cliente necesita
+                // el detalle de los campos. Se delega al manejador por defecto.
+                if ($status === 422) {
+                    return null;
+                }
+
+                return response()->json([
+                    'error' => $generic[$status] ?? 'Error',
+                ], $status);
+            }
+
+            return null; // 500 y demás: manejador por defecto (respeta APP_DEBUG=false)
+        });
     })->create();

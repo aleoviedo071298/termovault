@@ -2,17 +2,12 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' https://cdn.jsdelivr.net;
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: blob: https:;
-      font-src 'self' data:;
-      connect-src 'self' https://cognito-idp.*.amazonaws.com https://api.example.com http://localhost:8000 http://127.0.0.1:8000 ws://localhost:5173 ws://127.0.0.1:5173;
-      frame-ancestors 'none';
-      base-uri 'self';
-      form-action 'self'
-    ">
+    <!--
+      La Content-Security-Policy se entrega por header HTTP, no por <meta>:
+        - Desarrollo: Vite dev server (ver server.headers en vite.config.ts).
+        - Producción: Nginx/Cloudflare (CSP estricta de prod).
+      Así se evita duplicar la política y enviar orígenes de dev en el build.
+    -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
