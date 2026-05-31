@@ -105,6 +105,116 @@ class ElementoManagementTest extends TestCase
         ]);
     }
 
+    public function test_admin_catalog_includes_all_yacimientos(): void
+    {
+        config()->set('cognito.required', true);
+        $this->mockVerifier($this->adminClaims);
+
+        $otherEmpresa = Empresa::create(['nombre' => 'CAPSA', 'cuit' => '30-99887766-0']);
+        $otherYacimiento = Yacimiento::create([
+            'empresa_id' => $otherEmpresa->id,
+            'nombre' => 'CAPSA',
+            'codigo' => 'YAC-CAPSA',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/catalogos');
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $this->yacimiento->id, 'codigo' => 'YAC-PAE'])
+            ->assertJsonFragment(['id' => $otherYacimiento->id, 'codigo' => 'YAC-CAPSA']);
+    }
+
+    public function test_owner_supervisor_catalog_only_includes_owner_yacimientos(): void
+    {
+        config()->set('cognito.required', true);
+
+        $ownerYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Owner',
+            'codigo' => 'YAC-PAE-OWNER',
+            'permite_supervisor_elementos' => true,
+        ]);
+        $assignedNonOwnerYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Contratista',
+            'codigo' => 'YAC-PAE-CONTR',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'Owner',
+            'email' => 'supervisor.owner@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            ['usuario_id' => $supervisorId, 'yacimiento_id' => $ownerYacimiento->id],
+            ['usuario_id' => $supervisorId, 'yacimiento_id' => $assignedNonOwnerYacimiento->id],
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-owner-catalog-123',
+            'email' => 'supervisor.owner@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $this->empresa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/catalogos');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'yacimientos')
+            ->assertJsonFragment(['id' => $ownerYacimiento->id, 'codigo' => 'YAC-PAE-OWNER'])
+            ->assertJsonMissing(['id' => $assignedNonOwnerYacimiento->id, 'codigo' => 'YAC-PAE-CONTR']);
+    }
+
+    public function test_non_owner_supervisor_catalog_still_includes_assigned_yacimientos(): void
+    {
+        config()->set('cognito.required', true);
+
+        $assignedYacimiento = Yacimiento::create([
+            'empresa_id' => $this->empresa->id,
+            'nombre' => 'PAE Asignado',
+            'codigo' => 'YAC-PAE-ASIG',
+            'permite_supervisor_elementos' => false,
+        ]);
+
+        $supervisorRole = Role::firstOrCreate(['codigo' => 'supervisor'], ['nombre' => 'Supervisor']);
+        $supervisorId = \DB::table('usuarios')->insertGetId([
+            'empresa_id' => $this->empresa->id,
+            'rol_id' => $supervisorRole->id,
+            'nombre' => 'Supervisor',
+            'apellido' => 'Contratista',
+            'email' => 'supervisor.contratista@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        \DB::table('usuario_yacimientos')->insert([
+            'usuario_id' => $supervisorId,
+            'yacimiento_id' => $assignedYacimiento->id,
+        ]);
+
+        $this->mockVerifier([
+            'sub' => 'sup-non-owner-catalog-123',
+            'email' => 'supervisor.contratista@example.com',
+            'token_use' => 'access',
+            'cognito:groups' => ['supervisor'],
+            'custom:empresa_id' => (string) $this->empresa->id,
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->getJson('/api/catalogos');
+
+        $response->assertOk()
+            ->assertJsonFragment(['id' => $assignedYacimiento->id, 'codigo' => 'YAC-PAE-ASIG']);
+    }
+
     public function test_technician_cannot_create_element(): void
     {
         config()->set('cognito.required', true);

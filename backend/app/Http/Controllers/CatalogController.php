@@ -9,6 +9,7 @@ use App\Models\Yacimiento;
 use App\Services\Auth\AccessScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CatalogController extends Controller
 {
@@ -24,9 +25,12 @@ class CatalogController extends Controller
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'codigo']);
         } else {
-            $assignedIds = [];
-            if ($userId) {
-                $assignedIds = \Illuminate\Support\Facades\DB::table('usuario_yacimientos')
+            $yacimientoIds = $scope['is_owner_supervisor']
+                ? $scope['owner_yacimiento_ids']
+                : [];
+
+            if (! $scope['is_owner_supervisor'] && $userId) {
+                $yacimientoIds = DB::table('usuario_yacimientos')
                     ->where('usuario_id', (int) $userId)
                     ->pluck('yacimiento_id')
                     ->map(fn ($id) => (int) $id)
@@ -34,7 +38,7 @@ class CatalogController extends Controller
             }
 
             $yacimientos = Yacimiento::query()
-                ->whereIn('id', $assignedIds !== [] ? $assignedIds : [-1])
+                ->whereIn('id', $yacimientoIds !== [] ? $yacimientoIds : [-1])
                 ->orderBy('nombre')
                 ->get(['id', 'nombre', 'codigo']);
         }
