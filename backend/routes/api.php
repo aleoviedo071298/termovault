@@ -36,6 +36,10 @@ Route::middleware('api')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::get('/catalogos', [\App\Http\Controllers\CatalogController::class, 'index']);
 
+        Route::middleware('role.claim:admin,supervisor')->group(function () {
+            Route::get('/elementos/yacimientos', [ElementoController::class, 'listElementYacimientoOptions']);
+        });
+
         Route::middleware('role.claim:admin,supervisor,tecnico')->group(function () {
             Route::get('/dashboard/overview', [DashboardController::class, 'overview']);
             Route::get('/elementos', [ElementoController::class, 'listElements']);
