@@ -1,6 +1,6 @@
 import type { DashboardOverview, DashboardReportRow } from "../../api/dashboard";
 
-export type DashboardRole = "admin" | "supervisor-pae" | "supervisor-contratista" | "tecnico";
+export type DashboardRole = "admin" | "supervisor-owner" | "supervisor-contratista" | "tecnico";
 
 export interface DashboardFiltersState {
   estado: string;
