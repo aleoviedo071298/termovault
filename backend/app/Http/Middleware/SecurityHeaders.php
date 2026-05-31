@@ -63,6 +63,12 @@ class SecurityHeaders
             "form-action 'self'"
         );
 
+        // HSTS — fuerza HTTPS en el navegador durante 1 año (incluye subdominios).
+        // El sitio se sirve solo por HTTPS (HTTP→HTTPS 301 en el edge). Cubre las
+        // respuestas de la API; el documento HTML estático debería además tener
+        // HSTS a nivel Nginx/Cloudflare para cobertura total en la primera carga.
+        $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
         // Referrer Policy
         $response->headers->set('Referrer-Policy', 'no-referrer');
 
