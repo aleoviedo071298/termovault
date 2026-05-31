@@ -26,6 +26,18 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('Expires', '0');
     }
 
+    public function test_catalogos_response_uses_private_no_store_cache_policy(): void
+    {
+        $response = $this->getJson('/api/catalogos');
+
+        $response
+            ->assertHeader('Cache-Control', 'max-age=0, must-revalidate, no-cache, no-store, private')
+            ->assertHeader('Pragma', 'no-cache')
+            ->assertHeader('Expires', '0');
+
+        $this->assertStringContainsString('Authorization', $response->headers->get('Vary', ''));
+    }
+
     /**
      * Test: CORS headers present for allowed origin
      */
