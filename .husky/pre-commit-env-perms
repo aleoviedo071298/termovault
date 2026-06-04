@@ -1,0 +1,41 @@
+#!/bin/bash
+# Pre-commit hook: valida que los .env no estén con permisos inseguros
+# Este hook se ejecuta automáticamente antes de cada commit (si está en .husky)
+
+set -e
+
+# Solo en Linux/macOS (en Windows, Git Bash no lo soporta nativamente)
+if [[ "$OSTYPE" != "linux-gnu"* && "$OSTYPE" != "darwin"* ]]; then
+    exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Archivos que NO deberían estar commiteados (pero si existen, verifcar permisos)
+SENSITIVE_FILES=(
+    "backend/.env"
+    "web/.env.local"
+    "web/.env.development.local"
+)
+
+UNSAFE_PERMS=false
+
+for file in "${SENSITIVE_FILES[@]}"; do
+    if [ -f "$REPO_ROOT/$file" ]; then
+        PERMS=$(stat -c %a "$REPO_ROOT/$file" 2>/dev/null || stat -f %OLp "$REPO_ROOT/$file" 2>/dev/null | sed 's/.*\(...\)$/\1/')
+        if [ "$PERMS" != "600" ]; then
+            echo "⚠️  SEGURIDAD: $file tiene permisos $PERMS (debería ser 600)"
+            echo "   Ejecutá: chmod 600 $file"
+            UNSAFE_PERMS=true
+        fi
+    fi
+done
+
+if [ "$UNSAFE_PERMS" = true ]; then
+    echo ""
+    echo "❌ Hook abortado: hay archivos .env con permisos inseguros."
+    echo "   Ejecutá: bash scripts/secure-env.sh"
+    exit 1
+fi
+
+exit 0
