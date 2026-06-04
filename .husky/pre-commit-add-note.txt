@@ -1,0 +1,8 @@
+Para activar la validación de permisos en cada commit, descomenta la línea:
+    bash scripts/secure-env.sh
+en .husky/pre-commit (si existe).
+
+En Windows/NTFS (sin permisos POSIX), ejecutá manualmente antes de push:
+    bash scripts/secure-env.sh
+
+En prod (Linux), los permisos se fuerzan en deploy via SSH.
