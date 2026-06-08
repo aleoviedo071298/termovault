@@ -6,17 +6,22 @@ Este documento detalla las medidas de seguridad y controles implementados en el 
 
 ## 🛡️ 1. Política de Seguridad del Contenido (CSP)
 
-Se implementó una política de CSP estricta mediante meta-tags en [index.html](file:///C:/Users/Alejandro/Desktop/local/termovault/web/index.html) y a través del middleware del backend [SecurityHeaders.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/app/Http/Middleware/SecurityHeaders.php).
+La CSP se entrega **exclusivamente por header HTTP** (no por `<meta>`), con dos fuentes según el entorno:
 
-### Estructura de la CSP
-- **`default-src 'self'`**: Solo permite cargar recursos (scripts, estilos, imágenes) originados en el propio dominio de la aplicación.
-- **`script-src 'self' https://cdn.jsdelivr.net`**: Restringe la ejecución de scripts a fuentes locales y orígenes de confianza autorizados (como librerías estáticas validadas). Bloquea la inyección y ejecución de scripts en línea (`inline scripts`) no firmados.
-- **`style-src 'self' 'unsafe-inline'`**: Permite estilos locales y de librerías CSS que requieran inicializaciones dinámicas seguras.
-- **`img-src 'self' data: blob: https:`**: Habilita la visualización de imágenes locales, blobs cargados dinámicamente y URLs remotas de protocolo seguro.
-- **`connect-src 'self' https://cognito-idp.*.amazonaws.com http://localhost:8000 http://127.0.0.1:8000 ws://localhost:5173 ws://127.0.0.1:5173`**: Whitelist de endpoints para peticiones de red (API y Cognito). Incluye soporte local para endpoints de desarrollo y WebSockets de hot-reload de Vite.
-- **`frame-ancestors 'none'`**: Impide que la aplicación de frontend sea embebida en `<frame>`, `<iframe>` o `<embed>` por sitios externos, mitigando ataques de **Clickjacking**.
-- **`base-uri 'self'`**: Restringe las URLs permitidas en el elemento `<base>` del documento.
-- **`form-action 'self'`**: Limita los destinos para los envíos de formularios.
+- **Producción (documento HTML)**: Nginx, vía la fuente canónica [`infra/nginx/security-headers.conf`](file:///C:/Users/Alejandro/Desktop/local/termovault/infra/nginx/security-headers.conf).
+- **API**: middleware [SecurityHeaders.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/app/Http/Middleware/SecurityHeaders.php).
+- **Desarrollo**: Vite dev server (ver `server.headers` en `web/vite.config.ts`); incluye orígenes locales y `unsafe-inline/eval` que **no** se envían en el build de producción.
+
+### Estructura de la CSP de producción
+- **`default-src 'self'`**: Solo permite cargar recursos originados en el propio dominio de la aplicación.
+- **`script-src 'self'`**: Restringe la ejecución de scripts al propio origen. **No se permite ningún CDN externo** (FIX [006]): el build de Vite sirve módulos desde el propio origen, y habilitar un CDN como `cdn.jsdelivr.net` implicaría que un compromiso de ese CDN derivara en XSS masivo.
+- **`style-src 'self' 'unsafe-inline'`**: Permite estilos locales e inline (requeridos por React/Vite para estilos dinámicos).
+- **`img-src 'self' data: https:`**: Imágenes locales, `data:` URIs y URLs remotas por HTTPS.
+- **`connect-src 'self' https://cognito-idp.us-east-2.amazonaws.com`**: Whitelist de endpoints de red. La API es same-origin (`/api`); Cognito se incluye para el flujo de autenticación. **Sin** orígenes de desarrollo en producción.
+- **`object-src 'none'`**: Bloquea plugins embebidos (`<object>`, `<embed>`).
+- **`frame-ancestors 'none'`**: Impide el embebido en `<frame>`/`<iframe>`, mitigando **Clickjacking**.
+- **`base-uri 'self'`**: Restringe las URLs del elemento `<base>`.
+- **`form-action 'self'`**: Limita los destinos de envío de formularios.
 
 ---
 
@@ -52,8 +57,11 @@ Se integró **DOMPurify** para limpiar cualquier entrada de usuario o marcado di
 ## 🛠️ Procedimiento de Actualización de CSP
 
 1. **Agregar nuevo dominio de API**:
-   - Modifica el tag CSP de `connect-src` en [index.html](file:///C:/Users/Alejandro/Desktop/local/termovault/web/index.html) agregando el nuevo dominio.
-   - Actualiza el CSP header en [SecurityHeaders.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/app/Http/Middleware/SecurityHeaders.php).
+   - Actualiza `connect-src` en los **tres** puntos de entrega para mantenerlos alineados:
+     - Producción HTML: [`infra/nginx/security-headers.conf`](file:///C:/Users/Alejandro/Desktop/local/termovault/infra/nginx/security-headers.conf)
+     - API: [SecurityHeaders.php](file:///C:/Users/Alejandro/Desktop/local/termovault/backend/app/Http/Middleware/SecurityHeaders.php)
+     - Desarrollo: `server.headers` en `web/vite.config.ts`
+   - **Nunca** agregues un CDN externo a `script-src` (ver FIX [006]).
 2. **Ejecutar suite de pruebas de seguridad**:
    ```bash
    cd frontend
