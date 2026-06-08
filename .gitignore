@@ -62,6 +62,16 @@ yarn-debug.log*
 *.crt
 aws-credentials*
 
+# Documentación interna de infraestructura / seguridad (NO versionar)
+DESPLIEGUE_AWS.md
+AUDITORIA_SEGURIDAD_TERMOVAULT_WEB.md
+
+# Artefactos locales / herramientas de agente (NO versionar)
+graphify-out/
+capturas/
+.claude/
+CLAUDE.md
+
 # Coverage
 coverage/
 .nyc_output/
