@@ -267,6 +267,87 @@ class InspeccionTest extends TestCase
     }
 
     /**
+     * Test: [008] Termografía con magic bytes de ejecutable es rechazada
+     *
+     * CRÍTICO: malware.exe renombrado a .is2 pasa la validación de extensión
+     * pero debe ser bloqueado por la inspección de contenido (magic bytes).
+     */
+    public function test_thermal_upload_with_executable_content_is_rejected(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+
+        // Ejecutable de Windows (firma MZ) disfrazado de termografía .is2
+        $malware = UploadedFile::fake()->createWithContent('captura.is2', "MZ\x90\x00\x03\x00\x00\x00");
+
+        $response = $this->actingAs($tecnico)
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [$malware],
+                'novedades' => json_encode([]),
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('archivo');
+
+        // No se creó ninguna inspección ni archivo
+        $this->assertDatabaseMissing('inspecciones', ['elemento_id' => $elemento->id]);
+        $this->assertSame(0, \DB::table('archivos')->count());
+    }
+
+    /**
+     * Test: [008] Reporte con magic bytes de ELF disfrazado de PDF es rechazado
+     */
+    public function test_report_with_elf_content_disguised_as_pdf_is_rejected(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+
+        // Binario ELF (Linux) renombrado a .is2 (la regla mimes no aplica a termografías)
+        $elf = UploadedFile::fake()->createWithContent('reporte.is2', "\x7fELF\x02\x01\x01\x00");
+
+        $response = $this->actingAs($tecnico)
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [$elf],
+                'novedades' => json_encode([]),
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('archivo');
+    }
+
+    /**
+     * Test: [008] Termografía .is2 legítima (sin firma de ejecutable) se acepta
+     *
+     * Garantiza que el guard NO genera falsos positivos sobre contenido válido.
+     */
+    public function test_legitimate_thermal_file_is_accepted(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+
+        // .is2 Fluke real (basado en ZIP, firma PK)
+        $is2 = UploadedFile::fake()->createWithContent('captura.is2', "PK\x03\x04\x0a\x00\x00\x00datos");
+
+        $response = $this->actingAs($tecnico)
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [$is2],
+                'novedades' => json_encode([]),
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertSame(1, \DB::table('archivos')->where('tipo', 'termografia_is2')->count());
+    }
+
+    /**
      * Test: Novedades se crean con estado 'abierta'
      */
     public function test_inspeccion_novedades_created_as_abierta(): void

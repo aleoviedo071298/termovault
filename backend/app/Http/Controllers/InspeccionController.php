@@ -8,6 +8,7 @@ use App\Models\Inspeccion;
 use App\Models\Novedad;
 use App\Services\AuditTrail;
 use App\Services\Auth\AccessScopeResolver;
+use App\Services\FileSignatureGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class InspeccionController extends Controller
     public function __construct(
         private readonly AccessScopeResolver $scopeResolver,
         private readonly AuditTrail $auditTrail,
+        private readonly FileSignatureGuard $fileSignatureGuard,
     ) {}
 
     private function archivoPayload(Archivo $archivo): array
@@ -350,6 +352,31 @@ class InspeccionController extends Controller
                     'errors' => ['termografias' => ['Extensión no permitida: .' . $ext]],
                 ], 422);
             }
+        }
+
+        // FIX [008]: Inspección de magic bytes. La regla mimes: de Laravel no cubre
+        // el campo "termografias" (.is2 propietario se valida solo por extensión),
+        // así que un atacante podría renombrar un ejecutable a .is2/.zip. Bloqueamos
+        // por contenido cualquier firma de ejecutable/script en TODOS los adjuntos.
+        $uploadedFiles = array_merge(
+            $request->hasFile('reporte') ? [$request->file('reporte')] : [],
+            (array) $request->file('termografias', []),
+            $request->hasFile('imagenes') ? [$request->file('imagenes')] : [],
+        );
+
+        $threat = $this->fileSignatureGuard->firstThreat($uploadedFiles);
+        if ($threat !== null) {
+            Log::warning('upload.rejected.dangerous_signature', [
+                'user_id' => $scope['user_id'] ?? null,
+                'file_name' => $threat['name'],
+                'threat' => $threat['threat'],
+            ]);
+            return response()->json([
+                'message' => 'El archivo adjunto no es válido: se detectó contenido ejecutable.',
+                'errors' => ['archivo' => [
+                    "El archivo \"{$threat['name']}\" parece contener {$threat['threat']} y fue rechazado por seguridad.",
+                ]],
+            ], 422);
         }
 
         if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
