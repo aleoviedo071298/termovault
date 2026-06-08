@@ -495,7 +495,16 @@ class InspeccionManagementTest extends TestCase
             'estado' => 'abierta',
         ]);
 
+        // El ciclo de vida exige pasar por "revisada" antes de "cerrada"
+        // (state machine [013]). El admin bypasea la segregación de funciones,
+        // por lo que puede revisar y cerrar él mismo.
         $this->mockVerifier($this->adminClaims);
+        $reviewResponse = $this->withHeader('Authorization', 'Bearer valid-token')
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'revisada',
+            ]);
+        $reviewResponse->assertOk();
+
         $closeResponse = $this->withHeader('Authorization', 'Bearer valid-token')
             ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
                 'estado' => 'cerrada',
