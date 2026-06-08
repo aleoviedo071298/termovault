@@ -76,12 +76,24 @@ class AdminUserController extends Controller
             return $user->load(['rol:id,codigo,nombre', 'empresa:id,nombre', 'yacimientos:id,nombre,codigo']);
         });
 
+        $actorId = $request->attributes->get('auth.user_id');
+
         $this->auditTrail->record('usuario.created', [
-            'actor_user_id' => $request->attributes->get('auth.user_id'),
+            'actor_user_id' => $actorId,
             'usuario_id' => $user->id,
             'rol' => $user->rol?->codigo,
             'empresa_id' => $user->empresa_id,
         ]);
+
+        // FIX [002]: crear directamente un usuario con privilegio admin es un
+        // evento sensible que debe alertarse igual que una escalada.
+        if ($this->roleRank($user->rol?->codigo) >= $this->roleRank('admin')) {
+            $this->auditTrail->alert('usuario.created_with_admin_privilege', [
+                'actor_user_id' => $actorId,
+                'usuario_id' => $user->id,
+                'rol' => $user->rol?->codigo,
+            ]);
+        }
 
         return response()->json([
             'id' => $user->id,
@@ -98,7 +110,7 @@ class AdminUserController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $user = Usuario::query()->find($id);
+        $user = Usuario::query()->with(['rol:id,codigo', 'yacimientos:id'])->find($id);
         if (! $user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
@@ -108,6 +120,15 @@ class AdminUserController extends Controller
         if (! $rol) {
             return response()->json(['message' => 'Rol invalido'], 422);
         }
+
+        // FIX [002]: snapshot del estado ANTES del cambio, para poder auditar
+        // escaladas de privilegio (rol), reactivaciones y reasignaciones.
+        $previous = [
+            'rol' => $user->rol?->codigo,
+            'empresa_id' => $user->empresa_id !== null ? (int) $user->empresa_id : null,
+            'activo' => (bool) $user->activo,
+            'yacimiento_ids' => $user->yacimientos->pluck('id')->map(fn ($i) => (int) $i)->sort()->values()->all(),
+        ];
 
         $email = mb_strtolower(trim($data['email']));
         $yacimientos = collect($data['yacimientos'] ?? [])->map(fn ($value) => (int) $value)->unique()->values();
@@ -127,13 +148,41 @@ class AdminUserController extends Controller
 
         $fresh = $user->load(['rol:id,codigo,nombre', 'empresa:id,nombre', 'yacimientos:id,nombre,codigo']);
 
-        $this->auditTrail->record('usuario.updated', [
-            'actor_user_id' => $request->attributes->get('auth.user_id'),
-            'usuario_id' => $fresh->id,
+        $current = [
             'rol' => $fresh->rol?->codigo,
-            'empresa_id' => $fresh->empresa_id,
+            'empresa_id' => $fresh->empresa_id !== null ? (int) $fresh->empresa_id : null,
             'activo' => (bool) $fresh->activo,
+            'yacimiento_ids' => $fresh->yacimientos->pluck('id')->map(fn ($i) => (int) $i)->sort()->values()->all(),
+        ];
+
+        $actorId = $request->attributes->get('auth.user_id');
+
+        // Auditoría enriquecida con before/after (antes solo se registraba el estado final).
+        $this->auditTrail->record('usuario.updated', [
+            'actor_user_id' => $actorId,
+            'usuario_id' => $fresh->id,
+            'previous' => $previous,
+            'current' => $current,
         ]);
+
+        // Alerta de escalada de privilegio: el rol subió de jerarquía
+        // (tecnico < supervisor < admin). Evento WARNING para alerting.
+        if ($this->roleRank($current['rol']) > $this->roleRank($previous['rol'])) {
+            $this->auditTrail->alert('usuario.privilege_escalated', [
+                'actor_user_id' => $actorId,
+                'usuario_id' => $fresh->id,
+                'from_rol' => $previous['rol'],
+                'to_rol' => $current['rol'],
+            ]);
+        }
+
+        // Alerta de reactivación: una cuenta deshabilitada vuelve a estar activa.
+        if (! $previous['activo'] && $current['activo']) {
+            $this->auditTrail->alert('usuario.reactivated', [
+                'actor_user_id' => $actorId,
+                'usuario_id' => $fresh->id,
+            ]);
+        }
 
         return response()->json([
             'id' => $fresh->id,
@@ -146,6 +195,20 @@ class AdminUserController extends Controller
             'rol' => $fresh->rol?->codigo,
             'yacimientos' => $fresh->yacimientos->map(fn ($y) => ['id' => $y->id, 'nombre' => $y->nombre, 'codigo' => $y->codigo])->values(),
         ]);
+    }
+
+    /**
+     * Jerarquía de roles para detectar escaladas de privilegio.
+     * Un valor mayor implica más privilegios.
+     */
+    private function roleRank(?string $code): int
+    {
+        return match ($code) {
+            'admin' => 3,
+            'supervisor' => 2,
+            'tecnico' => 1,
+            default => 0,
+        };
     }
 
     private function validatePayload(Request $request, ?int $ignoreId): array

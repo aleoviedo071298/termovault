@@ -78,6 +78,22 @@ class SecurityHeadersTest extends TestCase
     }
 
     /**
+     * Test: [006] La CSP no permite CDNs externos en script-src.
+     *
+     * Un CDN comprometido (p. ej. cdn.jsdelivr.net) habilitaría XSS masivo.
+     * script-src debe limitarse a 'self'.
+     */
+    public function test_csp_script_src_has_no_external_cdn(): void
+    {
+        $response = $this->getJson('/api/health');
+        $csp = $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("script-src 'self'", $csp);
+        $this->assertStringNotContainsString('jsdelivr', $csp);
+        $this->assertStringNotContainsString('cdn.', $csp);
+    }
+
+    /**
      * Test: X-Frame-Options prevents clickjacking
      */
     public function test_x_frame_options_deny(): void
