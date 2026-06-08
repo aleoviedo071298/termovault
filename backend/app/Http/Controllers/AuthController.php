@@ -6,6 +6,7 @@ use App\Services\Auth\LocalUserProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -67,6 +68,7 @@ class AuthController extends Controller
 
             $challengeData = $challengeResponse->json();
             if (! $challengeResponse->successful()) {
+                $this->logLoginFailure($request, $email, $challengeData, 'new_password_challenge');
                 return response()->json([
                     'message' => $this->translateCognitoError($challengeData['__type'] ?? null, $challengeData['message'] ?? null),
                 ], 401);
@@ -74,6 +76,7 @@ class AuthController extends Controller
 
             $authResult = $challengeData['AuthenticationResult'] ?? [];
             if (($authResult['AccessToken'] ?? null) && ($authResult['IdToken'] ?? null)) {
+                $this->logLoginSuccess($request, $email, 'new_password_challenge');
                 $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
                 if ($claims !== null) {
                     $this->provisioner->findOrProvisionFromClaims($claims);
@@ -119,6 +122,7 @@ class AuthController extends Controller
         $data = $response->json();
 
         if (! $response->successful()) {
+            $this->logLoginFailure($request, $email, $data, 'password_auth');
             $message = $this->translateCognitoError($data['__type'] ?? null, $data['message'] ?? null);
             return response()->json([
                 'message' => $message,
@@ -135,6 +139,7 @@ class AuthController extends Controller
 
         $authResult = $data['AuthenticationResult'] ?? [];
         if (($authResult['IdToken'] ?? null)) {
+            $this->logLoginSuccess($request, $email, 'password_auth');
             $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
             if ($claims !== null) {
                 $this->provisioner->findOrProvisionFromClaims($claims);
@@ -178,6 +183,37 @@ class AuthController extends Controller
             'groups' => $effectiveGroups,
             'local_role' => $localRole,
             'empresa_id' => $empresaId,
+        ]);
+    }
+
+    /**
+     * FIX [001]: registra un intento de login fallido para monitoreo de seguridad
+     * (detección de fuerza bruta / credential stuffing). Nivel WARNING para SIEM.
+     */
+    private function logLoginFailure(Request $request, string $email, ?array $cognito, string $flow): void
+    {
+        Log::warning('auth.login.failed', [
+            'event' => 'auth.login.failed',
+            'email' => $email,
+            'ip' => $request->ip(),
+            'ua' => $request->userAgent(),
+            'flow' => $flow,
+            'reason' => $cognito['__type'] ?? 'unknown',
+        ]);
+    }
+
+    /**
+     * FIX [001]: registra un login exitoso (nivel INFO) para trazabilidad de accesos.
+     * No se registran tokens ni contraseñas.
+     */
+    private function logLoginSuccess(Request $request, string $email, string $flow): void
+    {
+        Log::info('auth.login.success', [
+            'event' => 'auth.login.success',
+            'email' => $email,
+            'ip' => $request->ip(),
+            'ua' => $request->userAgent(),
+            'flow' => $flow,
         ]);
     }
 

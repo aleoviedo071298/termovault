@@ -22,11 +22,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api')->group(function () {
     // Health check endpoint
     Route::get('/health', function () {
+        // FIX [010]: no exponemos la versión en el endpoint público para evitar
+        // fingerprinting. El estado alcanza para health checks de monitoreo.
         return response()->json([
             'status' => 'ok',
             'service' => 'termovault-api',
             'timestamp' => now()->toIso8601String(),
-            'version' => '0.1.0',
         ], 200);
     });
 

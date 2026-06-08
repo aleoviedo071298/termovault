@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Authentication Tests
@@ -22,12 +23,20 @@ class AuthTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Mock Cognito HTTP responses for all tests
+    }
+
+    /**
+     * Fake de Cognito devolviendo credenciales inválidas (400).
+     * Se invoca explícitamente en cada test de login para controlar el orden
+     * de los stubs (el primer stub registrado gana en Laravel).
+     */
+    private function fakeCognitoInvalidCredentials(): void
+    {
         Http::fake([
             'cognito-idp.*' => Http::response([
                 '__type' => 'NotAuthorizedException',
-                'message' => 'Incorrect username or password.'
-            ], 400)
+                'message' => 'Incorrect username or password.',
+            ], 400),
         ]);
     }
 
@@ -43,10 +52,11 @@ class AuthTest extends TestCase
             'status',
             'service',
             'timestamp',
-            'version'
         ]);
         $this->assertEquals('ok', $response['status']);
         $this->assertEquals('termovault-api', $response['service']);
+        // FIX [010]: la versión NO debe exponerse en el endpoint público.
+        $response->assertJsonMissingPath('version');
     }
 
     /**
@@ -54,6 +64,7 @@ class AuthTest extends TestCase
      */
     public function test_login_fails_with_invalid_credentials(): void
     {
+        $this->fakeCognitoInvalidCredentials();
         $response = $this->postJson('/api/auth/login', [
             'email' => 'invalid@example.com',
             'password' => 'wrong_password'
@@ -63,6 +74,58 @@ class AuthTest extends TestCase
         $response->assertStatus(400);
         $response->assertJsonPath('message', 'Email o contraseña incorrectos.');
         $response->assertJsonMissingPath('error');
+    }
+
+    /**
+     * Test: [001] Un login fallido se registra con email + IP + motivo.
+     */
+    public function test_failed_login_is_logged(): void
+    {
+        Log::spy();
+        $this->fakeCognitoInvalidCredentials();
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'attacker@example.com',
+            'password' => 'wrong_password',
+        ])->assertStatus(400);
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message, $context = []) => $message === 'auth.login.failed'
+                && ($context['email'] ?? null) === 'attacker@example.com'
+                && array_key_exists('ip', $context)
+                && ($context['reason'] ?? null) === 'NotAuthorizedException')
+            ->once();
+    }
+
+    /**
+     * Test: [001] Un login exitoso se registra (sin tokens ni password).
+     */
+    public function test_successful_login_is_logged(): void
+    {
+        Log::spy();
+
+        // Override del fake del setUp: Cognito devuelve tokens válidos.
+        Http::fake([
+            'cognito-idp.*' => Http::response([
+                'AuthenticationResult' => [
+                    'AccessToken' => 'fake-access',
+                    'IdToken' => 'fake-id-token', // sin '.', decodeIdTokenClaims->null, salta provisioner
+                    'RefreshToken' => 'fake-refresh',
+                    'ExpiresIn' => 3600,
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'user@example.com',
+            'password' => 'correct',
+        ])->assertStatus(200);
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn ($message, $context = []) => $message === 'auth.login.success'
+                && ($context['email'] ?? null) === 'user@example.com'
+                && array_key_exists('ip', $context))
+            ->once();
     }
 
     /**
@@ -103,6 +166,7 @@ class AuthTest extends TestCase
      */
     public function test_login_rate_limiting(): void
     {
+        $this->fakeCognitoInvalidCredentials();
         // Intentar 11 veces (límite es 10)
         for ($i = 0; $i < 11; $i++) {
             $response = $this->postJson('/api/auth/login', [
