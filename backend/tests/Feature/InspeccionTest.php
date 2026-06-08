@@ -335,4 +335,255 @@ class InspeccionTest extends TestCase
             'estado' => 'resuelta'
         ]);
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // FIX [013] — State machine & segregation of duties
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Test: Transición inválida enviada → cerrada es rechazada (422)
+     *
+     * CRÍTICO: [013-A] No se puede saltar el paso "revisada".
+     */
+    public function test_cannot_skip_revisada_going_directly_to_cerrada(): void
+    {
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'enviada',
+            'elemento_id' => $elemento->id,
+        ]);
+
+        $response = $this->actingAs($supervisor)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'cerrada',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonFragment(['message' => 'Transición de estado inválida: enviada → cerrada']);
+
+        // Estado no cambió
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccion->id,
+            'estado' => 'enviada',
+        ]);
+    }
+
+    /**
+     * Test: Transición inválida cerrada → revisada es rechazada (422)
+     *
+     * CRÍTICO: [013-A] Estado "cerrada" es terminal.
+     */
+    public function test_cannot_reopen_closed_inspeccion(): void
+    {
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'cerrada',
+            'elemento_id' => $elemento->id,
+        ]);
+
+        $response = $this->actingAs($supervisor)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'revisada',
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    /**
+     * Test: Transición regresiva revisada → enviada es rechazada (422)
+     *
+     * CRÍTICO: [013-A] No se puede revertir una revisión.
+     */
+    public function test_cannot_regress_from_revisada_to_enviada(): void
+    {
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'revisada',
+            'elemento_id' => $elemento->id,
+        ]);
+
+        $response = $this->actingAs($supervisor)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'enviada',
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    /**
+     * Test: Segregación de funciones — mismo supervisor NO puede revisar Y cerrar
+     *
+     * CRÍTICO: [013-B] El que revisó no puede cerrar su propia revisión.
+     */
+    public function test_same_supervisor_cannot_review_and_close(): void
+    {
+        $supervisor = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisor->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'revisada',
+            'elemento_id' => $elemento->id,
+            'revisada_por' => $supervisor->id, // ← ESTE supervisor revisó
+            'fecha_revision' => now(),
+        ]);
+
+        // Mismo supervisor intenta cerrar → 403
+        $response = $this->actingAs($supervisor)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'cerrada',
+            ]);
+
+        $response->assertStatus(403);
+        $response->assertJsonFragment([
+            'message' => 'No puedes cerrar una inspección que vos mismo revisaste (segregación de funciones)',
+        ]);
+
+        // Estado no cambió
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccion->id,
+            'estado' => 'revisada',
+        ]);
+    }
+
+    /**
+     * Test: Supervisor diferente SÍ puede cerrar inspección revisada por otro
+     *
+     * CRÍTICO: [013-B] Validar que la segregación no bloquea el flujo correcto.
+     */
+    public function test_different_supervisor_can_close_after_review(): void
+    {
+        $supervisorA = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisorA->yacimientos()->attach($this->yacimiento->id);
+
+        $supervisorB = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisorB->yacimientos()->attach($this->yacimiento->id);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'revisada',
+            'elemento_id' => $elemento->id,
+            'revisada_por' => $supervisorA->id,  // Supervisor A revisó
+            'fecha_revision' => now(),
+        ]);
+
+        // Supervisor B cierra → 200
+        $response = $this->actingAs($supervisorB)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'cerrada',
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccion->id,
+            'estado' => 'cerrada',
+            'cerrada_por' => $supervisorB->id,
+        ]);
+    }
+
+    /**
+     * Test: Admin puede cerrar incluso si él mismo revisó (bypass de segregación)
+     *
+     * Admin no tiene restricción de segregación (es superusuario).
+     */
+    public function test_admin_can_close_even_if_same_reviewer(): void
+    {
+        $admin = Usuario::factory()->admin()->create(['empresa_id' => $this->empresa->id]);
+
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+        $inspeccion = Inspeccion::factory()->create([
+            'estado' => 'revisada',
+            'elemento_id' => $elemento->id,
+            'revisada_por' => $admin->id,  // Admin mismo revisó
+            'fecha_revision' => now(),
+        ]);
+
+        // Admin cierra → 200 (bypass segregation)
+        $response = $this->actingAs($admin)
+            ->patchJson("/api/inspecciones/{$inspeccion->id}/estado", [
+                'estado' => 'cerrada',
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccion->id,
+            'estado' => 'cerrada',
+        ]);
+    }
+
+    /**
+     * Test: Flujo completo enviada → revisada → cerrada
+     *
+     * Valida el happy path con state machine + segregation.
+     */
+    public function test_full_inspection_lifecycle(): void
+    {
+        $supervisorA = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisorA->yacimientos()->attach($this->yacimiento->id);
+
+        $supervisorB = Usuario::factory()->supervisor()
+            ->create(['empresa_id' => $this->empresa->id]);
+        $supervisorB->yacimientos()->attach($this->yacimiento->id);
+
+        $tecnico = Usuario::factory()->tecnico()->create(['empresa_id' => $this->empresa->id]);
+        $tecnico->yacimientos()->attach($this->yacimiento->id);
+        $elemento = Elemento::factory()->create(['yacimiento_id' => $this->yacimiento->id]);
+
+        // 1. Técnico crea
+        $response = $this->actingAs($tecnico)
+            ->postJson('/api/inspecciones', [
+                'elemento_id' => $elemento->id,
+                'fecha_inspeccion' => now()->format('Y-m-d'),
+                'termografias' => [UploadedFile::fake()->create('termo.is2', 50)],
+                'novedades' => json_encode([]),
+            ]);
+        $response->assertStatus(201);
+        $inspeccionId = $response->json('inspeccion.id');
+
+        // 2. Supervisor A revisa
+        $response = $this->actingAs($supervisorA)
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'revisada',
+                'observaciones_revisor' => 'Todo en orden',
+            ]);
+        $response->assertStatus(200);
+
+        // 3. Supervisor A intenta cerrar (mismo que revisó) → 403
+        $response = $this->actingAs($supervisorA)
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'cerrada',
+            ]);
+        $response->assertStatus(403);
+
+        // 4. Supervisor B cierra → 200
+        $response = $this->actingAs($supervisorB)
+            ->patchJson("/api/inspecciones/{$inspeccionId}/estado", [
+                'estado' => 'cerrada',
+            ]);
+        $response->assertStatus(200);
+
+        // 5. Verificar estado final
+        $this->assertDatabaseHas('inspecciones', [
+            'id' => $inspeccionId,
+            'estado' => 'cerrada',
+            'revisada_por' => $supervisorA->id,
+            'cerrada_por' => $supervisorB->id,
+        ]);
+    }
 }

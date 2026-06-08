@@ -171,6 +171,16 @@ class InspeccionController extends Controller
         ]);
     }
 
+    /**
+     * Transiciones de estado válidas (state machine).
+     * Cada key es el estado actual, el value es la lista de estados destino permitidos.
+     */
+    private const VALID_TRANSITIONS = [
+        Inspeccion::ESTADO_ENVIADA  => [Inspeccion::ESTADO_REVISADA],
+        Inspeccion::ESTADO_REVISADA => [Inspeccion::ESTADO_CERRADA],
+        Inspeccion::ESTADO_CERRADA  => [], // estado terminal
+    ];
+
     public function updateEstado(Request $request, int $id): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);
@@ -216,27 +226,56 @@ class InspeccionController extends Controller
             return response()->json(['message' => 'Inspección no encontrada'], 404);
         }
 
-        $inspeccion->estado = $data['estado'];
+        $newEstado = $data['estado'];
+        $currentEstado = $inspeccion->estado;
+
+        // ── FIX [013-A]: Validar transición de estado (state machine) ──
+        $allowed = self::VALID_TRANSITIONS[$currentEstado] ?? [];
+        if (! in_array($newEstado, $allowed, true)) {
+            Log::notice('authz.denied.inspeccion.estado.transition', [
+                'user_id' => $scope['user_id'] ?? null,
+                'inspeccion_id' => $id,
+                'from' => $currentEstado,
+                'to' => $newEstado,
+            ]);
+            return response()->json([
+                'message' => "Transición de estado inválida: {$currentEstado} → {$newEstado}",
+            ], 422);
+        }
+
+        // ── FIX [013-B]: Segregación de funciones en cierre ──
+        // Un supervisor (no admin) no puede cerrar una inspección que él mismo revisó.
+        if ($newEstado === Inspeccion::ESTADO_CERRADA && ! $scope['is_admin']) {
+            if ((int) $inspeccion->revisada_por === (int) $scope['user_id']) {
+                Log::notice('authz.denied.inspeccion.estado.segregation', [
+                    'user_id' => $scope['user_id'] ?? null,
+                    'inspeccion_id' => $id,
+                    'revisada_por' => $inspeccion->revisada_por,
+                ]);
+                return response()->json([
+                    'message' => 'No puedes cerrar una inspección que vos mismo revisaste (segregación de funciones)',
+                ], 403);
+            }
+        }
+
+        // ── Aplicar cambio de estado ──
+        $inspeccion->estado = $newEstado;
         if (array_key_exists('observaciones_revisor', $data)) {
             $inspeccion->observaciones_revisor = $data['observaciones_revisor'];
         }
         $inspeccion->updated_by = $scope['user_id'];
 
-        if ($data['estado'] === Inspeccion::ESTADO_REVISADA) {
+        if ($newEstado === Inspeccion::ESTADO_REVISADA) {
             $inspeccion->revisada_por = $scope['user_id'];
             $inspeccion->fecha_revision = now();
             $inspeccion->cerrada_por = null;
             $inspeccion->fecha_cierre = null;
         }
 
-        if ($data['estado'] === Inspeccion::ESTADO_CERRADA) {
-            // Si se cierra directamente sin paso previo por "revisada", dejamos trazabilidad mínima.
-            if (! $inspeccion->revisada_por) {
-                $inspeccion->revisada_por = $scope['user_id'];
-                $inspeccion->fecha_revision = now();
-            }
+        if ($newEstado === Inspeccion::ESTADO_CERRADA) {
             $inspeccion->cerrada_por = $scope['user_id'];
             $inspeccion->fecha_cierre = now();
+            // revisada_por ya fue asignado en la transición enviada → revisada
         }
 
         $inspeccion->save();
@@ -244,12 +283,13 @@ class InspeccionController extends Controller
         $this->auditTrail->record('inspeccion.estado.updated', [
             'actor_user_id' => $scope['user_id'] ?? null,
             'inspeccion_id' => $inspeccion->id,
-            'estado' => $inspeccion->estado,
+            'from_estado' => $currentEstado,
+            'to_estado' => $newEstado,
             'revisada_por' => $inspeccion->revisada_por,
             'cerrada_por' => $inspeccion->cerrada_por,
         ]);
 
-        if ($data['estado'] === Inspeccion::ESTADO_CERRADA) {
+        if ($newEstado === Inspeccion::ESTADO_CERRADA) {
             Novedad::query()
                 ->where('inspeccion_id', $inspeccion->id)
                 ->where('estado', Novedad::ESTADO_ABIERTA)
