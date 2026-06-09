@@ -10,12 +10,11 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $allowedOrigins = [
-            'https://app.example.com',
-            'https://app.staging.example.com',
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-        ];
+        // FIX [N-04]: la lista de orígenes CORS viene de config (env-driven).
+        // En producción la variable CORS_ALLOWED_ORIGINS debe estar vacía:
+        // el frontend es same-origin y no necesita CORS. Los orígenes de dev
+        // (Vite en localhost:5173) se configuran solo en .env de desarrollo.
+        $allowedOrigins = (array) config('security.cors.allowed_origins', []);
         $origin = $request->headers->get('Origin');
 
         if ($request->isMethod('OPTIONS')) {
