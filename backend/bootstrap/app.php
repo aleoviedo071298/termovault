@@ -21,6 +21,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->remove(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->append(SecurityHeaders::class);
 
+        // FIX [N-07] paso A: confiar en proxies (Cloudflare + nginx local) para
+        // que $request->ip() devuelva la IP real del cliente desde
+        // X-Forwarded-For / CF-Connecting-IP, no la del proxy. Indispensable
+        // para que el rate-limiting por IP (login) funcione correctamente.
+        // Nota: mientras [N-01] siga abierto (origen accesible directo),
+        // un atacante podría falsificar el header pegando al origen sin pasar
+        // por Cloudflare. Al cerrar N-01, restringir esta lista a las IPs de
+        // Cloudflare (https://www.cloudflare.com/ips/).
+        $middleware->trustProxies(at: '*', headers:
+            Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO
+            | Request::HEADER_X_FORWARDED_AWS_ELB
+        );
+
         $middleware->alias([
             'cognito.auth' => EnsureCognitoJwt::class,
             'role.claim' => EnsureRoleFromClaims::class,
