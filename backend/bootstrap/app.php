@@ -21,15 +21,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->remove(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->append(SecurityHeaders::class);
 
-        // FIX [N-07] paso A: confiar en proxies (Cloudflare + nginx local) para
-        // que $request->ip() devuelva la IP real del cliente desde
-        // X-Forwarded-For / CF-Connecting-IP, no la del proxy. Indispensable
-        // para que el rate-limiting por IP (login) funcione correctamente.
-        // Nota: mientras [N-01] siga abierto (origen accesible directo),
-        // un atacante podría falsificar el header pegando al origen sin pasar
-        // por Cloudflare. Al cerrar N-01, restringir esta lista a las IPs de
-        // Cloudflare (https://www.cloudflare.com/ips/).
-        $middleware->trustProxies(at: '*', headers:
+        // FIX [N-07] + [R-01]: lista explícita de proxies en los que confiamos
+        // para leer X-Forwarded-For. Default: rangos de Cloudflare (la única
+        // ruta de entrada legítima tras [N-01]). Cualquier petición que NO
+        // venga de un rango confiable ignora el XFF y usa la IP directa,
+        // bloqueando intentos de spoof si en el futuro se cambia el routing.
+        // Lista en config/trustedproxies.php (override por env TRUSTED_PROXIES).
+        // Nota: el helper config() todavía no está disponible en esta fase del
+        // bootstrap; cargamos el archivo directamente con require.
+        $trustedProxiesConfig = require __DIR__.'/../config/trustedproxies.php';
+        $middleware->trustProxies(at: $trustedProxiesConfig['proxies'], headers:
             Request::HEADER_X_FORWARDED_FOR
             | Request::HEADER_X_FORWARDED_HOST
             | Request::HEADER_X_FORWARDED_PORT
