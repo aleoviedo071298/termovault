@@ -39,15 +39,20 @@ class SecurityHeadersTest extends TestCase
     }
 
     /**
-     * Test: CORS headers present for allowed origin
+     * Test: CORS headers present for an origin explicitly configured.
+     *
+     * Tras [N-04] el middleware lee la lista desde config (env-driven).
+     * Aquí inyectamos un origen permitido y verificamos el comportamiento.
      */
     public function test_cors_headers_allowed_origin(): void
     {
+        config(['security.cors.allowed_origins' => ['https://allowed.test']]);
+
         $response = $this->withHeaders([
-            'Origin' => 'https://app.example.com',
+            'Origin' => 'https://allowed.test',
         ])->getJson('/api/health');
 
-        $response->assertHeader('Access-Control-Allow-Origin', 'https://app.example.com');
+        $response->assertHeader('Access-Control-Allow-Origin', 'https://allowed.test');
         $response->assertHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         $response->assertHeader('Access-Control-Allow-Credentials', 'false');
     }
@@ -57,11 +62,29 @@ class SecurityHeadersTest extends TestCase
      */
     public function test_cors_headers_blocked_origin(): void
     {
+        config(['security.cors.allowed_origins' => ['https://allowed.test']]);
+
         $response = $this->withHeaders([
             'Origin' => 'https://evil.example.com',
         ])->getJson('/api/health');
 
         $response->assertHeaderMissing('Access-Control-Allow-Origin');
+    }
+
+    /**
+     * Test: [N-04] sin orígenes configurados (producción default), NINGÚN
+     * origen recibe headers CORS. Garantiza que los placeholders y los
+     * orígenes de desarrollo nunca queden hardcodeados.
+     */
+    public function test_cors_default_production_allows_no_origins(): void
+    {
+        config(['security.cors.allowed_origins' => []]);
+
+        foreach (['https://app.example.com', 'http://localhost:5173', 'https://termovault.com.ar'] as $origin) {
+            $this->withHeaders(['Origin' => $origin])
+                ->getJson('/api/health')
+                ->assertHeaderMissing('Access-Control-Allow-Origin');
+        }
     }
 
     /**
@@ -141,12 +164,14 @@ class SecurityHeadersTest extends TestCase
      */
     public function test_cors_preflight_request(): void
     {
+        config(['security.cors.allowed_origins' => ['https://allowed.test']]);
+
         $response = $this->withHeaders([
-            'Origin' => 'https://app.example.com',
+            'Origin' => 'https://allowed.test',
             'Access-Control-Request-Method' => 'POST',
         ])->options('/api/health');
 
         $response->assertStatus(204);
-        $response->assertHeader('Access-Control-Allow-Origin', 'https://app.example.com');
+        $response->assertHeader('Access-Control-Allow-Origin', 'https://allowed.test');
     }
 }
