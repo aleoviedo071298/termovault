@@ -36,6 +36,22 @@ class InspeccionController extends Controller
         ];
     }
 
+    /**
+     * Trunca un valor opcional a max chars o devuelve null si está vacío.
+     * Usado en la validación per-item de novedades ([M-02]).
+     */
+    private function truncateOrNull(mixed $value, int $maxLength): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $str = trim((string) $value);
+        if ($str === '') {
+            return null;
+        }
+        return mb_substr($str, 0, $maxLength);
+    }
+
     private function safeStorageFileName(string $originalName): string
     {
         $name = basename($originalName);
@@ -335,7 +351,10 @@ class InspeccionController extends Controller
             'termografias.*' => 'file|max:61440', // Max 60MB por archivo térmico
             // Compatibilidad: campo legacy de un único ZIP (no usado por el frontend nuevo).
             'imagenes' => 'nullable|file|mimes:zip|max:51200',
-            'novedades' => 'nullable|string', // JSON string containing array of findings
+            // FIX [M-02]: límite de tamaño al JSON crudo para evitar payloads
+            // multi-MB en un campo no validado per-item (defensa adicional al
+            // count limit y max lengths aplicados después de json_decode).
+            'novedades' => 'nullable|string|max:131072', // 128 KB max
         ], [
             'termografias.required' => 'Debes adjuntar al menos un archivo térmico (.is2 o .zip).',
             'termografias.array' => 'Formato de archivos térmicos inválido.',
@@ -449,18 +468,40 @@ class InspeccionController extends Controller
             }
 
             // 4. Handle Findings (Novedades)
+            // FIX [M-02]: validación por-item después de json_decode. Sin
+            // estos límites, un técnico autenticado podía insertar miles de
+            // novedades por inspección con texto de tamaño arbitrario (DoS
+            // contra PostgreSQL + OOM en eager loads).
             if (!empty($data['novedades'])) {
                 $findings = json_decode($data['novedades'], true);
                 if (is_array($findings)) {
+                    // Tope duro: 50 hallazgos por inspección.
+                    if (count($findings) > 50) {
+                        return response()->json([
+                            'message' => 'Máximo 50 hallazgos por inspección.',
+                        ], 422);
+                    }
+                    // Cache de IDs de criticidad válidos (1 query, no N+1).
+                    $criticidadesValidas = DB::table('criticidades')->pluck('id')->all();
                     foreach ($findings as $finding) {
+                        if (! is_array($finding)) {
+                            continue;
+                        }
+                        $criticidadId = !empty($finding['criticidad_id']) ? (int) $finding['criticidad_id'] : null;
+                        if ($criticidadId !== null && ! in_array($criticidadId, $criticidadesValidas, true)) {
+                            $criticidadId = null;
+                        }
+                        // Límites alineados con el esquema de DB (ver migration
+                        // 2026_05_25): titulo y ubicacion son VARCHAR(200);
+                        // descripcion y accion son TEXT (límite operativo razonable).
                         $novedad = Novedad::create([
                             'inspeccion_id' => $inspeccion->id,
-                            'criticidad_id' => !empty($finding['criticidad_id']) ? (int) $finding['criticidad_id'] : null,
-                            'titulo' => $finding['titulo'] ?? 'Hallazgo sin título',
-                            'descripcion' => $finding['descripcion'] ?? null,
-                            'ubicacion_dentro_elemento' => $finding['ubicacion_dentro_elemento'] ?? null,
+                            'criticidad_id' => $criticidadId,
+                            'titulo' => mb_substr(trim((string) ($finding['titulo'] ?? 'Hallazgo sin título')), 0, 200),
+                            'descripcion' => $this->truncateOrNull($finding['descripcion'] ?? null, 4096),
+                            'ubicacion_dentro_elemento' => $this->truncateOrNull($finding['ubicacion_dentro_elemento'] ?? null, 200),
                             'temperatura_detectada' => isset($finding['temperatura_detectada']) && $finding['temperatura_detectada'] !== '' ? (float) $finding['temperatura_detectada'] : null,
-                            'accion_recomendada' => $finding['accion_recomendada'] ?? null,
+                            'accion_recomendada' => $this->truncateOrNull($finding['accion_recomendada'] ?? null, 2048),
                             'estado' => Novedad::ESTADO_ABIERTA,
                         ]);
                         $this->auditTrail->record('novedad.created', [

@@ -27,7 +27,18 @@ class DashboardController extends Controller
 
         // Resolve global dashboard cache version
         $version = \Illuminate\Support\Facades\Cache::rememberForever('dashboard.version', fn() => microtime(true));
-        $cacheKey = "dashboard.overview.{$scope['user_id']}.v{$version}." . md5(json_encode($request->all()));
+        // FIX [I-01]: solo los 6 filtros validados entran en la key. Antes
+        // se usaba $request->all() que dejaba a un usuario autenticado generar
+        // cache entries arbitrarias enviando query params irrelevantes.
+        $filterKey = json_encode([
+            'estado' => $request->string('estado')->value(),
+            'tecnico_id' => $request->string('tecnico_id')->value(),
+            'empresa_id' => $request->string('empresa_id')->value(),
+            'yacimiento_id' => $request->string('yacimiento_id')->value(),
+            'fecha_desde' => $request->string('fecha_desde')->value(),
+            'fecha_hasta' => $request->string('fecha_hasta')->value(),
+        ]);
+        $cacheKey = "dashboard.overview.{$scope['user_id']}.v{$version}." . md5($filterKey);
 
         $cachedData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($scope, $role, $reportsBase, $request) {
             $this->applyFilters($reportsBase, $request);
