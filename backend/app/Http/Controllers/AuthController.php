@@ -3,15 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Services\Auth\LocalUserProvisioner;
+use App\Services\CognitoJwtVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly LocalUserProvisioner $provisioner) {}
+    public function __construct(
+        private readonly LocalUserProvisioner $provisioner,
+        private readonly CognitoJwtVerifier $verifier,
+    ) {}
+
+    /**
+     * FIX [L-02]: verifica firma + claims del IdToken recibido de Cognito antes
+     * de usarlo para aprovisionar el usuario local. Antes solo se hacía
+     * base64+json_decode sin validar la firma — defense-in-depth contra
+     * MITM en la conexión server→Cognito (Guzzle ya valida TLS, esto suma
+     * verificación criptográfica de la cadena RSA/JWKS de Cognito).
+     *
+     * Si el token no verifica, NO se aprovisiona el usuario local pero el
+     * login no falla (el cliente sí recibió tokens válidos de Cognito;
+     * solo perdemos el sync local). Se loguea para diagnóstico.
+     */
+    private function verifyAndProvision(?string $idToken): void
+    {
+        if ($idToken === null || $idToken === '') {
+            return;
+        }
+        try {
+            $claims = $this->verifier->verify($idToken);
+            $this->provisioner->findOrProvisionFromClaims($claims);
+        } catch (Throwable $e) {
+            Log::warning('auth.idtoken.verify_failed', [
+                'event' => 'auth.idtoken.verify_failed',
+                'reason' => $e->getMessage(),
+            ]);
+        }
+    }
 
     public function login(Request $request): JsonResponse
     {
@@ -77,10 +109,8 @@ class AuthController extends Controller
             $authResult = $challengeData['AuthenticationResult'] ?? [];
             if (($authResult['AccessToken'] ?? null) && ($authResult['IdToken'] ?? null)) {
                 $this->logLoginSuccess($request, $email, 'new_password_challenge');
-                $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
-                if ($claims !== null) {
-                    $this->provisioner->findOrProvisionFromClaims($claims);
-                }
+                // FIX [L-02]: verificación de firma + claims, no solo decode.
+                $this->verifyAndProvision((string) $authResult['IdToken']);
                 return response()->json([
                     'access_token' => $authResult['AccessToken'] ?? null,
                     'id_token' => $authResult['IdToken'] ?? null,
@@ -140,10 +170,8 @@ class AuthController extends Controller
         $authResult = $data['AuthenticationResult'] ?? [];
         if (($authResult['IdToken'] ?? null)) {
             $this->logLoginSuccess($request, $email, 'password_auth');
-            $claims = $this->decodeIdTokenClaims((string) $authResult['IdToken']);
-            if ($claims !== null) {
-                $this->provisioner->findOrProvisionFromClaims($claims);
-            }
+            // FIX [L-02]: verificación de firma + claims, no solo decode.
+            $this->verifyAndProvision((string) $authResult['IdToken']);
         }
 
         return response()->json([
@@ -215,28 +243,6 @@ class AuthController extends Controller
             'ua' => $request->userAgent(),
             'flow' => $flow,
         ]);
-    }
-
-    private function decodeIdTokenClaims(string $idToken): ?array
-    {
-        $parts = explode('.', $idToken);
-        if (count($parts) < 2) {
-            return null;
-        }
-
-        $payloadB64 = strtr($parts[1], '-_', '+/');
-        $padding = strlen($payloadB64) % 4;
-        if ($padding > 0) {
-            $payloadB64 .= str_repeat('=', 4 - $padding);
-        }
-
-        $json = base64_decode($payloadB64, true);
-        if (! is_string($json)) {
-            return null;
-        }
-
-        $claims = json_decode($json, true);
-        return is_array($claims) ? $claims : null;
     }
 
     private function translateCognitoError(?string $type, ?string $message): string

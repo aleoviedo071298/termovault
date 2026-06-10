@@ -34,6 +34,13 @@ class ArchivoController extends Controller
                     $query->where('i.tecnico_id', $scope['user_id']);
                     if ($scope['assigned_yacimiento_ids'] !== []) {
                         $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+                    } else {
+                        // FIX [M-01]: fail-closed cuando el técnico no tiene
+                        // yacimientos asignados (consistente con
+                        // InspeccionController::show). Sin esta línea, un
+                        // técnico desasignado retiene acceso de descarga a
+                        // archivos que él mismo creó en el pasado.
+                        $query->whereRaw('1 = 0');
                     }
                     return;
                 }
