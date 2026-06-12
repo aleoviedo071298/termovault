@@ -1,0 +1,361 @@
+/* ====================================================================
+   TermoVault — Design tokens & shell (rediseño 2026-06)
+   Aislado del CSS legacy: todas las clases usan prefijo `tv-`.
+   ==================================================================== */
+
+:root {
+  /* Sidebar */
+  --tv-sidebar-bg: #0F3D2F;
+  --tv-sidebar-bg-soft: #133F31;
+  --tv-sidebar-fg: #D1D5DB;
+  --tv-sidebar-fg-muted: #9CA3AF;
+  --tv-sidebar-active-bg: rgba(255, 255, 255, 0.07);
+  --tv-sidebar-active-fg: #FFFFFF;
+  --tv-sidebar-ribbon: #22C55E;
+  --tv-sidebar-divider: rgba(255, 255, 255, 0.06);
+
+  /* App surface */
+  --tv-app-bg: #F9FAFB;
+  --tv-surface: #FFFFFF;
+  --tv-surface-muted: #F3F4F6;
+
+  /* Borders */
+  --tv-border: #E5E7EB;
+  --tv-border-strong: #D1D5DB;
+
+  /* Text */
+  --tv-text: #111827;
+  --tv-text-secondary: #374151;
+  --tv-text-muted: #6B7280;
+  --tv-text-disabled: #9CA3AF;
+
+  /* Brand */
+  --tv-primary: #15803D;
+  --tv-primary-hover: #166534;
+  --tv-primary-active: #14532D;
+  --tv-primary-soft: #DCFCE7;
+
+  /* State colors */
+  --tv-success: #16A34A;
+  --tv-success-soft: #DCFCE7;
+  --tv-warning: #F59E0B;
+  --tv-warning-soft: #FEF3C7;
+  --tv-info: #2563EB;
+  --tv-info-soft: #DBEAFE;
+  --tv-danger: #DC2626;
+  --tv-danger-soft: #FEE2E2;
+
+  /* Radius */
+  --tv-radius-sm: 4px;
+  --tv-radius-md: 6px;
+  --tv-radius-lg: 8px;
+  --tv-radius-xl: 12px;
+
+  /* Shadows */
+  --tv-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --tv-shadow-md: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.05);
+  --tv-shadow-lg: 0 10px 15px -3px rgba(16, 24, 40, 0.10), 0 4px 6px -4px rgba(16, 24, 40, 0.05);
+
+  /* Typography */
+  --tv-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Layout */
+  --tv-sidebar-width: 240px;
+}
+
+/* ====================================================================
+   Shell layout
+   ==================================================================== */
+
+.tv-shell {
+  display: grid;
+  grid-template-columns: var(--tv-sidebar-width) 1fr;
+  min-height: 100vh;
+  background: var(--tv-app-bg);
+  color: var(--tv-text);
+  font-family: var(--tv-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tv-shell__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* permite que children con overflow respeten el grid */
+}
+
+.tv-page {
+  flex: 1;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ====================================================================
+   Sidebar
+   ==================================================================== */
+
+.tv-sidebar {
+  background: var(--tv-sidebar-bg);
+  color: var(--tv-sidebar-fg);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.tv-sidebar__brand {
+  padding: 20px 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid var(--tv-sidebar-divider);
+}
+
+.tv-sidebar__brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 60%, #15803D 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.tv-sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.tv-sidebar__brand-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  letter-spacing: -0.01em;
+}
+
+.tv-sidebar__brand-subtitle {
+  font-size: 10px;
+  color: var(--tv-sidebar-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-top: 3px;
+}
+
+/* Nav */
+
+.tv-sidebar__nav {
+  flex: 1;
+  padding: 8px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+
+.tv-sidebar__section {
+  padding: 14px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tv-sidebar-fg-muted);
+}
+
+.tv-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  border-radius: var(--tv-radius-md);
+  color: var(--tv-sidebar-fg);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.tv-sidebar__item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--tv-sidebar-active-fg);
+}
+
+.tv-sidebar__item.is-active {
+  background: var(--tv-sidebar-active-bg);
+  color: var(--tv-sidebar-active-fg);
+}
+
+.tv-sidebar__item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--tv-sidebar-ribbon);
+}
+
+.tv-sidebar__item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tv-sidebar__item.is-active svg {
+  opacity: 1;
+}
+
+/* Footer (user) */
+
+.tv-sidebar__footer {
+  border-top: 1px solid var(--tv-sidebar-divider);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tv-sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.18);
+  color: #BBF7D0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.tv-sidebar__user {
+  min-width: 0;
+  flex: 1;
+  line-height: 1.2;
+}
+
+.tv-sidebar__user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-sidebar__user-role {
+  font-size: 11px;
+  color: var(--tv-sidebar-fg-muted);
+  text-transform: capitalize;
+  margin-top: 2px;
+}
+
+.tv-sidebar__signout {
+  background: transparent;
+  border: 0;
+  color: var(--tv-sidebar-fg-muted);
+  cursor: pointer;
+  padding: 7px;
+  border-radius: var(--tv-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tv-sidebar__signout:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ====================================================================
+   TopBar
+   ==================================================================== */
+
+.tv-topbar {
+  background: var(--tv-surface);
+  border-bottom: 1px solid var(--tv-border);
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.tv-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--tv-text-secondary);
+  min-width: 0;
+}
+
+.tv-topbar__title {
+  font-weight: 600;
+  color: var(--tv-text);
+  font-size: 14.5px;
+  letter-spacing: -0.005em;
+}
+
+.tv-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--tv-text-muted);
+}
+
+.tv-topbar__role-pill {
+  background: var(--tv-primary-soft);
+  color: var(--tv-primary-active);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: capitalize;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(21, 128, 61, 0.16);
+}
+
+.tv-topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tv-text-secondary);
+  font-weight: 500;
+}
+
+/* ====================================================================
+   Responsive (sidebar collapse en pantallas chicas — fase posterior)
+   Por ahora, en < 1024px reducimos padding del page para que se note menos.
+   ==================================================================== */
+
+@media (max-width: 1024px) {
+  .tv-page { padding: 22px 20px; }
+  .tv-topbar { padding: 12px 20px; }
+}

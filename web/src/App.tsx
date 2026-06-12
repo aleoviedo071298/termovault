@@ -5,6 +5,7 @@ import { Login } from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ElementosGestion from "./pages/ElementosGestion";
 import AdminUsuariosPage from "./pages/AdminUsuariosPage";
+import { AppShell } from "./components/layout/AppShell";
 
 function DashboardRoute() {
   const navigate = useNavigate();
@@ -50,12 +51,14 @@ function App() {
 
   return (
     <ProtectedRoute allowedGroups={["admin", "supervisor", "tecnico"]} fallback={<Login />}>
-      <Routes>
-        <Route path="/" element={<DashboardRoute />} />
-        <Route path="/elementos/gestion" element={<ElementosGestionRoute />} />
-        <Route path="/admin/usuarios" element={<AdminUsuariosRoute />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<DashboardRoute />} />
+          <Route path="/elementos/gestion" element={<ElementosGestionRoute />} />
+          <Route path="/admin/usuarios" element={<AdminUsuariosRoute />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppShell>
     </ProtectedRoute>
   );
 }
