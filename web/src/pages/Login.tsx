@@ -1,6 +1,15 @@
-import { AlertCircle, ArrowRight, LockKeyhole, RadioTower, ShieldCheck, ThermometerSun } from "lucide-react";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import React, { useState } from "react";
 import { useAuth } from "../auth/useAuth";
+import { Field, Input } from "../components/ui/Field";
+import { Button } from "../components/ui/Button";
+import { Checkbox } from "../components/ui/Field";
+
+// ─────────────────────────────────────────────────────────────────────────
+// LÓGICA DE NEGOCIO INTACTA — NO MODIFICAR
+// ─────────────────────────────────────────────────────────────────────────
+// Esta función y los handlers asociados (handleSubmit, useState, login)
+// se mantienen exactamente como estaban antes del rediseño visual.
 
 function normalizeLoginMessage(message: string): string {
   const text = message.toLowerCase();
@@ -24,6 +33,7 @@ export const Login: React.FC = () => {
   const [challengeSession, setChallengeSession] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,101 +68,136 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <main className="login-frame login-frame-v2">
-      <section className="login-command-surface">
-        <div className="login-intel-panel">
-          <div className="login-brand-lockup">
-            <div className="brand-mark" aria-hidden="true">
-              <ThermometerSun size={28} strokeWidth={1.8} />
-            </div>
-            <div>
-              <span>TermoVault</span>
-              <strong>Inspecciones Termográficas</strong>
-            </div>
-          </div>
-
-          <div className="login-headline">
-            <h1>Gestión de informes termográficos</h1>
-            <p>Acceso al sistema para el registro y revisión de reportes técnicos de termografía.</p>
+    <main className="tv-login">
+      {/* ─── Panel verde izquierdo (branding) ─── */}
+      <aside className="tv-login__panel">
+        <div className="tv-login__brand">
+          <div className="tv-login__brand-mark" aria-hidden="true">TV</div>
+          <div className="tv-login__brand-text">
+            <span className="tv-login__brand-name">TermoVault</span>
+            <span className="tv-login__brand-sub">Inspecciones termográficas</span>
           </div>
         </div>
 
-        <div className={`login-card login-card-v2 ${challengeSession ? "is-challenge" : ""}`}>
-          <header className="login-header">
-            <div>
-              <p>{challengeSession ? "Primer ingreso" : "Acceso"}</p>
-              <h2>{challengeSession ? "Establecer nueva contraseña" : "Iniciar Sesión"}</h2>
-              <span>
-                {challengeSession
-                  ? "Cognito requiere actualizar la contraseña inicial para activar tu acceso."
-                  : "Usa tus credenciales asignadas para continuar."}
-              </span>
+        <div className="tv-login__headline">
+          <h1 className="tv-login__title">Gestión de informes termográficos</h1>
+          <p className="tv-login__lead">
+            Acceso al sistema para el registro y revisión de reportes técnicos de termografía.
+          </p>
+        </div>
+
+        <p className="tv-login__footnote">
+          Plataforma segura y confiable para la gestión de inspecciones termográficas.
+        </p>
+      </aside>
+
+      {/* ─── Panel derecho (formulario) ─── */}
+      <section className="tv-login__form-side">
+        <div className="tv-login__form-wrap">
+          <header>
+            <div className="tv-login__eyebrow">
+              {challengeSession ? "Primer ingreso" : "Acceso"}
             </div>
+            <h2 className="tv-login__h2">
+              {challengeSession ? "Establecer nueva contraseña" : "Iniciar Sesión"}
+            </h2>
+            <p className="tv-login__sub">
+              {challengeSession
+                ? "Cognito requiere actualizar la contraseña inicial para activar tu acceso."
+                : "Usa tus credenciales asignadas para continuar."}
+            </p>
           </header>
 
           {error && (
-            <div className="login-error" role="alert">
-              <AlertCircle size={18} aria-hidden="true" />
+            <div className="tv-login__alert" role="alert">
+              <AlertCircle size={16} aria-hidden="true" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <label htmlFor="email">Correo electronico</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="nombre@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-                required
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="tv-login__form">
+            <Field label="Correo electrónico" required>
+              {(id) => (
+                <Input
+                  id={id}
+                  type="email"
+                  placeholder="nombre@empresa.com"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                />
+              )}
+            </Field>
 
-            <div className="form-group">
-              <label htmlFor="password">Contraseña</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSubmitting}
-                required
-              />
-            </div>
+            <Field label="Contraseña" required>
+              {(id) => (
+                <Input
+                  id={id}
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                />
+              )}
+            </Field>
 
-            {challengeSession ? (
-              <section className="password-challenge-panel">
+            {challengeSession && (
+              <div className="tv-login__challenge">
                 <div>
-                  <strong>Validacion requerida</strong>
-                  <p>Defini una contraseña permanente. Debe tener al menos 8 caracteres.</p>
+                  <div className="tv-login__challenge-title">Validación requerida</div>
+                  <p className="tv-login__challenge-desc">
+                    Definí una contraseña permanente. Debe tener al menos 8 caracteres.
+                  </p>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="newPassword">Nueva contraseña</label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Minimo 8 caracteres"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    disabled={isSubmitting}
-                    required
-                  />
-                </div>
-              </section>
-            ) : null}
+                <Field label="Nueva contraseña" required>
+                  {(id) => (
+                    <Input
+                      id={id}
+                      type="password"
+                      placeholder="Mínimo 8 caracteres"
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  )}
+                </Field>
+              </div>
+            )}
 
-            <button type="submit" className="login-button login-button-v2" disabled={isSubmitting}>
+            {!challengeSession && (
+              <div className="tv-login__row">
+                <Checkbox
+                  label="Recordarme"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                {/* Link visual — la funcionalidad de recuperación no está
+                    implementada todavía en backend; queda como anchor sin
+                    impacto funcional. */}
+                <span className="tv-login__link" aria-disabled="true">¿Olvidaste tu contraseña?</span>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              full
+              disabled={isSubmitting}
+              rightIcon={<ArrowRight size={16} />}
+            >
               {isSubmitting
                 ? "Iniciando sesión..."
                 : challengeSession
                   ? "Establecer contraseña"
                   : "Ingresar"}
-              <ArrowRight size={17} />
-            </button>
+            </Button>
           </form>
         </div>
       </section>
