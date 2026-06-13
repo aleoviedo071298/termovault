@@ -30,11 +30,11 @@
   --tv-text-muted: #6B7280;
   --tv-text-disabled: #9CA3AF;
 
-  /* Brand */
-  --tv-primary: #15803D;
-  --tv-primary-hover: #166534;
-  --tv-primary-active: #14532D;
-  --tv-primary-soft: #DCFCE7;
+  /* Brand — same family as sidebar #0F3D2F */
+  --tv-primary: #0F3D2F;
+  --tv-primary-hover: #0C3326;
+  --tv-primary-active: #09291E;
+  --tv-primary-soft: #D1FAE5;
 
   /* State colors */
   --tv-success: #16A34A;
@@ -545,7 +545,7 @@
   padding: 5px 12px;
   font-weight: 400;
 }
-.tv-badge--outline.tv-badge--primary { border-color: rgba(21, 128, 61, 0.3); color: var(--tv-primary); background: rgba(21, 128, 61, 0.04); }
+.tv-badge--outline.tv-badge--primary { border-color: rgba(15, 61, 47, 0.25); color: var(--tv-primary); background: rgba(15, 61, 47, 0.04); }
 .tv-badge--outline.tv-badge--success { border-color: rgba(22, 163, 74, 0.3); color: #15803D; background: rgba(22, 163, 74, 0.04); }
 .tv-badge--outline.tv-badge--info    { border-color: rgba(37, 99, 235, 0.3); color: #1D4ED8; background: rgba(37, 99, 235, 0.04); }
 .tv-badge--outline.tv-badge--warning { border-color: rgba(245, 158, 11, 0.3); color: #B45309; background: rgba(245, 158, 11, 0.04); }
@@ -1029,13 +1029,11 @@
 
 .tv-page-head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 26px;
-  flex-wrap: wrap;
 }
-.tv-page-head__left { min-width: 0; flex: 1; }
+.tv-page-head__left { min-width: 0; }
 .tv-page-head__eyebrow {
   display: block;
   font-size: 11px;
@@ -1071,7 +1069,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  margin-top: 18px;
 }
 
 /* ---- KPI grid ---- */
