@@ -1,15 +1,7 @@
-import React from "react";
-import { ArrowUpRight, FileText, Flame, MapPin, UserRound } from "lucide-react";
+import { ArrowUpRight, FileText, MapPin, UserRound } from "lucide-react";
 import type { DashboardReportRow } from "../../api/dashboard";
 import type { ReportTableProps } from "./types";
-
-const CRITICIDAD_COLOR: Record<string, string> = {
-  Normal: "#4a7a5e",
-  Baja: "#22c55e",
-  Media: "#d8a316",
-  Alta: "#f97316",
-  Critica: "#ef4444",
-};
+import { Badge, badgeToneForEstado } from "../ui/Badge";
 
 function estadoLabel(estado: string): string {
   if (estado === "enviada") return "Enviada";
@@ -19,86 +11,116 @@ function estadoLabel(estado: string): string {
 }
 
 function criticidadLabel(criticidad: DashboardReportRow["criticidad"]): string {
-  return String(criticidad).normalize("NFD").replace(/\p{Diacritic}/gu, "").includes("tica")
-    ? "Critica"
+  return String(criticidad)
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .includes("tica")
+    ? "Crítica"
     : criticidad;
+}
+
+function criticidadTone(c: string): "neutral" | "info" | "success" | "warning" | "danger" {
+  const norm = c.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  if (norm === "critica") return "danger";
+  if (norm === "alta")    return "warning";
+  if (norm === "media")   return "warning";
+  if (norm === "baja")    return "success";
+  return "neutral";
 }
 
 export function ReportTable({ loading, reports, onOpenDetail }: ReportTableProps) {
   return (
-    <section className="dashboard-section report-panel">
-      <div className="section-heading report-heading">
+    <div className="tv-table-wrap">
+      <div className="tv-table-head">
         <div>
-          <span>Informes termograficos</span>
-          <small>Seguimiento operativo por estado, criticidad y alcance</small>
+          <div className="tv-table-head__title">Informes termográficos</div>
+          <div className="tv-table-head__sub">
+            Seguimiento por estado, criticidad y alcance
+          </div>
         </div>
-        <strong>{reports.length}</strong>
+        <span className="tv-table-head__count">{reports.length}</span>
       </div>
 
-      <div className="report-table-wrap">
-        <table className="report-table">
+      <div className="tv-table-scroll">
+        <table className="tv-table">
           <thead>
             <tr>
               <th>Fecha</th>
               <th>Informe</th>
-              <th>Operacion</th>
+              <th>Operación</th>
               <th>Estado</th>
               <th>Criticidad</th>
               <th>Hallazgos</th>
-              <th aria-label="Accion" />
+              <th aria-label="Acción" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="empty-cell">Cargando informes...</td></tr>
+              <tr>
+                <td colSpan={7} className="tv-table__empty">Cargando informes…</td>
+              </tr>
             ) : reports.length === 0 ? (
-              <tr><td colSpan={7} className="empty-cell">No hay resultados para los filtros aplicados.</td></tr>
-            ) : reports.map((r) => {
-              const criticidad = criticidadLabel(r.criticidad);
+              <tr>
+                <td colSpan={7} className="tv-table__empty">
+                  No hay resultados para los filtros aplicados.
+                </td>
+              </tr>
+            ) : (
+              reports.map((r) => {
+                const fecha = new Date(r.fecha_inspeccion);
+                const day = fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+                const year = fecha.getFullYear();
+                const crit = criticidadLabel(r.criticidad);
 
-              return (
-                <tr key={r.id}>
-                  <td className="date-cell">
-                    <strong>{new Date(r.fecha_inspeccion).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })}</strong>
-                    <span>{new Date(r.fecha_inspeccion).getFullYear()}</span>
-                  </td>
-                  <td className="main-report-cell">
-                    <div className="report-title-line">
-                      <FileText size={16} />
-                      <strong>{r.elemento}</strong>
-                    </div>
-                    <span>Informe #{r.id}</span>
-                  </td>
-                  <td>
-                    <div className="stacked-cell">
-                      <span><UserRound size={13} /> {r.tecnico}</span>
-                      <span><MapPin size={13} /> {r.yacimiento} / {r.empresa}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-chip status-${r.estado}`}>{estadoLabel(r.estado)}</span>
-                  </td>
-                  <td>
-                    <span className="badge badge-criticidad" style={{ "--badge-color": CRITICIDAD_COLOR[criticidad] ?? "#4a7a5e" } as React.CSSProperties}>
-                      <Flame size={13} />
-                      {criticidad}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="finding-count">{r.hallazgos}</span>
-                  </td>
-                  <td className="action-cell">
-                    <button className="table-action" type="button" onClick={() => onOpenDetail(r.id)}>
-                      Ver
-                      <ArrowUpRight size={14} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <div className="tv-table__date">
+                        <span className="tv-table__date-day">{day}</span>
+                        <span className="tv-table__date-year">{year}</span>
+                      </div>
+                    </td>
+                    <td className="tv-table__main">
+                      <div className="tv-table__main-title">
+                        <FileText size={15} strokeWidth={1.8} />
+                        <span>{r.elemento}</span>
+                      </div>
+                      <div className="tv-table__main-sub">Informe #{r.id}</div>
+                    </td>
+                    <td>
+                      <div className="tv-table__stack">
+                        <span><UserRound size={13} strokeWidth={1.8} /> {r.tecnico}</span>
+                        <span><MapPin size={13} strokeWidth={1.8} /> {r.yacimiento} · {r.empresa}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <Badge tone={badgeToneForEstado(r.estado)} dot>
+                        {estadoLabel(r.estado)}
+                      </Badge>
+                    </td>
+                    <td>
+                      <Badge tone={criticidadTone(crit)}>{crit}</Badge>
+                    </td>
+                    <td>
+                      <span className="tv-table__count">{r.hallazgos}</span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        type="button"
+                        className="tv-table__action"
+                        onClick={() => onOpenDetail(r.id)}
+                      >
+                        Ver
+                        <ArrowUpRight size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, AlertCircle, Save, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Save } from "lucide-react";
 import {
   getCatalogos,
   getElementoYacimientos,
@@ -7,9 +7,14 @@ import {
   createElemento,
   updateElemento,
   type Catalogos,
-  type ElementoDetail
+  type ElementoDetail,
 } from "../api/elementos";
 import { useAuth } from "../auth/useAuth";
+
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Field, Input, Select, Textarea } from "./ui/Field";
+import { Stepper, type Step } from "./ui/Stepper";
 
 interface ElementModalProps {
   isOpen: boolean;
@@ -18,11 +23,16 @@ interface ElementModalProps {
   onSuccess: () => void;
 }
 
+const STEPS: Step[] = [
+  { id: "id",   caption: "Paso 1", label: "Identificación" },
+  { id: "tech", caption: "Paso 2", label: "Especificaciones técnicas" },
+];
+
 export const ElementModal: React.FC<ElementModalProps> = ({
   isOpen,
   onClose,
   elementId,
-  onSuccess
+  onSuccess,
 }) => {
   const { user } = useAuth();
   const isAdmin = (user?.groups ?? []).some((g) => g.toLowerCase() === "admin");
@@ -31,7 +41,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
+  // Form states (idénticos a la versión anterior)
   const [nombre, setNombre] = useState("");
   const [codigo, setCodigo] = useState("");
   const [yacimientoId, setYacimientoId] = useState<number | "">("");
@@ -45,25 +55,26 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const [estadoOperativo, setEstadoOperativo] = useState("operativo");
   const [observacionesGenerales, setObservacionesGenerales] = useState("");
 
+  // UI: paso del wizard
+  const [currentStep, setCurrentStep] = useState(0);
+
   // Determine if selected element type requires tension
   const requiresTension = React.useMemo(() => {
     if (!catalogos || !tipoElementoId) return false;
-    const selectedType = catalogos.tipos_elemento.find(t => t.id === tipoElementoId);
+    const selectedType = catalogos.tipos_elemento.find((t) => t.id === tipoElementoId);
     return selectedType?.requiere_tension ?? false;
   }, [catalogos, tipoElementoId]);
 
-  // Load catalog options and element data if editing
+  // Load catalog options and element data if editing (idéntico)
   useEffect(() => {
     if (!isOpen) return;
+    setCurrentStep(0);
 
     async function loadData() {
       try {
         setLoading(true);
         setError(null);
-        const [cats, yacimientos] = await Promise.all([
-          getCatalogos(),
-          getElementoYacimientos(),
-        ]);
+        const [cats, yacimientos] = await Promise.all([getCatalogos(), getElementoYacimientos()]);
         const formCatalogos: Catalogos = { ...cats, yacimientos };
         setCatalogos(formCatalogos);
 
@@ -116,12 +127,10 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     }
   }, [requiresTension]);
 
-  if (!isOpen) return null;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     if (!nombre.trim() || !codigo.trim() || !yacimientoId || !tipoElementoId) {
-      setError("Por favor completa los campos obligatorios (*)");
+      setError("Por favor completá los campos obligatorios (*)");
+      setCurrentStep(0);
       return;
     }
 
@@ -159,213 +168,301 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     }
   }
 
+  function canAdvanceFrom(step: number): boolean {
+    if (step === 0) {
+      return Boolean(nombre.trim()) && Boolean(codigo.trim()) && Boolean(yacimientoId) && Boolean(tipoElementoId);
+    }
+    return true;
+  }
+
+  function goNext() {
+    setError(null);
+    if (currentStep === 0 && !canAdvanceFrom(0)) {
+      setError("Completá yacimiento, tipo, código y nombre antes de continuar.");
+      return;
+    }
+    if (requiresTension && !nivelTensionId && currentStep === 1) {
+      setError("El tipo de elemento seleccionado requiere nivel de tensión.");
+      return;
+    }
+    setCurrentStep((s) => Math.min(STEPS.length - 1, s + 1));
+  }
+
+  function goBack() {
+    setError(null);
+    setCurrentStep((s) => Math.max(0, s - 1));
+  }
+
+  const isLastStep = currentStep === STEPS.length - 1;
+
+  const footer = (
+    <>
+      <Button variant="ghost" onClick={onClose} disabled={saving}>
+        Cancelar
+      </Button>
+      <div style={{ flex: 1 }} />
+      {currentStep > 0 && (
+        <Button
+          variant="secondary"
+          onClick={goBack}
+          disabled={saving}
+          leftIcon={<ArrowLeft size={14} />}
+        >
+          Anterior
+        </Button>
+      )}
+      {!isLastStep && (
+        <Button
+          variant="primary"
+          onClick={goNext}
+          disabled={saving || !canAdvanceFrom(currentStep)}
+          rightIcon={<ArrowRight size={14} />}
+        >
+          Siguiente
+        </Button>
+      )}
+      {isLastStep && (
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={saving || (requiresTension && !nivelTensionId)}
+          leftIcon={<Save size={14} />}
+        >
+          {saving ? "Guardando…" : elementId ? "Guardar cambios" : "Guardar elemento"}
+        </Button>
+      )}
+    </>
+  );
+
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
-        <header className="modal-header">
-          <h2>{elementId ? "Editar Elemento" : "Nuevo Elemento"}</h2>
-          <button className="close-btn" onClick={onClose} type="button" aria-label="Cerrar modal">
-            <X size={20} />
-          </button>
-        </header>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={elementId ? "Editar elemento" : "Nuevo elemento"}
+      subtitle="Completá la información en pasos. Lo opcional se puede saltar."
+      size="lg"
+      footer={footer}
+    >
+      <div style={{ margin: "-20px -22px 18px", padding: 0 }}>
+        <Stepper steps={STEPS} current={currentStep} />
+      </div>
 
-        {loading ? (
-          <div className="modal-loading">
-            <Loader2 className="animate-spin" size={32} />
-            <p>Cargando información...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="modal-form">
-            {error && (
-              <div className="form-error" role="alert">
-                <AlertCircle size={18} />
-                <span>{error}</span>
-              </div>
-            )}
+      {error && (
+        <div className="tv-notice tv-notice--danger" role="alert" style={{ marginBottom: 14 }}>
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
-            <div className="form-grid">
-              {/* Obligatorios */}
-              <div className="form-group col-span-2">
-                <label htmlFor="form-nombre">Nombre *</label>
-                <input
-                  id="form-nombre"
-                  type="text"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej: Banco Capacitores PIAS ZR2"
-                  required
-                />
+      {loading ? (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--tv-text-muted)" }}>
+          Cargando información…
+        </div>
+      ) : (
+        <>
+          {/* ─── PASO 1: Identificación ─── */}
+          {currentStep === 0 && (
+            <div className="tv-step">
+              <div className="tv-step__head">
+                <div className="tv-step__title">Identificación del elemento</div>
+                <div className="tv-step__desc">
+                  Indicá dónde está, qué tipo es y cómo lo identificamos en el inventario.
+                </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="form-codigo">Código único *</label>
-                <input
-                  id="form-codigo"
-                  type="text"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                  placeholder="Ej: BCAP-PIAS-ZR2"
-                  required
-                />
-              </div>
+              <div className="tv-step__grid">
+                <Field label="Yacimiento" required>
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={yacimientoId}
+                      onChange={(e) => setYacimientoId(e.target.value ? Number(e.target.value) : "")}
+                      disabled={!isAdmin && (catalogos?.yacimientos.length ?? 0) <= 1}
+                      required
+                    >
+                      <option value="">Seleccionar yacimiento</option>
+                      {catalogos?.yacimientos.map((y) => (
+                        <option key={y.id} value={y.id}>
+                          {y.nombre} ({y.codigo})
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
 
-              <div className="form-group">
-                <label htmlFor="form-yacimiento">Yacimiento *</label>
-                <select
-                  id="form-yacimiento"
-                  value={yacimientoId}
-                  onChange={(e) => setYacimientoId(e.target.value ? Number(e.target.value) : "")}
-                  disabled={!isAdmin && (catalogos?.yacimientos.length ?? 0) <= 1}
-                  required
-                >
-                  <option value="">Seleccione yacimiento</option>
-                  {catalogos?.yacimientos.map(y => (
-                    <option key={y.id} value={y.id}>{y.nombre} ({y.codigo})</option>
-                  ))}
-                </select>
-              </div>
+                <Field label="Tipo de elemento" required>
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={tipoElementoId}
+                      onChange={(e) => setTipoElementoId(e.target.value ? Number(e.target.value) : "")}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      {catalogos?.tipos_elemento.map((t) => (
+                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
 
-              <div className="form-group">
-                <label htmlFor="form-tipo">Tipo de Elemento *</label>
-                <select
-                  id="form-tipo"
-                  value={tipoElementoId}
-                  onChange={(e) => setTipoElementoId(e.target.value ? Number(e.target.value) : "")}
-                  required
-                >
-                  <option value="">Seleccione tipo</option>
-                  {catalogos?.tipos_elemento.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
-              </div>
+                <Field label="Código único" required hint="Identificador interno (ej: BCAP-PIAS-ZR2).">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={codigo}
+                      onChange={(e) => setCodigo(e.target.value)}
+                      placeholder="Ej: BCAP-PIAS-ZR2"
+                      required
+                    />
+                  )}
+                </Field>
 
-              <div className="form-group">
-                <label htmlFor="form-funcion">Función (Opcional)</label>
-                <input
-                  id="form-funcion"
-                  type="text"
-                  value={funcion}
-                  onChange={(e) => setFuncion(e.target.value)}
-                  placeholder="Ej: PIAS, SET, ETR, etc."
-                />
-              </div>
+                <Field label="Nombre" required>
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Ej: Banco Capacitores PIAS ZR2"
+                      required
+                    />
+                  )}
+                </Field>
 
-              {/* Nivel Tensión condicional */}
-              <div className="form-group">
-                <label htmlFor="form-tension">
-                  Nivel de Tensión {requiresTension && "*"}
-                </label>
-                <select
-                  id="form-tension"
-                  value={nivelTensionId}
-                  onChange={(e) => setNivelTensionId(e.target.value ? Number(e.target.value) : "")}
-                  disabled={!requiresTension}
-                  required={requiresTension}
-                >
-                  <option value="">
-                    {requiresTension ? "Seleccione tensión" : "No requiere tensión"}
-                  </option>
-                  {catalogos?.niveles_tension.map(t => (
-                    <option key={t.id} value={t.id}>{t.etiqueta} ({t.kv} kV)</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-criticidad">Criticidad</label>
-                <select
-                  id="form-criticidad"
-                  value={criticidadId}
-                  onChange={(e) => setCriticidadId(e.target.value ? Number(e.target.value) : "")}
-                >
-                  <option value="">Sin asignar</option>
-                  {catalogos?.criticidades.map(c => (
-                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Datos Técnicos */}
-              <div className="form-group">
-                <label htmlFor="form-marca">Marca</label>
-                <input
-                  id="form-marca"
-                  type="text"
-                  value={marca}
-                  onChange={(e) => setMarca(e.target.value)}
-                  placeholder="Ej: ABB, Siemens"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-modelo">Modelo</label>
-                <input
-                  id="form-modelo"
-                  type="text"
-                  value={modelo}
-                  onChange={(e) => setModelo(e.target.value)}
-                  placeholder="Ej: Resibloc"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="form-nserie">Número de Serie</label>
-                <input
-                  id="form-nserie"
-                  type="text"
-                  value={nSerie}
-                  onChange={(e) => setNSerie(e.target.value)}
-                  placeholder="Ej: SN-938102"
-                />
-              </div>
-
-              <div className="form-group col-span-2">
-                <label htmlFor="form-estado-operativo">Estado Operativo</label>
-                <select
-                  id="form-estado-operativo"
-                  value={estadoOperativo}
-                  onChange={(e) => setEstadoOperativo(e.target.value)}
-                >
-                  <option value="operativo">Operativo</option>
-                  <option value="mantenimiento">En Mantenimiento</option>
-                  <option value="fuera_de_servicio">Fuera de Servicio</option>
-                </select>
-              </div>
-
-              <div className="form-group col-span-2">
-                <label htmlFor="form-observaciones">Observaciones Generales</label>
-                <textarea
-                  id="form-observaciones"
-                  rows={3}
-                  value={observacionesGenerales}
-                  onChange={(e) => setObservacionesGenerales(e.target.value)}
-                  placeholder="Detalles adicionales sobre el estado, historial, etc."
-                />
+                <div className="tv-field--full">
+                  <Field label="Función (opcional)" hint="Rol operativo. Ej: PIAS, SET, ETR.">
+                    {(id) => (
+                      <Input
+                        id={id}
+                        value={funcion}
+                        onChange={(e) => setFuncion(e.target.value)}
+                        placeholder="Ej: PIAS"
+                      />
+                    )}
+                  </Field>
+                </div>
               </div>
             </div>
+          )}
 
-            <footer className="modal-actions">
-              <button className="cancel-btn" onClick={onClose} type="button" disabled={saving}>
-                Cancelar
-              </button>
-              <button className="submit-btn" type="submit" disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="animate-spin" size={18} />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Guardar Elemento
-                  </>
-                )}
-              </button>
-            </footer>
-          </form>
-        )}
-      </div>
-    </div>
+          {/* ─── PASO 2: Especificaciones técnicas ─── */}
+          {currentStep === 1 && (
+            <div className="tv-step">
+              <div className="tv-step__head">
+                <div className="tv-step__title">Especificaciones técnicas</div>
+                <div className="tv-step__desc">
+                  Datos eléctricos, fabricante y estado actual. Todo opcional excepto la tensión si el tipo la requiere.
+                </div>
+              </div>
+
+              <div className="tv-step__grid">
+                <Field
+                  label={`Nivel de tensión${requiresTension ? "" : " (no requiere)"}`}
+                  required={requiresTension}
+                >
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={nivelTensionId}
+                      onChange={(e) => setNivelTensionId(e.target.value ? Number(e.target.value) : "")}
+                      disabled={!requiresTension}
+                      required={requiresTension}
+                    >
+                      <option value="">
+                        {requiresTension ? "Seleccionar tensión" : "El tipo no la requiere"}
+                      </option>
+                      {catalogos?.niveles_tension.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.etiqueta} ({t.kv} kV)
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+
+                <Field label="Criticidad">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={criticidadId}
+                      onChange={(e) => setCriticidadId(e.target.value ? Number(e.target.value) : "")}
+                    >
+                      <option value="">Sin asignar</option>
+                      {catalogos?.criticidades.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+
+                <Field label="Marca">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={marca}
+                      onChange={(e) => setMarca(e.target.value)}
+                      placeholder="Ej: ABB, Siemens"
+                    />
+                  )}
+                </Field>
+
+                <Field label="Modelo">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={modelo}
+                      onChange={(e) => setModelo(e.target.value)}
+                      placeholder="Ej: Resibloc"
+                    />
+                  )}
+                </Field>
+
+                <Field label="Número de serie">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={nSerie}
+                      onChange={(e) => setNSerie(e.target.value)}
+                      placeholder="Ej: SN-938102"
+                    />
+                  )}
+                </Field>
+
+                <Field label="Estado operativo">
+                  {(id) => (
+                    <Select
+                      id={id}
+                      value={estadoOperativo}
+                      onChange={(e) => setEstadoOperativo(e.target.value)}
+                    >
+                      <option value="operativo">Operativo</option>
+                      <option value="mantenimiento">En mantenimiento</option>
+                      <option value="fuera_de_servicio">Fuera de servicio</option>
+                    </Select>
+                  )}
+                </Field>
+
+                <div className="tv-field--full">
+                  <Field label="Observaciones generales (opcional)">
+                    {(id) => (
+                      <Textarea
+                        id={id}
+                        rows={3}
+                        value={observacionesGenerales}
+                        onChange={(e) => setObservacionesGenerales(e.target.value)}
+                        placeholder="Detalles adicionales sobre el estado, historial, etc."
+                      />
+                    )}
+                  </Field>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </Modal>
   );
 };
+
+export default ElementModal;

@@ -1,64 +1,100 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Field, Input, Select } from "../ui/Field";
+import { Button } from "../ui/Button";
 import type { FilterBarProps } from "./types";
 
-export function FilterBar({ filters, onChange, onClear, filteredCount, totalCount }: FilterBarProps) {
+export function FilterBar({
+  filters,
+  onChange,
+  onClear,
+  filteredCount,
+  totalCount,
+}: FilterBarProps) {
   return (
-    <section className="dashboard-section filter-bar">
-      <div className="filter-head">
-        <div className="filter-title">
-          <SlidersHorizontal size={16} />
-          <span>Consola de filtros</span>
+    <section className="tv-filterbar">
+      <div className="tv-filterbar__head">
+        <div className="tv-filterbar__title">
+          <SlidersHorizontal size={15} />
+          <span>Filtros</span>
         </div>
-        <div className="filter-actions">
-          <small>{filteredCount} de {totalCount} informes</small>
-          <button type="button" className="ghost-action" onClick={onClear}>
-            <X size={14} />
+        <div className="tv-filterbar__head-right">
+          <span className="tv-filterbar__count">
+            {filteredCount} de {totalCount} informes
+          </span>
+          <Button variant="ghost" size="sm" leftIcon={<X size={13} />} onClick={onClear}>
             Limpiar
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="filter-grid">
-        <label className="filter-input search">
-          <Search size={16} />
-          <input
-            placeholder="Buscar tecnico, empresa, yacimiento, elemento o estado"
-            value={filters.q}
-            onChange={(e) => onChange({ q: e.target.value })}
-          />
-        </label>
+      <div className="tv-filterbar__grid">
+        <Field label="Buscar">
+          {(id) => (
+            <div className="tv-search tv-filterbar__search">
+              <span className="tv-search__icon"><Search size={16} /></span>
+              <Input
+                id={id}
+                placeholder="Técnico, empresa, yacimiento, elemento o estado"
+                value={filters.q}
+                onChange={(e) => onChange({ q: e.target.value })}
+              />
+            </div>
+          )}
+        </Field>
 
-        <label className="filter-input">
-          <span>Desde</span>
-          <input type="date" value={filters.fecha_desde} onChange={(e) => onChange({ fecha_desde: e.target.value })} />
-        </label>
+        <Field label="Desde">
+          {(id) => (
+            <Input
+              id={id}
+              type="date"
+              value={filters.fecha_desde}
+              onChange={(e) => onChange({ fecha_desde: e.target.value })}
+            />
+          )}
+        </Field>
 
-        <label className="filter-input">
-          <span>Hasta</span>
-          <input type="date" value={filters.fecha_hasta} onChange={(e) => onChange({ fecha_hasta: e.target.value })} />
-        </label>
+        <Field label="Hasta">
+          {(id) => (
+            <Input
+              id={id}
+              type="date"
+              value={filters.fecha_hasta}
+              onChange={(e) => onChange({ fecha_hasta: e.target.value })}
+            />
+          )}
+        </Field>
 
-        <label className="filter-input">
-          <span>Estado</span>
-          <select value={filters.estado} onChange={(e) => onChange({ estado: e.target.value })}>
-            <option value="">Todos</option>
-            <option value="enviada">Enviada</option>
-            <option value="revisada">Revisada</option>
-            <option value="cerrada">Cerrada</option>
-          </select>
-        </label>
+        <Field label="Estado">
+          {(id) => (
+            <Select
+              id={id}
+              value={filters.estado}
+              onChange={(e) => onChange({ estado: e.target.value })}
+            >
+              <option value="">Todos</option>
+              <option value="enviada">Enviada</option>
+              <option value="revisada">Revisada</option>
+              <option value="cerrada">Cerrada</option>
+            </Select>
+          )}
+        </Field>
 
-        <label className="filter-input">
-          <span>Criticidad</span>
-          <select value={filters.criticidad} onChange={(e) => onChange({ criticidad: e.target.value })}>
-            <option value="">Todas</option>
-            <option value="Crítica">Critica</option>
-            <option value="Alta">Alta</option>
-            <option value="Media">Media</option>
-            <option value="Baja">Baja</option>
-            <option value="Normal">Normal</option>
-          </select>
-        </label>
+        <Field label="Criticidad">
+          {(id) => (
+            <Select
+              id={id}
+              value={filters.criticidad}
+              onChange={(e) => onChange({ criticidad: e.target.value })}
+            >
+              <option value="">Todas</option>
+              <option value="Crítica">Crítica</option>
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+              <option value="Normal">Normal</option>
+            </Select>
+          )}
+        </Field>
       </div>
     </section>
   );

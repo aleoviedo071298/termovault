@@ -1,7 +1,26 @@
-import { Download, FileText, FolderArchive, Thermometer, X } from "lucide-react";
+import {
+  Calendar,
+  Building2,
+  Users,
+  MapPin,
+  Hash,
+  UserCheck,
+  CheckCircle2,
+  Activity,
+  Thermometer,
+  FolderArchive,
+  FileText,
+  Download,
+  Flame,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { apiDownload } from "../api/client";
 import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado } from "../api/inspecciones";
+
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Badge, badgeToneForEstado } from "./ui/Badge";
+import { Textarea } from "./ui/Field";
 
 interface Props {
   inspeccionId: number | null;
@@ -24,15 +43,30 @@ function fmtBytes(bytes?: number | null): string {
   return `${value.toFixed(1)} ${units[idx]}`;
 }
 
-export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroups = [], canReviewOverride, onStatusChanged }: Props) {
+function estadoLabel(estado: string): string {
+  if (estado === "enviada") return "Enviada";
+  if (estado === "revisada") return "Revisada";
+  if (estado === "cerrada") return "Cerrada";
+  return estado;
+}
+
+export function InspectionDetailModal({
+  inspeccionId,
+  isOpen,
+  onClose,
+  userGroups = [],
+  canReviewOverride,
+  onStatusChanged,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<InspeccionDetalle | null>(null);
   const [observaciones, setObservaciones] = useState("");
   const [updating, setUpdating] = useState(false);
-  const canReview = typeof canReviewOverride === "boolean"
-    ? canReviewOverride
-    : (userGroups.includes("admin") || userGroups.includes("supervisor"));
+  const canReview =
+    typeof canReviewOverride === "boolean"
+      ? canReviewOverride
+      : userGroups.includes("admin") || userGroups.includes("supervisor");
 
   useEffect(() => {
     if (!isOpen || !inspeccionId) return;
@@ -49,13 +83,14 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
     })();
   }, [inspeccionId, isOpen]);
 
-  if (!isOpen) return null;
-
   async function markStatus(estado: "revisada" | "cerrada") {
     if (!inspeccionId) return;
     try {
       setUpdating(true);
-      await updateInspeccionEstado(inspeccionId, { estado, observaciones_revisor: observaciones || undefined });
+      await updateInspeccionEstado(inspeccionId, {
+        estado,
+        observaciones_revisor: observaciones || undefined,
+      });
       const refreshed = await getInspeccion(inspeccionId);
       setData(refreshed);
       onStatusChanged?.();
@@ -75,142 +110,291 @@ export function InspectionDetailModal({ inspeccionId, isOpen, onClose, userGroup
     }
   }
 
+  const informes = data?.archivos.filter((f) => f.tipo.startsWith("informe")) ?? [];
+  const termografias = data?.archivos.filter((f) => !f.tipo.startsWith("informe")) ?? [];
+
+  const subtitle = data
+    ? `${new Date(data.fecha_inspeccion).toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })}`
+    : undefined;
+
+  const titleWithBadge = (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+      <span>Detalle de informe #{inspeccionId ?? "—"}</span>
+      {data && (
+        <Badge tone={badgeToneForEstado(data.estado)} dot>
+          {estadoLabel(data.estado)}
+        </Badge>
+      )}
+    </span>
+  );
+
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content" style={{ width: "min(980px, 100%)" }}>
-        <header className="modal-header">
-          <h2>Detalle de Informe #{inspeccionId ?? "-"}</h2>
-          <button className="close-btn" onClick={onClose} type="button"><X size={18} /></button>
-        </header>
-        <div className="modal-form">
-          {loading ? <p>Cargando detalle...</p> : null}
-          {error ? <div className="form-error">{error}</div> : null}
-          {!loading && !error && data ? (
-            <>
-              <div className="form-grid">
-                <div><strong>Fecha:</strong> {new Date(data.fecha_inspeccion).toLocaleString("es-AR")}</div>
-                <div><strong>Estado:</strong> {data.estado}</div>
-                <div><strong>Tecnico:</strong> {data.tecnico?.nombre ?? "-"}</div>
-                <div><strong>Empresa:</strong> {data.empresa_contratista ?? "-"}</div>
-                <div><strong>Integrantes:</strong> {data.integrantes ?? "-"}</div>
-                <div><strong>Yacimiento:</strong> {data.elemento?.yacimiento ?? "-"}</div>
-                <div><strong>Subestacion/Elemento:</strong> {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "-"}</div>
-                <div><strong>Revisada por:</strong> {data.revisada_por?.nombre ?? "-"}</div>
-                <div><strong>Cerrada por:</strong> {data.cerrada_por?.nombre ?? "-"}</div>
+    <Modal open={isOpen} onClose={onClose} title={titleWithBadge} subtitle={subtitle} size="xl">
+      {loading && (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--tv-text-muted)" }}>
+          Cargando detalle…
+        </div>
+      )}
+
+      {error && (
+        <div className="tv-notice tv-notice--danger" role="alert" style={{ marginBottom: 14 }}>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {!loading && !error && data && (
+        <>
+          {/* ─── Metadata grid ─── */}
+          <div className="tv-meta-grid">
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><Calendar /></span>
+              <span className="tv-meta-grid__label">Fecha:</span>
+              <span className="tv-meta-grid__value">
+                {new Date(data.fecha_inspeccion).toLocaleDateString("es-AR", {
+                  day: "2-digit", month: "2-digit", year: "numeric",
+                })}
+              </span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><Activity /></span>
+              <span className="tv-meta-grid__label">Estado:</span>
+              <span className="tv-meta-grid__value" style={{ textTransform: "capitalize" }}>
+                {estadoLabel(data.estado)}
+              </span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><UserCheck /></span>
+              <span className="tv-meta-grid__label">Técnico:</span>
+              <span className="tv-meta-grid__value">{data.tecnico?.nombre ?? "—"}</span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><Building2 /></span>
+              <span className="tv-meta-grid__label">Empresa:</span>
+              <span className="tv-meta-grid__value">{data.empresa_contratista ?? "—"}</span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><Users /></span>
+              <span className="tv-meta-grid__label">Integrantes:</span>
+              <span className="tv-meta-grid__value">{data.integrantes ?? "—"}</span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><MapPin /></span>
+              <span className="tv-meta-grid__label">Yacimiento:</span>
+              <span className="tv-meta-grid__value">{data.elemento?.yacimiento ?? "—"}</span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><Hash /></span>
+              <span className="tv-meta-grid__label">Subestación / elemento:</span>
+              <span className="tv-meta-grid__value">
+                {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "—"}
+              </span>
+            </div>
+
+            <div className="tv-meta-grid__row">
+              <span className="tv-meta-grid__icon"><UserCheck /></span>
+              <span className="tv-meta-grid__label">Revisada por:</span>
+              <span className="tv-meta-grid__value">{data.revisada_por?.nombre ?? "—"}</span>
+            </div>
+
+            {data.cerrada_por && (
+              <div className="tv-meta-grid__row">
+                <span className="tv-meta-grid__icon"><CheckCircle2 /></span>
+                <span className="tv-meta-grid__label">Cerrada por:</span>
+                <span className="tv-meta-grid__value">{data.cerrada_por.nombre}</span>
               </div>
+            )}
+          </div>
 
-              <div>
-                <strong>Descripcion / Resumen</strong>
-                <p className="field-paragraph">{data.resumen ?? "Sin descripcion."}</p>
+          {/* ─── Descripción / Resumen ─── */}
+          <section className="tv-section">
+            <div className="tv-section__title">Descripción / resumen</div>
+            <div className="tv-section__body">
+              {data.resumen ? (
+                <p className="tv-section__paragraph">{data.resumen}</p>
+              ) : (
+                <span className="tv-section__empty">Sin descripción.</span>
+              )}
+            </div>
+          </section>
+
+          {/* ─── Observaciones del supervisor (si existen) ─── */}
+          {data.observaciones_revisor && (
+            <section className="tv-section">
+              <div className="tv-section__title">Observaciones del supervisor</div>
+              <div className="tv-section__body">
+                <p className="tv-section__paragraph">{data.observaciones_revisor}</p>
               </div>
+            </section>
+          )}
 
-              {data.observaciones_revisor ? (
-                <div>
-                  <strong>Observaciones del supervisor</strong>
-                  <p className="field-paragraph">{data.observaciones_revisor}</p>
-                </div>
-              ) : null}
+          {/* ─── Hallazgos ─── */}
+          <section className="tv-section">
+            <div className="tv-section__title">
+              Hallazgos
+              <span className="tv-section__count">· {data.novedades.length}</span>
+            </div>
+            {data.novedades.length === 0 ? (
+              <span className="tv-section__empty">Sin hallazgos cargados.</span>
+            ) : (
+              <div className="tv-finding-list">
+                {data.novedades.map((novedad) => (
+                  <article key={novedad.id} className="tv-finding">
+                    <span
+                      className="tv-finding__color"
+                      style={{ background: novedad.criticidad_color ?? "#4a7a5e" }}
+                      aria-hidden="true"
+                    />
+                    <div className="tv-finding__main">
+                      <div className="tv-finding__head">
+                        <span className="tv-finding__title">{novedad.titulo}</span>
+                        <span
+                          className="tv-badge tv-badge--solid"
+                          style={{
+                            background: novedad.criticidad_color ?? "#4a7a5e",
+                            color: "white",
+                          }}
+                        >
+                          {novedad.criticidad ?? "normal"}
+                        </span>
+                        <span style={{ marginLeft: "auto" }}>
+                          <Badge tone={novedad.estado === "abierta" ? "warning" : "success"} variant="soft">
+                            {novedad.estado}
+                          </Badge>
+                        </span>
+                      </div>
 
-              {canReview && (data.estado === "enviada" || data.estado === "revisada") ? (
-                <div style={{ display: "grid", gap: 10 }}>
-                  <strong>Revision</strong>
-                  <textarea
-                    rows={3}
-                    placeholder="Observaciones del revisor (opcional)"
-                    value={observaciones}
-                    onChange={(e) => setObservaciones(e.target.value)}
-                  />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {data.estado === "enviada" ? (
-                      <button className="submit-btn" type="button" disabled={updating} onClick={() => void markStatus("revisada")}>
-                        Marcar revisada
-                      </button>
-                    ) : null}
-                    {data.estado === "revisada" ? (
-                      <button className="submit-btn" type="button" disabled={updating} onClick={() => void markStatus("cerrada")}>
-                        Cerrar informe
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+                      <div className="tv-finding__meta">
+                        {novedad.ubicacion && (
+                          <span><MapPin size={12} /> {novedad.ubicacion}</span>
+                        )}
+                        {novedad.temperatura !== null && novedad.temperatura !== undefined && (
+                          <span><Flame size={12} /> {novedad.temperatura} °C</span>
+                        )}
+                      </div>
 
-              <div className="findings-section">
-                <h4>Hallazgos</h4>
-                {data.novedades.length === 0 ? (
-                  <p>Sin hallazgos cargados.</p>
-                ) : (
-                  <div className="findings-list">
-                    {data.novedades.map((novedad) => (
-                      <article key={novedad.id} className={`finding-card ${novedad.criticidad === "normal" ? "normal" : ""}`}>
-                        <div className="finding-header">
-                          <h5>{novedad.titulo}</h5>
-                          <span className="badge" style={{ "--badge-color": novedad.criticidad_color ?? "#4a7a5e" } as React.CSSProperties}>
-                            {novedad.criticidad ?? "normal"}
-                          </span>
+                      {novedad.descripcion && (
+                        <div className="tv-finding__desc">{novedad.descripcion}</div>
+                      )}
+                      {novedad.accion_recomendada && (
+                        <div className="tv-finding__desc">
+                          <strong>Acción recomendada: </strong>
+                          {novedad.accion_recomendada}
                         </div>
-                        {novedad.descripcion ? <p className="finding-desc">{novedad.descripcion}</p> : null}
-                        <p><strong>Estado:</strong> {novedad.estado}</p>
-                        {novedad.ubicacion ? <p><strong>Ubicacion:</strong> {novedad.ubicacion}</p> : null}
-                        {novedad.temperatura !== null ? <p><strong>Temperatura:</strong> {novedad.temperatura}°C</p> : null}
-                        {novedad.accion_recomendada ? <p className="recommendation"><strong>Accion recomendada:</strong> {novedad.accion_recomendada}</p> : null}
-                      </article>
-                    ))}
-                  </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ─── Informe formal ─── */}
+          <section className="tv-section">
+            <div className="tv-section__title">Informe formal</div>
+            {informes.length === 0 ? (
+              <span className="tv-section__empty">Sin informe formal.</span>
+            ) : (
+              <div className="tv-file-list" style={{ marginTop: 0 }}>
+                {informes.map((file) => (
+                  <button
+                    key={file.id}
+                    type="button"
+                    className="tv-file-download"
+                    onClick={() => void downloadFile(file)}
+                  >
+                    <span className="tv-file__icon tv-file__icon--report">
+                      <FileText size={15} />
+                    </span>
+                    <div className="tv-file__text">
+                      <div className="tv-file__name">{file.nombre}</div>
+                      <div className="tv-file__size">{fmtBytes(file.tamano)}</div>
+                    </div>
+                    <Download size={15} className="tv-file-download__download" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ─── Archivos térmicos ─── */}
+          <section className="tv-section">
+            <div className="tv-section__title">
+              Archivos térmicos
+              <span className="tv-section__count">· {termografias.length}</span>
+            </div>
+            {termografias.length === 0 ? (
+              <span className="tv-section__empty">Sin archivos térmicos.</span>
+            ) : (
+              <div className="tv-file-list" style={{ marginTop: 0 }}>
+                {termografias.map((file) => (
+                  <button
+                    key={file.id}
+                    type="button"
+                    className="tv-file-download"
+                    onClick={() => void downloadFile(file)}
+                  >
+                    <span className="tv-file__icon tv-file__icon--therm">
+                      {file.tipo.includes("zip") ? (
+                        <FolderArchive size={15} />
+                      ) : (
+                        <Thermometer size={15} />
+                      )}
+                    </span>
+                    <div className="tv-file__text">
+                      <div className="tv-file__name">{file.nombre}</div>
+                      <div className="tv-file__size">{fmtBytes(file.tamano)}</div>
+                    </div>
+                    <Download size={15} className="tv-file-download__download" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ─── Bloque de revisión (sólo si canReview y estado lo permite) ─── */}
+          {canReview && (data.estado === "enviada" || data.estado === "revisada") && (
+            <section className="tv-review-block" style={{ marginTop: 18 }}>
+              <div className="tv-review-block__title">
+                {data.estado === "enviada" ? "Revisión de informe" : "Cierre de informe"}
+              </div>
+              <Textarea
+                rows={3}
+                placeholder="Observaciones del revisor (opcional)"
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+              />
+              <div className="tv-review-block__actions">
+                {data.estado === "enviada" && (
+                  <Button
+                    variant="primary"
+                    onClick={() => void markStatus("revisada")}
+                    disabled={updating}
+                    leftIcon={<CheckCircle2 size={15} />}
+                  >
+                    {updating ? "Procesando…" : "Marcar revisada"}
+                  </Button>
+                )}
+                {data.estado === "revisada" && (
+                  <Button
+                    variant="primary"
+                    onClick={() => void markStatus("cerrada")}
+                    disabled={updating}
+                    leftIcon={<CheckCircle2 size={15} />}
+                  >
+                    {updating ? "Procesando…" : "Cerrar informe"}
+                  </Button>
                 )}
               </div>
-
-              {(() => {
-                const informes = data.archivos.filter((f) => f.tipo.startsWith("informe"));
-                const termografias = data.archivos.filter((f) => !f.tipo.startsWith("informe"));
-                return (
-                  <>
-                    <div>
-                      <strong>Informe formal</strong>
-                      <div className="files-list" style={{ marginTop: 8 }}>
-                        {informes.length === 0 ? (
-                          <p style={{ fontStyle: "italic", color: "#59645e" }}>Sin informe formal.</p>
-                        ) : (
-                          informes.map((file) => (
-                            <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
-                              <FileText size={18} className="icon-word" />
-                              <div className="file-info">
-                                <span className="file-name">{file.nombre}</span>
-                                <span className="file-size">{fmtBytes(file.tamano)}</span>
-                              </div>
-                              <Download size={16} style={{ marginLeft: "auto" }} />
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <strong>Archivos térmicos</strong>
-                      <div className="files-list" style={{ marginTop: 8 }}>
-                        {termografias.length === 0 ? (
-                          <p style={{ fontStyle: "italic", color: "#59645e" }}>Sin archivos térmicos.</p>
-                        ) : (
-                          termografias.map((file) => (
-                            <button className="file-download-btn" key={file.id} type="button" onClick={() => void downloadFile(file)}>
-                              {file.tipo.includes("zip") ? <FolderArchive size={18} className="icon-zip" /> : <Thermometer size={18} className="icon-zip" />}
-                              <div className="file-info">
-                                <span className="file-name">{file.nombre}</span>
-                                <span className="file-size">{fmtBytes(file.tamano)}</span>
-                              </div>
-                              <Download size={16} style={{ marginLeft: "auto" }} />
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
+            </section>
+          )}
+        </>
+      )}
+    </Modal>
   );
 }

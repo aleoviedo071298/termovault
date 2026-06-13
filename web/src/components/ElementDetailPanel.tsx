@@ -1,7 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { apiDownload } from "../api/client";
-import { X, FileText, FolderArchive, Thermometer, Calendar, ShieldAlert, Edit3, Settings, MapPin, Loader2, AlertTriangle } from "lucide-react";
-import { getElemento, deleteElemento, type ElementoDetailResponse, type InspeccionArchivo } from "../api/elementos";
+import {
+  FileText,
+  FolderArchive,
+  Thermometer,
+  Calendar,
+  Edit3,
+  AlertTriangle,
+  Trash2,
+  Plus,
+  MapPin,
+  Flame,
+  Download,
+} from "lucide-react";
+import {
+  getElemento,
+  deleteElemento,
+  type ElementoDetailResponse,
+  type InspeccionArchivo,
+} from "../api/elementos";
+
+import { Drawer } from "./ui/Drawer";
+import { Tabs } from "./ui/Tabs";
+import { Badge, badgeToneForEstado } from "./ui/Badge";
+import { Button } from "./ui/Button";
 
 interface ElementDetailPanelProps {
   isOpen: boolean;
@@ -13,6 +35,35 @@ interface ElementDetailPanelProps {
   onNewInspectionClick?: (id: number) => void;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function estadoLabel(estado: string): string {
+  if (estado === "enviada") return "Enviada";
+  if (estado === "revisada") return "Revisada";
+  if (estado === "cerrada") return "Cerrada";
+  return estado;
+}
+
+function estadoOperativoLabel(estado?: string | null): string {
+  if (estado === "mantenimiento") return "En mantenimiento";
+  if (estado === "fuera_de_servicio") return "Fuera de servicio";
+  if (estado === "operativo") return "Operativo";
+  return estado ?? "—";
+}
+
+function estadoOperativoTone(estado?: string | null): "success" | "warning" | "danger" | "neutral" {
+  if (estado === "operativo") return "success";
+  if (estado === "mantenimiento") return "warning";
+  if (estado === "fuera_de_servicio") return "danger";
+  return "neutral";
+}
+
 export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   isOpen,
   onClose,
@@ -20,7 +71,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   onEditClick,
   userGroups,
   onDeleteSuccess,
-  onNewInspectionClick
+  onNewInspectionClick,
 }) => {
   const [data, setData] = useState<ElementoDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +80,8 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   const [deleting, setDeleting] = useState(false);
 
   const canEdit = userGroups.includes("admin") || userGroups.includes("supervisor");
+  const canInspect =
+    userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
 
   async function handleDelete(id: number) {
     const confirmed = window.confirm(
@@ -60,6 +113,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
         setError(null);
         const res = await getElemento(elementId as number);
         setData(res);
+        setActiveTab("ficha");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al cargar los detalles del elemento");
       } finally {
@@ -70,10 +124,6 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
     void loadDetail();
   }, [isOpen, elementId]);
 
-  if (!isOpen) return null;
-
-  const canInspect = userGroups.includes("admin") || userGroups.includes("supervisor") || userGroups.includes("tecnico");
-
   async function handleDownload(file: InspeccionArchivo) {
     try {
       setError(null);
@@ -83,301 +133,324 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
     }
   }
 
-  // Format bytes into human readable format
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
+  const subtitle = data?.elemento.codigo
+    ? `Código ${data.elemento.codigo}`
+    : undefined;
+
+  const tabs = [
+    { id: "ficha", label: "Ficha técnica" },
+    { id: "historial", label: "Historial", count: data?.inspecciones.length },
+  ];
 
   return (
-    <aside className="detail-panel-wrapper" aria-label="Detalle del elemento">
-      <div className="detail-panel-backdrop" onClick={onClose} />
-      <div className="detail-panel">
-        <header className="detail-panel-header">
-          <div className="title-area">
-            <h2>{loading ? "Cargando..." : data?.elemento.nombre}</h2>
-            <small>{data?.elemento.codigo}</small>
-          </div>
-          <button className="close-btn" onClick={onClose} aria-label="Cerrar panel">
-            <X size={20} />
-          </button>
-        </header>
+    <Drawer
+      open={isOpen}
+      onClose={onClose}
+      title={loading ? "Cargando…" : data?.elemento.nombre ?? "—"}
+      subtitle={subtitle}
+      width={540}
+    >
+      {loading && (
+        <div style={{ padding: 40, textAlign: "center", color: "var(--tv-text-muted)" }}>
+          Cargando detalles e historial…
+        </div>
+      )}
 
-        {loading ? (
-          <div className="detail-panel-loading">
-            <Loader2 className="animate-spin" size={32} />
-            <p>Cargando detalles e historial...</p>
-          </div>
-        ) : error ? (
-          <div className="detail-panel-error">
-            <AlertTriangle size={24} />
-            <p>{error}</p>
-          </div>
-        ) : data ? (
-          <div className="detail-panel-body">
-            <div className="action-bar" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {canInspect && onNewInspectionClick && (
-                <button
-                  className="edit-button-quick"
-                  onClick={() => onNewInspectionClick(data.elemento.id)}
-                  type="button"
-                  style={{
-                    background: "#1d5c46",
-                    color: "#f4f0df",
-                    borderColor: "#1d5c46"
-                  }}
+      {error && (
+        <div className="tv-notice tv-notice--danger" role="alert" style={{ marginBottom: 14 }}>
+          <AlertTriangle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {!loading && !error && data && (
+        <>
+          {/* ─── Action bar ─── */}
+          <div className="tv-actionbar">
+            {canInspect && onNewInspectionClick && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus size={14} />}
+                onClick={() => onNewInspectionClick(data.elemento.id)}
+              >
+                Cargar inspección
+              </Button>
+            )}
+            {canEdit && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Edit3 size={14} />}
+                  onClick={() => onEditClick(data.elemento.id)}
                 >
-                  <FileText size={16} />
-                  Cargar inspección
-                </button>
-              )}
-              {canEdit && (
-                <>
-                  <button
-                    className="edit-button-quick"
-                    onClick={() => onEditClick(data.elemento.id)}
-                    type="button"
-                  >
-                    <Edit3 size={16} />
-                    Editar ficha técnica
-                  </button>
-                  <button
-                    className="delete-button-quick"
-                    onClick={() => handleDelete(data.elemento.id)}
-                    disabled={deleting}
-                    type="button"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 14px",
-                      background: "#fff5f5",
-                      border: "1px solid #feb2b2",
-                      borderRadius: "8px",
-                      color: "#c53030",
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <X size={16} />
-                    {deleting ? "Eliminando..." : "Eliminar elemento"}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="panel-tabs">
-              <button
-                className={`panel-tab ${activeTab === "ficha" ? "active" : ""}`}
-                onClick={() => setActiveTab("ficha")}
-                type="button"
-              >
-                Ficha Técnica
-              </button>
-              <button
-                className={`panel-tab ${activeTab === "historial" ? "active" : ""}`}
-                onClick={() => setActiveTab("historial")}
-                type="button"
-              >
-                Historial ({data.inspecciones.length})
-              </button>
-            </div>
-
-            {activeTab === "ficha" ? (
-              <section className="tech-sheet">
-                <div className="grid-2-col">
-                  <div className="field-group">
-                    <span className="field-label">Yacimiento</span>
-                    <span className="field-val">{data.elemento.yacimiento ?? "-"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Tipo de Elemento</span>
-                    <span className="field-val">{data.elemento.tipo ?? "-"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Función</span>
-                    <span className="field-val">{data.elemento.funcion ?? "-"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Nivel Tensión</span>
-                    <span className="field-val">{data.elemento.tension ?? "No requiere"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Criticidad</span>
-                    <span
-                      className="badge"
-                      style={{
-                        "--badge-color": data.elemento.criticidad_color ?? "#718096"
-                      } as React.CSSProperties}
-                    >
-                      {data.elemento.criticidad ?? "Sin asignar"}
-                    </span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Estado Operativo</span>
-                    <span className={`status-pill ${data.elemento.estado_operativo}`}>
-                      {data.elemento.estado_operativo === "operativo"
-                        ? "Operativo"
-                        : data.elemento.estado_operativo === "mantenimiento"
-                        ? "En Mantenimiento"
-                        : "Fuera de Servicio"}
-                    </span>
-                  </div>
-                </div>
-
-                <hr className="divider" />
-
-                <h3>Detalles de Fabricante y Ubicación</h3>
-                <div className="grid-2-col">
-                  <div className="field-group">
-                    <span className="field-label">Marca</span>
-                    <span className="field-val">{data.elemento.marca ?? "-"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">Modelo</span>
-                    <span className="field-val">{data.elemento.modelo ?? "-"}</span>
-                  </div>
-                  <div className="field-group">
-                    <span className="field-label">N° de Serie</span>
-                    <span className="field-val">{data.elemento.n_serie ?? "-"}</span>
-                  </div>
-                </div>
-
-                <div className="field-group" style={{ marginTop: "12px" }}>
-                  <span className="field-label">Observaciones Generales</span>
-                  <p className="field-paragraph">{data.elemento.observaciones ?? "Sin observaciones"}</p>
-                </div>
-              </section>
-            ) : (
-              <section className="inspection-history">
-                {data.inspecciones.length === 0 ? (
-                  <div className="empty-history">
-                    <Calendar size={36} />
-                    <p>No se registran inspecciones previas para este elemento.</p>
-                  </div>
-                ) : (
-                  <div className="timeline">
-                    {data.inspecciones.map((inspeccion) => (
-                      <article key={inspeccion.id} className="timeline-item">
-                        <header className="timeline-item-header">
-                          <span className="inspeccion-date">
-                            {new Date(inspeccion.fecha_inspeccion).toLocaleDateString()}
-                          </span>
-                          <span className={`badge-state ${inspeccion.estado}`}>
-                            {inspeccion.estado.toUpperCase()}
-                          </span>
-                        </header>
-
-                        <div className="inspeccion-details">
-                          <p><strong>Técnico:</strong> {inspeccion.tecnico ?? "S/D"}</p>
-                          <p><strong>Clima:</strong> {inspeccion.condiciones_clima ?? "-"}</p>
-                          
-                          {inspeccion.resumen && (
-                            <p className="resumen-text">
-                              <em>"{inspeccion.resumen}"</em>
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Archivos asociados */}
-                        {(() => {
-                          const informes = inspeccion.archivos.filter((f) => f.tipo.startsWith("informe"));
-                          const termografias = inspeccion.archivos.filter((f) => !f.tipo.startsWith("informe"));
-                          const renderFile = (file: InspeccionArchivo) => {
-                            const isInforme = file.tipo.startsWith("informe");
-                            const isZip = file.tipo.includes("zip");
-                            return (
-                              <button
-                                key={file.id}
-                                className="file-download-btn"
-                                onClick={() => void handleDownload(file)}
-                                type="button"
-                              >
-                                {isInforme ? (
-                                  <FileText size={18} className="icon-word" />
-                                ) : isZip ? (
-                                  <FolderArchive size={18} className="icon-zip" />
-                                ) : (
-                                  <Thermometer size={18} className="icon-zip" />
-                                )}
-                                <div className="file-info">
-                                  <span className="file-name">{file.nombre}</span>
-                                  <span className="file-size">{formatBytes(file.tamano)}</span>
-                                </div>
-                              </button>
-                            );
-                          };
-                          return (
-                            <div className="files-section">
-                              <h4>Informe formal</h4>
-                              <div className="files-list">
-                                {informes.length === 0 ? (
-                                  <p style={{ fontStyle: "italic", color: "#59645e", margin: 0 }}>Sin informe formal</p>
-                                ) : (
-                                  informes.map(renderFile)
-                                )}
-                              </div>
-                              <h4 style={{ marginTop: "10px" }}>Archivos térmicos</h4>
-                              <div className="files-list">
-                                {termografias.length === 0 ? (
-                                  <p style={{ fontStyle: "italic", color: "#59645e", margin: 0 }}>Sin archivos térmicos</p>
-                                ) : (
-                                  termografias.map(renderFile)
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Novedades / Hallazgos */}
-                        {inspeccion.novedades.length > 0 && (
-                          <div className="findings-section">
-                            <h4>Hallazgos Detectados ({inspeccion.novedades.length})</h4>
-                            <div className="findings-list">
-                              {inspeccion.novedades.map((novedad) => (
-                                <div key={novedad.id} className="finding-card">
-                                  <header className="finding-header">
-                                    <h5>{novedad.titulo}</h5>
-                                    <span
-                                      className="badge font-semibold"
-                                      style={{
-                                        "--badge-color": novedad.criticidad_color ?? "#e53e3e",
-                                        transform: "scale(0.85)",
-                                        transformOrigin: "right center"
-                                      } as React.CSSProperties}
-                                    >
-                                      {novedad.criticidad}
-                                    </span>
-                                  </header>
-                                  <p><strong>Ubicación:</strong> {novedad.ubicacion ?? "No especificado"}</p>
-                                  {novedad.temperatura !== null && (
-                                    <p><strong>Temperatura:</strong> {novedad.temperatura}°C</p>
-                                  )}
-                                  <p className="finding-desc">{novedad.descripcion}</p>
-                                  {novedad.accion_recomendada && (
-                                    <p className="recommendation">
-                                      <strong>Recomendación:</strong> {novedad.accion_recomendada}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
+                  Editar ficha técnica
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={() => handleDelete(data.elemento.id)}
+                  disabled={deleting}
+                >
+                  {deleting ? "Eliminando…" : "Eliminar elemento"}
+                </Button>
+              </>
             )}
           </div>
-        ) : null}
-      </div>
-    </aside>
+
+          <Tabs tabs={tabs} active={activeTab} onChange={(id) => setActiveTab(id as "ficha" | "historial")} />
+
+          <div style={{ marginTop: 16 }}>
+            {activeTab === "ficha" && (
+              <>
+                {/* Datos principales */}
+                <div className="tv-meta-grid">
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Yacimiento:</span>
+                    <span className="tv-meta-grid__value">{data.elemento.yacimiento ?? "—"}</span>
+                  </div>
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Tipo:</span>
+                    <span className="tv-meta-grid__value">{data.elemento.tipo ?? "—"}</span>
+                  </div>
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Función:</span>
+                    <span className="tv-meta-grid__value">{data.elemento.funcion ?? "—"}</span>
+                  </div>
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Tensión:</span>
+                    <span className="tv-meta-grid__value">
+                      {data.elemento.tension ?? <span style={{ color: "var(--tv-text-muted)" }}>No requiere</span>}
+                    </span>
+                  </div>
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Criticidad:</span>
+                    <span className="tv-meta-grid__value">
+                      {data.elemento.criticidad ? (
+                        <span
+                          className="tv-badge tv-badge--solid"
+                          style={{
+                            background: data.elemento.criticidad_color ?? "#4a7a5e",
+                            color: "white",
+                          }}
+                        >
+                          {data.elemento.criticidad}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--tv-text-muted)" }}>Sin asignar</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="tv-meta-grid__row">
+                    <span className="tv-meta-grid__label">Estado operativo:</span>
+                    <span className="tv-meta-grid__value">
+                      <Badge tone={estadoOperativoTone(data.elemento.estado_operativo)}>
+                        {estadoOperativoLabel(data.elemento.estado_operativo)}
+                      </Badge>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fabricante */}
+                <section className="tv-section">
+                  <div className="tv-section__title">Detalles de fabricante y ubicación</div>
+                  <div className="tv-meta-grid">
+                    <div className="tv-meta-grid__row">
+                      <span className="tv-meta-grid__label">Marca:</span>
+                      <span className="tv-meta-grid__value">{data.elemento.marca ?? "—"}</span>
+                    </div>
+                    <div className="tv-meta-grid__row">
+                      <span className="tv-meta-grid__label">Modelo:</span>
+                      <span className="tv-meta-grid__value">{data.elemento.modelo ?? "—"}</span>
+                    </div>
+                    <div className="tv-meta-grid__row">
+                      <span className="tv-meta-grid__label">N° de serie:</span>
+                      <span className="tv-meta-grid__value">{data.elemento.n_serie ?? "—"}</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Observaciones */}
+                <section className="tv-section">
+                  <div className="tv-section__title">Observaciones generales</div>
+                  <div className="tv-section__body">
+                    {data.elemento.observaciones ? (
+                      <p className="tv-section__paragraph">{data.elemento.observaciones}</p>
+                    ) : (
+                      <span className="tv-section__empty">Sin observaciones.</span>
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
+
+            {activeTab === "historial" && (
+              <>
+                {data.inspecciones.length === 0 ? (
+                  <div className="tv-empty-timeline">
+                    <Calendar size={28} strokeWidth={1.5} />
+                    <span>No se registran inspecciones previas para este elemento.</span>
+                  </div>
+                ) : (
+                  <div className="tv-timeline">
+                    {data.inspecciones.map((inspeccion) => {
+                      const informes = inspeccion.archivos.filter((f) => f.tipo.startsWith("informe"));
+                      const termografias = inspeccion.archivos.filter((f) => !f.tipo.startsWith("informe"));
+
+                      return (
+                        <article key={inspeccion.id} className="tv-timeline__item">
+                          <div className="tv-timeline__head">
+                            <span className="tv-timeline__date">
+                              <Calendar size={13} />
+                              {new Date(inspeccion.fecha_inspeccion).toLocaleDateString("es-AR", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <div className="tv-timeline__head-right">
+                              <Badge tone={badgeToneForEstado(inspeccion.estado)} dot>
+                                {estadoLabel(inspeccion.estado)}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="tv-timeline__meta">
+                            <span><strong>Técnico:</strong> {inspeccion.tecnico ?? "S/D"}</span>
+                            <span><strong>Clima:</strong> {inspeccion.condiciones_clima ?? "—"}</span>
+                          </div>
+
+                          {inspeccion.resumen && (
+                            <div className="tv-timeline__quote">"{inspeccion.resumen}"</div>
+                          )}
+
+                          {/* Archivos */}
+                          {(informes.length > 0 || termografias.length > 0) && (
+                            <div style={{ marginTop: 12 }}>
+                              {informes.length > 0 && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="tv-section__title" style={{ fontSize: 11.5, marginBottom: 6 }}>
+                                    Informe formal
+                                  </div>
+                                  <div className="tv-file-list" style={{ marginTop: 0 }}>
+                                    {informes.map((file) => (
+                                      <button
+                                        key={file.id}
+                                        type="button"
+                                        className="tv-file-download"
+                                        onClick={() => void handleDownload(file)}
+                                      >
+                                        <span className="tv-file__icon tv-file__icon--report">
+                                          <FileText size={14} />
+                                        </span>
+                                        <div className="tv-file__text">
+                                          <div className="tv-file__name">{file.nombre}</div>
+                                          <div className="tv-file__size">{formatBytes(file.tamano)}</div>
+                                        </div>
+                                        <Download size={14} className="tv-file-download__download" />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {termografias.length > 0 && (
+                                <div>
+                                  <div className="tv-section__title" style={{ fontSize: 11.5, marginBottom: 6 }}>
+                                    Archivos térmicos
+                                  </div>
+                                  <div className="tv-file-list" style={{ marginTop: 0 }}>
+                                    {termografias.map((file) => (
+                                      <button
+                                        key={file.id}
+                                        type="button"
+                                        className="tv-file-download"
+                                        onClick={() => void handleDownload(file)}
+                                      >
+                                        <span className="tv-file__icon tv-file__icon--therm">
+                                          {file.tipo.includes("zip") ? (
+                                            <FolderArchive size={14} />
+                                          ) : (
+                                            <Thermometer size={14} />
+                                          )}
+                                        </span>
+                                        <div className="tv-file__text">
+                                          <div className="tv-file__name">{file.nombre}</div>
+                                          <div className="tv-file__size">{formatBytes(file.tamano)}</div>
+                                        </div>
+                                        <Download size={14} className="tv-file-download__download" />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Hallazgos */}
+                          {inspeccion.novedades.length > 0 && (
+                            <div style={{ marginTop: 12 }}>
+                              <div className="tv-section__title" style={{ fontSize: 11.5, marginBottom: 6 }}>
+                                Hallazgos
+                                <span className="tv-section__count">· {inspeccion.novedades.length}</span>
+                              </div>
+                              <div className="tv-finding-list">
+                                {inspeccion.novedades.map((novedad) => (
+                                  <div key={novedad.id} className="tv-finding">
+                                    <span
+                                      className="tv-finding__color"
+                                      style={{ background: novedad.criticidad_color ?? "#4a7a5e" }}
+                                      aria-hidden="true"
+                                    />
+                                    <div className="tv-finding__main">
+                                      <div className="tv-finding__head">
+                                        <span className="tv-finding__title">{novedad.titulo}</span>
+                                        <span
+                                          className="tv-badge tv-badge--solid"
+                                          style={{
+                                            background: novedad.criticidad_color ?? "#4a7a5e",
+                                            color: "white",
+                                          }}
+                                        >
+                                          {novedad.criticidad}
+                                        </span>
+                                      </div>
+                                      {(novedad.ubicacion || novedad.temperatura !== null) && (
+                                        <div className="tv-finding__meta">
+                                          {novedad.ubicacion && (
+                                            <span><MapPin size={12} /> {novedad.ubicacion}</span>
+                                          )}
+                                          {novedad.temperatura !== null && novedad.temperatura !== undefined && (
+                                            <span><Flame size={12} /> {novedad.temperatura} °C</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {novedad.descripcion && (
+                                        <div className="tv-finding__desc">{novedad.descripcion}</div>
+                                      )}
+                                      {novedad.accion_recomendada && (
+                                        <div className="tv-finding__desc">
+                                          <strong>Recomendación:</strong> {novedad.accion_recomendada}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </Drawer>
   );
 };

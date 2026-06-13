@@ -1,4 +1,15 @@
-import { ArrowLeft, ArrowUpRight, Building2, Edit3, Factory, Plus, RefreshCw, Save, ShieldCheck, SlidersHorizontal, UserPlus, Users } from "lucide-react";
+import {
+  ArrowUpRight,
+  Building2,
+  Factory,
+  Plus,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  UserPlus,
+  Users,
+  AlertCircle,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   createAdminUsuario,
@@ -8,19 +19,43 @@ import {
   listAdminUsuarios,
   updateAdminUsuario,
   type AdminUsuario,
-  type AdminUsuarioMeta
+  type AdminUsuarioMeta,
 } from "../api/adminUsuarios";
 
-interface Props { onBack: () => void }
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { KPICard } from "../components/ui/KPICard";
+import { Card, CardHeader, CardBody } from "../components/ui/Card";
+import { Field, Input, Select } from "../components/ui/Field";
+import { Modal } from "../components/ui/Modal";
+
+interface Props {
+  onBack: () => void;
+}
 type RoleCode = "admin" | "supervisor" | "tecnico";
 
-export default function AdminUsuariosPage({ onBack }: Props) {
+function roleLabel(rol: string | null | undefined): string {
+  if (rol === "admin") return "Admin";
+  if (rol === "supervisor") return "Supervisor";
+  if (rol === "tecnico") return "Técnico";
+  return rol ?? "—";
+}
+
+function roleTone(rol: string | null | undefined): "primary" | "info" | "warning" | "neutral" {
+  if (rol === "admin") return "primary";
+  if (rol === "supervisor") return "info";
+  if (rol === "tecnico") return "warning";
+  return "neutral";
+}
+
+export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
   const [meta, setMeta] = useState<AdminUsuarioMeta | null>(null);
   const [items, setItems] = useState<AdminUsuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Crear usuario
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
@@ -28,11 +63,13 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   const [empresaId, setEmpresaId] = useState<number | "">("");
   const [yacimientos, setYacimientos] = useState<number[]>([]);
 
+  // Crear empresa/yacimiento
   const [empresaNueva, setEmpresaNueva] = useState("");
   const [yacNombre, setYacNombre] = useState("");
   const [yacCodigo, setYacCodigo] = useState("");
   const [yacPermiteSupervisorElementos, setYacPermiteSupervisorElementos] = useState(false);
 
+  // Editar usuario (modal)
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [editApellido, setEditApellido] = useState("");
@@ -57,7 +94,9 @@ export default function AdminUsuariosPage({ onBack }: Props) {
     }
   }
 
-  useEffect(() => { void loadAll(); }, []);
+  useEffect(() => {
+    void loadAll();
+  }, []);
 
   const allYacimientos = useMemo(() => meta?.yacimientos ?? [], [meta]);
   const empresaNombreById = useMemo(() => {
@@ -80,7 +119,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   function yacimientoLabel(yacimiento: AdminUsuarioMeta["yacimientos"][number]): string {
     const empresa = empresaNombreById.get(yacimiento.empresa_id);
     return empresa
-      ? `${yacimiento.nombre} (${yacimiento.codigo}) - ${empresa}`
+      ? `${yacimiento.nombre} (${yacimiento.codigo}) — ${empresa}`
       : `${yacimiento.nombre} (${yacimiento.codigo})`;
   }
 
@@ -89,12 +128,18 @@ export default function AdminUsuariosPage({ onBack }: Props) {
     try {
       setSaving(true);
       await createAdminUsuario({
-        nombre, apellido, email,
+        nombre,
+        apellido,
+        email,
         empresa_id: Number(empresaId),
         rol_codigo: rol,
         yacimientos: rol === "admin" ? [] : yacimientos,
       });
-      setNombre(""); setApellido(""); setEmail(""); setRol("tecnico"); setYacimientos([]);
+      setNombre("");
+      setApellido("");
+      setEmail("");
+      setRol("tecnico");
+      setYacimientos([]);
       await loadAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear el usuario.");
@@ -126,7 +171,7 @@ export default function AdminUsuariosPage({ onBack }: Props) {
         empresa_id: Number(editEmpresaId),
         rol_codigo: editRol,
         yacimientos: editRol === "admin" ? [] : editYacimientos,
-        activo: editActivo
+        activo: editActivo,
       });
       setEditingId(null);
       await loadAll();
@@ -138,146 +183,292 @@ export default function AdminUsuariosPage({ onBack }: Props) {
   }
 
   return (
-    <main className="app-shell admin-users-shell">
-      <section className="admin-hero dashboard-section">
-        <div className="hero-gridline" />
-        <div className="admin-hero-main">
-          <div className="hero-kicker">
-            <span className="system-dot" />
-            Administración
+    <>
+      {/* ─── Header de página ─── */}
+      <div className="tv-page-head">
+        <div className="tv-page-head__left">
+          <div className="tv-page-head__chips">
+            <Badge tone="neutral" variant="outline">Administración</Badge>
+            <Badge tone="neutral" variant="outline">{meta?.empresas.length ?? 0} empresas · {allYacimientos.length} yacimientos</Badge>
           </div>
-          <h1>Usuarios</h1>
-          <p>Perfiles, empresas contratistas y yacimientos habilitados.</p>
+          <h1 className="tv-page-head__title">Usuarios</h1>
+          <p className="tv-page-head__subtitle">
+            Perfiles, empresas contratistas y yacimientos habilitados.
+          </p>
         </div>
-
-        <div className="admin-hero-panel">
-          <div className="admin-metrics">
-            <article><Users size={16} /><span>Usuarios</span><strong>{loading ? "--" : items.length}</strong></article>
-            <article><ShieldCheck size={16} /><span>Activos</span><strong>{loading ? "--" : activeUsers}</strong></article>
-            <article><UserPlus size={16} /><span>Supervisores</span><strong>{loading ? "--" : supervisorCount}</strong></article>
-            <article><Factory size={16} /><span>Empresas</span><strong>{meta?.empresas.length ?? "--"}</strong></article>
-          </div>
-          <div className="admin-actions">
-            <button className="secondary-command" type="button" onClick={onBack}><ArrowLeft size={15} /> Dashboard</button>
-            <button className="utility-command" type="button" onClick={() => void loadAll()} title="Recargar"><RefreshCw size={15} /></button>
-          </div>
+        <div className="tv-page-head__actions">
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={<RefreshCw size={14} strokeWidth={2} />}
+            onClick={() => void loadAll()}
+            disabled={loading}
+          >
+            Refrescar
+          </Button>
         </div>
-      </section>
+      </div>
 
-      {error ? <section className="notice">{error}</section> : null}
+      {error && (
+        <div className="tv-notice tv-notice--danger" role="alert">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <section className="admin-grid">
-        <section className="dashboard-section admin-form-card">
-          <div className="section-heading">
-            <div>
-              <span>Nuevo usuario</span>
-              <small>Crear un usuario y asignarle su alcance</small>
-            </div>
-          </div>
-          <div className="admin-card-body">
-            <div className="form-grid">
-              <div className="form-group"><label>Nombre</label><input value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-              <div className="form-group"><label>Apellido</label><input value={apellido} onChange={(e) => setApellido(e.target.value)} /></div>
-              <div className="form-group col-span-2"><label>Email</label><input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div className="form-group">
-                <label>Rol</label>
-                <select value={rol} onChange={(e) => setRol(e.target.value as RoleCode)}>
-                  <option value="tecnico">Tecnico</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="admin">Admin</option>
-                </select>
+      {/* ─── KPIs ─── */}
+      <div className="tv-kpi-grid">
+        <KPICard
+          label="Usuarios"
+          value={loading ? "—" : items.length}
+          caption="Total de cuentas"
+          icon={<Users size={18} strokeWidth={1.8} />}
+          tone="info"
+        />
+        <KPICard
+          label="Activos"
+          value={loading ? "—" : activeUsers}
+          caption="Habilitados para ingresar"
+          icon={<ShieldCheck size={18} strokeWidth={1.8} />}
+          tone="success"
+        />
+        <KPICard
+          label="Supervisores"
+          value={loading ? "—" : supervisorCount}
+          caption="Rol supervisor activo"
+          icon={<UserPlus size={18} strokeWidth={1.8} />}
+          tone="warning"
+        />
+        <KPICard
+          label="Empresas"
+          value={meta?.empresas.length ?? "—"}
+          caption={`${allYacimientos.length} yacimientos en total`}
+          icon={<Factory size={18} strokeWidth={1.8} />}
+          tone="neutral"
+        />
+      </div>
+
+      {/* ─── 2 cards: Nuevo usuario | Organización ─── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+          gap: 16,
+          marginBottom: 18,
+        }}
+        className="tv-admin-grid"
+      >
+        {/* ── Nuevo usuario ── */}
+        <Card>
+          <CardHeader
+            title="Nuevo usuario"
+            subtitle="Crear un usuario y asignarle su alcance"
+          />
+          <CardBody>
+            <div className="tv-step__grid">
+              <Field label="Nombre" required>
+                {(id) => (
+                  <Input id={id} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: María" />
+                )}
+              </Field>
+              <Field label="Apellido" required>
+                {(id) => (
+                  <Input id={id} value={apellido} onChange={(e) => setApellido(e.target.value)} placeholder="Ej: González" />
+                )}
+              </Field>
+              <div className="tv-field--full">
+                <Field label="Email" required>
+                  {(id) => (
+                    <Input
+                      id={id}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nombre@empresa.com"
+                      autoComplete="off"
+                    />
+                  )}
+                </Field>
               </div>
-              <div className="form-group">
-                <label>Empresa / Contratista</label>
-                <select value={empresaId} onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}>
-                  {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
-                </select>
-              </div>
-              {rol !== "admin" ? (
-                <div className="form-group col-span-2">
-                  <label>{rol === "supervisor" ? "Yacimientos que puede supervisar" : "Yacimientos habilitados para carga"}</label>
-                  <div className="check-grid">
-                    {yacimientosCreate.length === 0 ? (
-                      <p className="admin-rule-note" style={{ margin: 0 }}>
-                        No hay yacimientos activos. Creá uno en el panel de Organización.
-                      </p>
-                    ) : yacimientosCreate.map((y) => (
-                      <label key={y.id} className="check-row">
-                        <input
-                          type="checkbox"
-                          checked={yacimientos.includes(y.id)}
-                          onChange={(e) => setYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
-                        />
-                        {yacimientoLabel(y)}
-                      </label>
+              <Field label="Rol" required>
+                {(id) => (
+                  <Select id={id} value={rol} onChange={(e) => setRol(e.target.value as RoleCode)}>
+                    <option value="tecnico">Técnico</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="admin">Admin</option>
+                  </Select>
+                )}
+              </Field>
+              <Field label="Empresa / contratista" required>
+                {(id) => (
+                  <Select
+                    id={id}
+                    value={empresaId}
+                    onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}
+                  >
+                    {meta?.empresas.map((empresa) => (
+                      <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>
                     ))}
-                  </div>
+                  </Select>
+                )}
+              </Field>
+
+              {rol !== "admin" ? (
+                <div className="tv-field--full">
+                  <Field
+                    label={
+                      rol === "supervisor"
+                        ? "Yacimientos que puede supervisar"
+                        : "Yacimientos habilitados para carga"
+                    }
+                    hint="Marcá los que correspondan."
+                  >
+                    {() => (
+                      <div className="tv-checkbox-grid">
+                        {yacimientosCreate.length === 0 ? (
+                          <p className="tv-section__empty" style={{ margin: 0 }}>
+                            No hay yacimientos activos. Creá uno en el panel de Organización.
+                          </p>
+                        ) : (
+                          yacimientosCreate.map((y) => (
+                            <label key={y.id} className="tv-check">
+                              <input
+                                type="checkbox"
+                                checked={yacimientos.includes(y.id)}
+                                onChange={(e) =>
+                                  setYacimientos((prev) =>
+                                    e.target.checked
+                                      ? [...prev, y.id]
+                                      : prev.filter((id) => id !== y.id)
+                                  )
+                                }
+                              />
+                              <span>{yacimientoLabel(y)}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </Field>
                 </div>
               ) : (
-                <div className="form-group col-span-2">
-                  <p className="admin-rule-note" style={{ margin: 0 }}>
-                    Los administradores acceden a todos los yacimientos; no requieren asignación.
-                  </p>
+                <div className="tv-field--full">
+                  <div className="tv-notice" style={{ marginBottom: 0, background: "var(--tv-info-soft)", borderColor: "rgba(37, 99, 235, 0.15)", color: "#1D4ED8" }}>
+                    <ShieldCheck size={14} />
+                    <span>Los administradores acceden a todos los yacimientos; no requieren asignación.</span>
+                  </div>
                 </div>
               )}
             </div>
-            <button className="primary-command admin-submit" type="button" disabled={saving || !nombre || !apellido || !email || !empresaId} onClick={() => void handleCreate()}>
-              <Plus size={16} /> {saving ? "Creando..." : "Crear usuario local"}
-            </button>
-          </div>
-        </section>
 
-        <section className="dashboard-section admin-form-card">
-          <div className="section-heading">
-            <div>
-              <span>Organización</span>
-              <small>Empresas y yacimientos</small>
+            <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="primary"
+                leftIcon={<Plus size={15} />}
+                disabled={saving || !nombre || !apellido || !email || !empresaId}
+                onClick={() => void handleCreate()}
+              >
+                {saving ? "Creando…" : "Crear usuario"}
+              </Button>
             </div>
-          </div>
-          <div className="admin-card-body">
-            <div className="organization-stack">
-              <div className="organization-line">
-                <div className="form-group">
-                  <label>Nueva empresa / contratista</label>
-                  <input value={empresaNueva} onChange={(e) => setEmpresaNueva(e.target.value)} placeholder="Ej: ELECTROPATAGONIA" />
-                </div>
-                <button className="secondary-command" type="button" disabled={!empresaNueva.trim()} onClick={async () => {
+          </CardBody>
+        </Card>
+
+        {/* ── Organización ── */}
+        <Card>
+          <CardHeader
+            title="Organización"
+            subtitle="Empresas y yacimientos"
+          />
+          <CardBody>
+            {/* Nueva empresa */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+              <Field label="Nueva empresa / contratista">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={empresaNueva}
+                    onChange={(e) => setEmpresaNueva(e.target.value)}
+                    placeholder="Ej: ELECTROPATAGONIA"
+                  />
+                )}
+              </Field>
+              <Button
+                variant="secondary"
+                leftIcon={<Building2 size={14} />}
+                disabled={!empresaNueva.trim()}
+                onClick={async () => {
                   try {
                     await createEmpresa({ nombre: empresaNueva.trim() });
                     setEmpresaNueva("");
                     await loadAll();
-                  } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear empresa."); }
-                }}><Building2 size={15} /> Crear empresa</button>
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "No se pudo crear empresa.");
+                  }
+                }}
+              >
+                Crear empresa
+              </Button>
+            </div>
+
+            <div style={{ height: 1, background: "var(--tv-border)", margin: "18px 0" }} />
+
+            {/* Nuevo yacimiento */}
+            <div className="tv-step__grid">
+              <Field label="Empresa propietaria">
+                {(id) => (
+                  <Select
+                    id={id}
+                    value={empresaId}
+                    onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}
+                  >
+                    {meta?.empresas.map((empresa) => (
+                      <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Código yacimiento">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={yacCodigo}
+                    onChange={(e) => setYacCodigo(e.target.value)}
+                    placeholder="Ej: YAC-PAE-CENTRAL"
+                  />
+                )}
+              </Field>
+              <div className="tv-field--full">
+                <Field label="Nuevo yacimiento">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={yacNombre}
+                      onChange={(e) => setYacNombre(e.target.value)}
+                      placeholder="Ej: PAE Central"
+                    />
+                  )}
+                </Field>
               </div>
 
-              <div className="organization-yacimiento-grid">
-                <div className="form-group">
-                  <label>Empresa propietaria</label>
-                  <select value={empresaId} onChange={(e) => changeEmpresaCreate(e.target.value ? Number(e.target.value) : "")}>
-                    {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Nuevo yacimiento</label>
-                  <input value={yacNombre} onChange={(e) => setYacNombre(e.target.value)} placeholder="Ej: PAE Central" />
-                </div>
-                <div className="form-group">
-                  <label>Codigo yacimiento</label>
-                  <input value={yacCodigo} onChange={(e) => setYacCodigo(e.target.value)} placeholder="Ej: YAC-PAE-CENTRAL" />
-                </div>
-                <div className="owner-toggle-group">
-                  <label className="owner-toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={yacPermiteSupervisorElementos}
-                      onChange={(e) => setYacPermiteSupervisorElementos(e.target.checked)}
-                    />
-                    <span>Supervisor de la empresa puede editar/agregar/eliminar elementos</span>
-                  </label>
-                </div>
+              <div className="tv-field--full">
+                <label className="tv-check">
+                  <input
+                    type="checkbox"
+                    checked={yacPermiteSupervisorElementos}
+                    onChange={(e) => setYacPermiteSupervisorElementos(e.target.checked)}
+                  />
+                  <span>El supervisor de la empresa puede editar / agregar / eliminar elementos en este yacimiento</span>
+                </label>
               </div>
-              <div className="organization-yacimiento-actions">
-                <button className="secondary-command" type="button" disabled={!empresaId || !yacNombre.trim() || !yacCodigo.trim()} onClick={async () => {
+            </div>
+
+            <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="secondary"
+                leftIcon={<Plus size={14} />}
+                disabled={!empresaId || !yacNombre.trim() || !yacCodigo.trim()}
+                onClick={async () => {
                   if (!empresaId) return;
                   try {
                     await createYacimiento({
@@ -290,130 +481,228 @@ export default function AdminUsuariosPage({ onBack }: Props) {
                     setYacCodigo("");
                     setYacPermiteSupervisorElementos(false);
                     await loadAll();
-                  } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear yacimiento."); }
-                }}>Crear yacimiento</button>
-              </div>
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "No se pudo crear yacimiento.");
+                  }
+                }}
+              >
+                Crear yacimiento
+              </Button>
             </div>
-            <p className="admin-rule-note">
-              Supervisor contratista ve informes de su empresa dentro de yacimientos asignados. Si el yacimiento marca permiso de supervisor owner, ese supervisor tambien puede administrar elementos de ese yacimiento.
-            </p>
-          </div>
-        </section>
-      </section>
 
-      <section className="dashboard-section admin-users-panel">
-        <div className="section-heading report-heading">
+            <div
+              className="tv-notice"
+              style={{ marginTop: 16, marginBottom: 0, background: "var(--tv-surface-muted)", borderColor: "var(--tv-border)", color: "var(--tv-text-muted)" }}
+            >
+              <span>
+                Supervisor contratista ve informes de su empresa dentro de yacimientos asignados.
+                Si el yacimiento marca permiso de supervisor owner, ese supervisor también puede
+                administrar elementos.
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* ─── Tabla de usuarios ─── */}
+      <div className="tv-table-wrap">
+        <div className="tv-table-head">
           <div>
-            <span>Listado de usuarios</span>
-            <small>Estado, rol, empresa y yacimientos</small>
+            <div className="tv-table-head__title">Listado de usuarios</div>
+            <div className="tv-table-head__sub">Estado, rol, empresa y yacimientos</div>
           </div>
-          <strong>{items.length}</strong>
+          <span className="tv-table-head__count">{items.length}</span>
         </div>
 
-        <div className="report-table-wrap">
-          <table className="report-table admin-users-table">
+        <div className="tv-table-scroll">
+          <table className="tv-table">
             <thead>
-              <tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Empresa</th><th>Yacimientos</th><th>Estado</th><th aria-label="Accion" /></tr>
+              <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Empresa</th>
+                <th>Yacimientos</th>
+                <th>Estado</th>
+                <th aria-label="Acción" />
+              </tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan={7} className="empty-cell">Cargando usuarios...</td></tr> : items.map((u) => (
-                <tr key={u.id}>
-                  <td className="main-report-cell">
-                    <div className="report-title-line">
-                      <Users size={16} />
-                      <strong>{u.nombre} {u.apellido}</strong>
-                    </div>
-                    <span>Usuario #{u.id}</span>
-                  </td>
-                  <td>{u.email}</td>
-                  <td><span className={`role-chip role-chip-${u.rol ?? "none"}`}>{u.rol ?? "-"}</span></td>
-                  <td>{u.empresa ?? "-"}</td>
-                  <td>{u.yacimientos.map((y) => y.codigo).join(", ") || "-"}</td>
-                  <td><span className={`status-chip ${u.activo ? "status-cerrada" : "status-revisada"}`}>{u.activo ? "Activo" : "Inactivo"}</span></td>
-                  <td className="action-cell">
-                    <button className="table-action" type="button" onClick={() => startEdit(u)}>
-                      Editar
-                      <ArrowUpRight size={14} />
-                    </button>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="tv-table__empty">Cargando usuarios…</td>
                 </tr>
-              ))}
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="tv-table__empty">No hay usuarios para mostrar.</td>
+                </tr>
+              ) : (
+                items.map((u) => (
+                  <tr key={u.id}>
+                    <td className="tv-table__main">
+                      <div className="tv-table__main-title">
+                        <Users size={15} strokeWidth={1.8} />
+                        <span>{u.nombre} {u.apellido}</span>
+                      </div>
+                      <div className="tv-table__main-sub">Usuario #{u.id}</div>
+                    </td>
+                    <td style={{ color: "var(--tv-text-muted)" }}>{u.email}</td>
+                    <td>
+                      <Badge tone={roleTone(u.rol)}>{roleLabel(u.rol)}</Badge>
+                    </td>
+                    <td>{u.empresa ?? "—"}</td>
+                    <td style={{ fontSize: 12, color: "var(--tv-text-secondary)" }}>
+                      {u.yacimientos.length === 0 ? (
+                        <span style={{ color: "var(--tv-text-muted)" }}>
+                          {u.rol === "admin" ? "Todos" : "—"}
+                        </span>
+                      ) : (
+                        u.yacimientos.map((y) => y.codigo).join(", ")
+                      )}
+                    </td>
+                    <td>
+                      <Badge tone={u.activo ? "success" : "neutral"} dot>
+                        {u.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        type="button"
+                        className="tv-table__action"
+                        onClick={() => startEdit(u)}
+                      >
+                        Editar
+                        <ArrowUpRight size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      {editingId ? (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <header className="modal-header">
-              <h2>Editar usuario #{editingId}</h2>
-              <button className="close-btn" onClick={() => setEditingId(null)} type="button">x</button>
-            </header>
-            <div className="modal-form">
-              <div className="form-grid">
-                <div className="form-group"><label>Nombre</label><input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} /></div>
-                <div className="form-group"><label>Apellido</label><input value={editApellido} onChange={(e) => setEditApellido(e.target.value)} /></div>
-                <div className="form-group col-span-2"><label>Email</label><input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} /></div>
-                <div className="form-group">
-                  <label>Rol</label>
-                  <select value={editRol} onChange={(e) => setEditRol(e.target.value as RoleCode)}>
-                    <option value="tecnico">Tecnico</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Empresa</label>
-                  <select value={editEmpresaId} onChange={(e) => changeEmpresaEdit(e.target.value ? Number(e.target.value) : "")}>
-                    {meta?.empresas.map((empresa) => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Estado</label>
-                  <select value={editActivo ? "1" : "0"} onChange={(e) => setEditActivo(e.target.value === "1")}>
-                    <option value="1">Activo</option>
-                    <option value="0">Inactivo</option>
-                  </select>
-                </div>
-                {editRol !== "admin" ? (
-                  <div className="form-group col-span-2">
-                    <label>{editRol === "supervisor" ? "Yacimientos del supervisor" : "Yacimientos del tecnico"}</label>
-                    <div className="check-grid">
-                      {yacimientosEdit.length === 0 ? (
-                        <p className="admin-rule-note" style={{ margin: 0 }}>
-                          No hay yacimientos activos. Creá uno en el panel de Organización.
-                        </p>
-                      ) : yacimientosEdit.map((y) => (
-                        <label key={y.id} className="check-row">
+      {/* ─── Modal de edición ─── */}
+      <Modal
+        open={editingId !== null}
+        onClose={() => setEditingId(null)}
+        title={`Editar usuario #${editingId ?? ""}`}
+        subtitle="Modificá los datos y guardá los cambios."
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditingId(null)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              leftIcon={<Save size={14} />}
+              onClick={() => void saveEdit()}
+              disabled={saving || !editEmpresaId}
+            >
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </Button>
+          </>
+        }
+      >
+        <div className="tv-step__grid">
+          <Field label="Nombre" required>
+            {(id) => (
+              <Input id={id} value={editNombre} onChange={(e) => setEditNombre(e.target.value)} />
+            )}
+          </Field>
+          <Field label="Apellido" required>
+            {(id) => (
+              <Input id={id} value={editApellido} onChange={(e) => setEditApellido(e.target.value)} />
+            )}
+          </Field>
+          <div className="tv-field--full">
+            <Field label="Email" required>
+              {(id) => (
+                <Input id={id} type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+              )}
+            </Field>
+          </div>
+          <Field label="Rol" required>
+            {(id) => (
+              <Select id={id} value={editRol} onChange={(e) => setEditRol(e.target.value as RoleCode)}>
+                <option value="tecnico">Técnico</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Admin</option>
+              </Select>
+            )}
+          </Field>
+          <Field label="Empresa" required>
+            {(id) => (
+              <Select
+                id={id}
+                value={editEmpresaId}
+                onChange={(e) => changeEmpresaEdit(e.target.value ? Number(e.target.value) : "")}
+              >
+                {meta?.empresas.map((empresa) => (
+                  <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Field label="Estado">
+            {(id) => (
+              <Select
+                id={id}
+                value={editActivo ? "1" : "0"}
+                onChange={(e) => setEditActivo(e.target.value === "1")}
+              >
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+              </Select>
+            )}
+          </Field>
+
+          {editRol !== "admin" ? (
+            <div className="tv-field--full">
+              <Field
+                label={editRol === "supervisor" ? "Yacimientos del supervisor" : "Yacimientos del técnico"}
+                hint="Marcá los yacimientos a los que tendrá acceso."
+              >
+                {() => (
+                  <div className="tv-checkbox-grid">
+                    {yacimientosEdit.length === 0 ? (
+                      <p className="tv-section__empty" style={{ margin: 0 }}>
+                        No hay yacimientos activos.
+                      </p>
+                    ) : (
+                      yacimientosEdit.map((y) => (
+                        <label key={y.id} className="tv-check">
                           <input
                             type="checkbox"
                             checked={editYacimientos.includes(y.id)}
-                            onChange={(e) => setEditYacimientos((prev) => e.target.checked ? [...prev, y.id] : prev.filter((id) => id !== y.id))}
+                            onChange={(e) =>
+                              setEditYacimientos((prev) =>
+                                e.target.checked
+                                  ? [...prev, y.id]
+                                  : prev.filter((id) => id !== y.id)
+                              )
+                            }
                           />
-                          {yacimientoLabel(y)}
+                          <span>{yacimientoLabel(y)}</span>
                         </label>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="form-group col-span-2">
-                    <p className="admin-rule-note" style={{ margin: 0 }}>
-                      Los administradores acceden a todos los yacimientos; no requieren asignación.
-                    </p>
+                      ))
+                    )}
                   </div>
                 )}
-              </div>
-              <div className="modal-actions">
-                <button className="cancel-btn" type="button" onClick={() => setEditingId(null)}>Cancelar</button>
-                <button className="submit-btn" type="button" onClick={() => void saveEdit()} disabled={saving}>
-                  <Save size={16} /> {saving ? "Guardando..." : "Guardar cambios"}
-                </button>
+              </Field>
+            </div>
+          ) : (
+            <div className="tv-field--full">
+              <div className="tv-notice" style={{ marginBottom: 0, background: "var(--tv-info-soft)", borderColor: "rgba(37, 99, 235, 0.15)", color: "#1D4ED8" }}>
+                <ShieldCheck size={14} />
+                <span>Los administradores acceden a todos los yacimientos; no requieren asignación.</span>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      ) : null}
-    </main>
+      </Modal>
+    </>
   );
 }
