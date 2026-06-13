@@ -7,3 +7,4 @@ export { EmptyState } from "./EmptyState";
 export { Modal } from "./Modal";
 export { Drawer } from "./Drawer";
 export { Tabs } from "./Tabs";
+export { Stepper, type Step } from "./Stepper";
