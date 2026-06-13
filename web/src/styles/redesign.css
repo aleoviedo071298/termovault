@@ -1,9 +1,10 @@
 /* ====================================================================
-   TermoVault — Design tokens & shell (rediseño 2026-06)
+   TermoVault — Design tokens & shell (rediseño 2026-06-13)
    Aislado del CSS legacy: todas las clases usan prefijo `tv-`.
    ==================================================================== */
 
 :root {
+  --tv-build: "20260613";
   /* Sidebar */
   --tv-sidebar-bg: #0F3D2F;
   --tv-sidebar-bg-soft: #133F31;
