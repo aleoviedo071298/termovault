@@ -187,19 +187,19 @@ export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
       {/* ─── Header de página ─── */}
       <div className="tv-page-head">
         <div className="tv-page-head__left">
-          <div className="tv-page-head__chips">
-            <Badge tone="neutral" variant="outline">Administración</Badge>
-            <Badge tone="neutral" variant="outline">{meta?.empresas.length ?? 0} empresas · {allYacimientos.length} yacimientos</Badge>
-          </div>
+          <span className="tv-page-head__eyebrow">Administración</span>
           <h1 className="tv-page-head__title">Usuarios</h1>
           <p className="tv-page-head__subtitle">
             Perfiles, empresas contratistas y yacimientos habilitados.
           </p>
+          <div className="tv-page-head__chips">
+            <Badge tone="neutral" variant="outline">{meta?.empresas.length ?? 0} empresas · {allYacimientos.length} yacimientos</Badge>
+          </div>
         </div>
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="md"
+            size="sm"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void loadAll()}
             disabled={loading}

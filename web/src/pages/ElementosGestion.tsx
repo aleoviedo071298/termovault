@@ -93,22 +93,22 @@ export default function ElementosGestion({ onBack: _onBack }: Props) {
       {/* ─── Header de página ─── */}
       <div className="tv-page-head">
         <div className="tv-page-head__left">
-          <div className="tv-page-head__chips">
-            <Badge tone="neutral" variant="outline">Inventario</Badge>
-            <Badge tone="neutral" variant="outline">{scopeLabel}</Badge>
-            <span style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {canManage ? "Edición habilitada" : "Solo consulta"}
-            </span>
-          </div>
+          <span className="tv-page-head__eyebrow">Inventario</span>
           <h1 className="tv-page-head__title">Elementos</h1>
           <p className="tv-page-head__subtitle">
             Subestaciones, transformadores y demás equipos que se pueden inspeccionar.
           </p>
+          <div className="tv-page-head__chips">
+            <Badge tone="neutral" variant="outline">{scopeLabel}</Badge>
+            <Badge tone={canManage ? "success" : "neutral"} variant="outline">
+              {canManage ? "Edición habilitada" : "Solo consulta"}
+            </Badge>
+          </div>
         </div>
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="md"
+            size="sm"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void load()}
             disabled={loading}
