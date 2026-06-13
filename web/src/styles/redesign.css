@@ -2065,6 +2065,8 @@ input[type="date"].tv-input:focus,
   .tv-table {
     display: block;
     width: 100%;
+    min-width: 0; /* <table> tiene min-width:auto intrínseco que lo fuerza a
+                     su min-content (~760px) y desborda la card; lo anulamos */
   }
   .tv-table thead {
     display: none;
