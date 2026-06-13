@@ -1,14 +1,15 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Plus, RefreshCw } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { getDashboardOverview, type DashboardOverview } from "../api/dashboard";
 import { useAuth } from "../auth/useAuth";
-import { DashboardHero } from "../components/dashboard/DashboardHero";
 import { FilterBar } from "../components/dashboard/FilterBar";
 import { KPIGrid } from "../components/dashboard/KPIGrid";
 import { ReportTable } from "../components/dashboard/ReportTable";
-import type { DashboardFiltersState, DashboardHeaderInfo, DashboardRole, KpiCardData } from "../components/dashboard/types";
+import type { DashboardFiltersState, DashboardRole, KpiCardData } from "../components/dashboard/types";
 import { InspectionDetailModal } from "../components/InspectionDetailModal";
 import { InspectionModal } from "../components/InspectionModal";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 
 interface Props {
   onOpenElementosGestion: () => void;
@@ -161,42 +162,59 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
     });
   }, [data, filters.q, filters.criticidad]);
 
-  const headerInfo: DashboardHeaderInfo = {
-    role,
-    roleLabel,
-    ...roleText[role],
-    userName: data?.scope.user_name ?? user?.email?.split("@")[0] ?? "Usuario",
-    userEmail: user?.email ?? "-",
-    empresaLabel: data?.scope.empresa_nombre ? `Empresa: ${data.scope.empresa_nombre}` : "Empresa: sin asignar",
-    yacimientoLabel: data?.scope.assigned_yacimiento_names?.length
-      ? `Yacimiento: ${data.scope.assigned_yacimiento_names.join(", ")}`
-      : "Yacimiento: segun alcance",
-    reportsCount: data?.reports.length ?? 0,
-  };
+  // Datos descriptivos para el header de la página (no se persisten ni se mandan
+  // a backend; son solo etiquetas visuales derivadas del scope ya cargado).
+  const empresaText = data?.scope.empresa_nombre ?? "Sin empresa";
+  const yacimientoText = data?.scope.assigned_yacimiento_names?.length
+    ? data.scope.assigned_yacimiento_names.join(", ")
+    : "Según alcance";
 
   return (
-    <main className={`app-shell dashboard-shell role-${role}`}>
-      <DashboardHero
-        info={headerInfo}
-        stats={data?.stats ?? null}
-        onPrimaryAction={() => {
-          setInspectionElementId(null);
-          setInspectionModalOpen(true);
-        }}
-        onManageElements={onOpenElementosGestion}
-        onManageUsers={onOpenAdminUsuarios}
-        onRefresh={() => void loadDashboard()}
-        onLogout={logout}
-        canManageElements={canManageElements}
-        canManageUsers={canManageUsers}
-      />
+    <>
+      {/* ─── Header de página ─────────────────────────────────────────── */}
+      <div className="tv-page-head">
+        <div className="tv-page-head__left">
+          <div className="tv-page-head__chips">
+            <Badge tone="neutral" variant="outline">{empresaText}</Badge>
+            <Badge tone="neutral" variant="outline">{yacimientoText}</Badge>
+            <span style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {roleLabel}
+            </span>
+          </div>
+          <h1 className="tv-page-head__title">{roleText[role].title}</h1>
+          <p className="tv-page-head__subtitle">{roleText[role].subtitle}</p>
+        </div>
+        <div className="tv-page-head__actions">
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={<RefreshCw size={14} strokeWidth={2} />}
+            onClick={() => void loadDashboard()}
+            disabled={loading}
+            aria-label="Refrescar"
+          >
+            Refrescar
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<Plus size={15} strokeWidth={2.2} />}
+            onClick={() => {
+              setInspectionElementId(null);
+              setInspectionModalOpen(true);
+            }}
+          >
+            Registrar nueva termografía
+          </Button>
+        </div>
+      </div>
 
-      {error ? (
-        <section className="notice">
-          <AlertCircle size={18} />
+      {error && (
+        <div className="tv-notice tv-notice--danger" role="alert">
+          <AlertCircle size={16} />
           <span>{error}</span>
-        </section>
-      ) : null}
+        </div>
+      )}
 
       <KPIGrid cards={cards} />
 
@@ -239,6 +257,6 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
         canReviewOverride={canReviewReports}
         onStatusChanged={() => void loadDashboard()}
       />
-    </main>
+    </>
   );
 }
