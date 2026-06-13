@@ -65,6 +65,9 @@ aws-credentials*
 # Documentación interna de infraestructura / seguridad (NO versionar)
 DESPLIEGUE_AWS.md
 AUDITORIA_SEGURIDAD_TERMOVAULT_WEB.md
+PENTEST_BASELINE_PRE_RAPTOR.md
+*security-assessment*.md
+*.env.*.bak*
 
 # Artefactos locales / herramientas de agente (NO versionar)
 graphify-out/
