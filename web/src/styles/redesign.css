@@ -30,11 +30,11 @@
   --tv-text-muted: #6B7280;
   --tv-text-disabled: #9CA3AF;
 
-  /* Brand — same family as sidebar #0F3D2F */
-  --tv-primary: #0F3D2F;
-  --tv-primary-hover: #0C3326;
-  --tv-primary-active: #09291E;
-  --tv-primary-soft: #D1FAE5;
+  /* Brand */
+  --tv-primary: #166534;
+  --tv-primary-hover: #14532D;
+  --tv-primary-active: #0F3D2F;
+  --tv-primary-soft: #DCFCE7;
 
   /* State colors */
   --tv-success: #16A34A;
@@ -545,7 +545,7 @@
   padding: 5px 12px;
   font-weight: 400;
 }
-.tv-badge--outline.tv-badge--primary { border-color: rgba(15, 61, 47, 0.25); color: var(--tv-primary); background: rgba(15, 61, 47, 0.04); }
+.tv-badge--outline.tv-badge--primary { border-color: rgba(22, 101, 52, 0.25); color: var(--tv-primary); background: rgba(22, 101, 52, 0.04); }
 .tv-badge--outline.tv-badge--success { border-color: rgba(22, 163, 74, 0.3); color: #15803D; background: rgba(22, 163, 74, 0.04); }
 .tv-badge--outline.tv-badge--info    { border-color: rgba(37, 99, 235, 0.3); color: #1D4ED8; background: rgba(37, 99, 235, 0.04); }
 .tv-badge--outline.tv-badge--warning { border-color: rgba(245, 158, 11, 0.3); color: #B45309; background: rgba(245, 158, 11, 0.04); }
