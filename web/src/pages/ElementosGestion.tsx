@@ -245,7 +245,7 @@ export default function ElementosGestion({ onBack: _onBack }: Props) {
                 </tr>
               ) : (
                 filtered.map((e) => (
-                  <tr key={e.id}>
+                  <tr key={e.id} onClick={() => { setDetailId(e.id); setDetailOpen(true); }} role="button" tabIndex={0}>
                     <td className="tv-table__main">
                       <div className="tv-table__main-title">
                         <Boxes size={15} strokeWidth={1.8} />
@@ -253,23 +253,20 @@ export default function ElementosGestion({ onBack: _onBack }: Props) {
                       </div>
                       <div className="tv-table__main-sub">Activo #{e.id}</div>
                     </td>
-                    <td>
+                    <td data-label="Código">
                       <span className="tv-badge tv-badge--outline" style={{ fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>
                         {e.codigo}
                       </span>
                     </td>
-                    <td>{e.tipo ?? "—"}</td>
-                    <td>{e.yacimiento ?? "—"}</td>
-                    <td>{e.funcion ?? "—"}</td>
-                    <td>{e.tension ?? <span style={{ color: "var(--tv-text-muted)" }}>No requiere</span>}</td>
-                    <td style={{ textAlign: "right" }}>
+                    <td data-label="Tipo">{e.tipo ?? "—"}</td>
+                    <td data-label="Yacimiento">{e.yacimiento ?? "—"}</td>
+                    <td data-label="Función">{e.funcion ?? "—"}</td>
+                    <td data-label="Tensión">{e.tension ?? <span style={{ color: "var(--tv-text-muted)" }}>No requiere</span>}</td>
+                    <td>
                       <button
                         type="button"
                         className="tv-table__action"
-                        onClick={() => {
-                          setDetailId(e.id);
-                          setDetailOpen(true);
-                        }}
+                        onClick={(ev) => { ev.stopPropagation(); setDetailId(e.id); setDetailOpen(true); }}
                       >
                         Ver
                         <ArrowUpRight size={14} />

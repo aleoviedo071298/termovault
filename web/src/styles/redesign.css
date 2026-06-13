@@ -1888,3 +1888,254 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ====================================================================
+   Sidebar close button (hidden on desktop, visible on mobile)
+   ==================================================================== */
+
+.tv-sidebar__close {
+  display: none;
+  background: transparent;
+  border: 0;
+  color: var(--tv-sidebar-fg-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--tv-radius-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.tv-sidebar__close:hover { color: white; }
+
+/* ====================================================================
+   Mobile header (hidden on desktop)
+   ==================================================================== */
+
+.tv-mobile-header {
+  display: none;
+}
+
+/* ====================================================================
+   Sidebar overlay (hidden on desktop)
+   ==================================================================== */
+
+.tv-sidebar__overlay {
+  display: none;
+}
+
+/* ====================================================================
+   Mobile — < 768px
+   ==================================================================== */
+
+@media (max-width: 768px) {
+
+  /* ---- Shell ---- */
+  .tv-shell {
+    grid-template-columns: 1fr;
+  }
+
+  /* ---- Mobile header ---- */
+  .tv-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 52px;
+    background: var(--tv-surface);
+    border-bottom: 1px solid var(--tv-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tv-mobile-header__burger {
+    background: transparent;
+    border: 0;
+    color: var(--tv-text);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--tv-radius-sm);
+    display: flex;
+    align-items: center;
+  }
+  .tv-mobile-header__burger:hover { background: var(--tv-surface-muted); }
+  .tv-mobile-header__brand {
+    flex: 1;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--tv-text);
+    letter-spacing: -0.02em;
+  }
+  .tv-mobile-header__spacer { width: 34px; }
+
+  /* ---- Sidebar drawer ---- */
+  .tv-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tv-sidebar.is-open {
+    transform: translateX(0);
+  }
+  .tv-sidebar__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tv-sidebar__overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 1000;
+    animation: tvFade 0.2s ease;
+  }
+
+  /* ---- Page ---- */
+  .tv-page {
+    padding: 20px 16px;
+  }
+
+  /* ---- Page head ---- */
+  .tv-page-head__title {
+    font-size: 22px;
+  }
+  .tv-page-head__subtitle {
+    font-size: 13.5px;
+  }
+  .tv-page-head__actions {
+    flex-wrap: wrap;
+  }
+  .tv-page-head__actions .tv-btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ---- KPI grid ---- */
+  .tv-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px;
+  }
+
+  /* ---- Filter bar ---- */
+  .tv-filterbar {
+    padding: 14px 16px 16px;
+  }
+  .tv-filterbar__grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ---- Table → Cards ---- */
+  .tv-table-head {
+    padding: 14px 16px;
+  }
+  .tv-table-scroll {
+    padding: 0 12px 12px;
+  }
+  .tv-table {
+    display: block;
+  }
+  .tv-table thead {
+    display: none;
+  }
+  .tv-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tv-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--tv-surface);
+    border: 1px solid var(--tv-border);
+    border-radius: var(--tv-radius-md);
+    padding: 14px 16px;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .tv-table tbody tr:hover {
+    border-color: var(--tv-border-strong);
+  }
+  .tv-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .tv-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    border-bottom: 0;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .tv-table tbody td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tv-text-muted);
+    flex-shrink: 0;
+    min-width: 80px;
+  }
+  .tv-table tbody td[data-label=""]::before,
+  .tv-table tbody td:not([data-label])::before {
+    display: none;
+  }
+  /* Main cell (first column) spans full width */
+  .tv-table tbody td.tv-table__main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .tv-table tbody td.tv-table__main::before {
+    display: none;
+  }
+  /* Hide the "Ver"/"Editar" action button on mobile — tap the card instead */
+  .tv-table tbody td:has(.tv-table__action) {
+    display: none;
+  }
+  .tv-table__empty {
+    text-align: center;
+  }
+
+  /* ---- Modal → bottom sheet ---- */
+  .tv-modal__overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .tv-modal {
+    width: 100%;
+    max-width: none;
+    border-radius: var(--tv-radius-xl) var(--tv-radius-xl) 0 0;
+    max-height: 92vh;
+  }
+
+  /* ---- Drawer → full width ---- */
+  .tv-drawer {
+    width: 100vw !important;
+  }
+
+  /* ---- Cards (Nuevo usuario / Organización) ---- */
+  .tv-card__body {
+    padding: 16px;
+  }
+  .tv-card__header {
+    padding: 14px 16px;
+  }
+
+  /* ---- Badges smaller ---- */
+  .tv-page-head__chips {
+    gap: 6px;
+  }
+
+  /* ---- Step grid ---- */
+  .tv-step__grid {
+    grid-template-columns: 1fr !important;
+  }
+}

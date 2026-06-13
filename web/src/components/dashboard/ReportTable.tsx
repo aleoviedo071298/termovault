@@ -73,8 +73,8 @@ export function ReportTable({ loading, reports, onOpenDetail }: ReportTableProps
                 const crit = criticidadLabel(r.criticidad);
 
                 return (
-                  <tr key={r.id}>
-                    <td>
+                  <tr key={r.id} onClick={() => onOpenDetail(r.id)} role="button" tabIndex={0}>
+                    <td data-label="Fecha">
                       <div className="tv-table__date">
                         <span className="tv-table__date-day">{day}</span>
                         <span className="tv-table__date-year">{year}</span>
@@ -87,28 +87,28 @@ export function ReportTable({ loading, reports, onOpenDetail }: ReportTableProps
                       </div>
                       <div className="tv-table__main-sub">Informe #{r.id}</div>
                     </td>
-                    <td>
+                    <td data-label="Operación">
                       <div className="tv-table__stack">
                         <span><UserRound size={13} strokeWidth={1.8} /> {r.tecnico}</span>
                         <span><MapPin size={13} strokeWidth={1.8} /> {r.yacimiento} · {r.empresa}</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Estado">
                       <Badge tone={badgeToneForEstado(r.estado)} dot>
                         {estadoLabel(r.estado)}
                       </Badge>
                     </td>
-                    <td>
+                    <td data-label="Criticidad">
                       <Badge tone={criticidadTone(crit)}>{crit}</Badge>
                     </td>
-                    <td>
+                    <td data-label="Hallazgos">
                       <span className="tv-table__count">{r.hallazgos}</span>
                     </td>
-                    <td style={{ textAlign: "right" }}>
+                    <td>
                       <button
                         type="button"
                         className="tv-table__action"
-                        onClick={() => onOpenDetail(r.id)}
+                        onClick={(e) => { e.stopPropagation(); onOpenDetail(r.id); }}
                       >
                         Ver
                         <ArrowUpRight size={14} />

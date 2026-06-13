@@ -539,7 +539,7 @@ export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
                 </tr>
               ) : (
                 items.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} onClick={() => startEdit(u)} role="button" tabIndex={0}>
                     <td className="tv-table__main">
                       <div className="tv-table__main-title">
                         <Users size={15} strokeWidth={1.8} />
@@ -547,12 +547,12 @@ export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
                       </div>
                       <div className="tv-table__main-sub">Usuario #{u.id}</div>
                     </td>
-                    <td style={{ color: "var(--tv-text-muted)" }}>{u.email}</td>
-                    <td>
+                    <td data-label="Email" style={{ color: "var(--tv-text-muted)" }}>{u.email}</td>
+                    <td data-label="Rol">
                       <Badge tone={roleTone(u.rol)}>{roleLabel(u.rol)}</Badge>
                     </td>
-                    <td>{u.empresa ?? "—"}</td>
-                    <td style={{ fontSize: 12, color: "var(--tv-text-secondary)" }}>
+                    <td data-label="Empresa">{u.empresa ?? "—"}</td>
+                    <td data-label="Yacimientos" style={{ fontSize: 12, color: "var(--tv-text-secondary)" }}>
                       {u.yacimientos.length === 0 ? (
                         <span style={{ color: "var(--tv-text-muted)" }}>
                           {u.rol === "admin" ? "Todos" : "—"}
@@ -561,16 +561,16 @@ export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
                         u.yacimientos.map((y) => y.codigo).join(", ")
                       )}
                     </td>
-                    <td>
+                    <td data-label="Estado">
                       <Badge tone={u.activo ? "success" : "neutral"} dot>
                         {u.activo ? "Activo" : "Inactivo"}
                       </Badge>
                     </td>
-                    <td style={{ textAlign: "right" }}>
+                    <td>
                       <button
                         type="button"
                         className="tv-table__action"
-                        onClick={() => startEdit(u)}
+                        onClick={(ev) => { ev.stopPropagation(); startEdit(u); }}
                       >
                         Editar
                         <ArrowUpRight size={14} />
