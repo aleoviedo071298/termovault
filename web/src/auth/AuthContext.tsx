@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import { loginCognito } from "./cognito";
 import { tokenManager } from "./TokenManager";
 
@@ -23,18 +24,18 @@ type MePayload = {
   local_role?: string | null;
 };
 
-function parseJwt(token: string) {
+interface JwtPayload {
+  email?: string;
+  exp: number;
+  "cognito:username"?: string;
+  "cognito:groups"?: string[];
+}
+
+function parseJwt(token: string): JwtPayload | null {
   try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      window.atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
+    return jwtDecode<JwtPayload>(token);
   } catch (e) {
+    console.error("Error decodificando JWT:", e);
     return null;
   }
 }
