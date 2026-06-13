@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
-import { TopBar } from "./TopBar";
 import { AppScopeProvider } from "../../auth/AppScope";
 
 /**
@@ -17,7 +16,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="tv-shell">
         <Sidebar />
         <div className="tv-shell__main">
-          <TopBar />
           <main className="tv-page">{children}</main>
         </div>
       </div>

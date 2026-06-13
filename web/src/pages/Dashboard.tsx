@@ -178,6 +178,7 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
           <h1 className="tv-page-head__title">{roleText[role].title}</h1>
           <p className="tv-page-head__subtitle">{roleText[role].subtitle}</p>
           <div className="tv-page-head__chips">
+            <Badge tone="primary" variant="outline">{role === "admin" ? "Admin" : role === "supervisor-owner" ? "Supervisor" : role === "supervisor-contratista" ? "Supervisor" : "Técnico"}</Badge>
             <Badge tone="neutral" variant="outline">{empresaText}</Badge>
             <Badge tone="neutral" variant="outline">{yacimientoText}</Badge>
           </div>
@@ -185,7 +186,7 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void loadDashboard()}
             disabled={loading}

@@ -411,9 +411,9 @@
 .tv-btn--ghost {
   background: transparent;
   color: var(--tv-text-secondary);
-  border-color: transparent;
+  border-color: var(--tv-border);
 }
-.tv-btn--ghost:hover { background: var(--tv-surface-muted); color: var(--tv-text); }
+.tv-btn--ghost:hover { background: var(--tv-surface-muted); border-color: var(--tv-border-strong); color: var(--tv-text); }
 
 .tv-btn--danger {
   background: var(--tv-surface);
@@ -545,6 +545,11 @@
   padding: 5px 12px;
   font-weight: 400;
 }
+.tv-badge--outline.tv-badge--primary { border-color: rgba(21, 128, 61, 0.3); color: var(--tv-primary); background: rgba(21, 128, 61, 0.04); }
+.tv-badge--outline.tv-badge--success { border-color: rgba(22, 163, 74, 0.3); color: #15803D; background: rgba(22, 163, 74, 0.04); }
+.tv-badge--outline.tv-badge--info    { border-color: rgba(37, 99, 235, 0.3); color: #1D4ED8; background: rgba(37, 99, 235, 0.04); }
+.tv-badge--outline.tv-badge--warning { border-color: rgba(245, 158, 11, 0.3); color: #B45309; background: rgba(245, 158, 11, 0.04); }
+.tv-badge--outline.tv-badge--danger  { border-color: rgba(220, 38, 38, 0.3); color: #B91C1C; background: rgba(220, 38, 38, 0.04); }
 
 /* ---- Field / Input / Select / Textarea ---- */
 .tv-field { display: flex; flex-direction: column; gap: 6px; }

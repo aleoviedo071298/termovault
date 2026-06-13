@@ -99,6 +99,7 @@ export default function ElementosGestion({ onBack: _onBack }: Props) {
             Subestaciones, transformadores y demás equipos que se pueden inspeccionar.
           </p>
           <div className="tv-page-head__chips">
+            <Badge tone="primary" variant="outline">{isAdmin ? "Admin" : isOwnerSupervisor ? "Supervisor" : "Técnico"}</Badge>
             <Badge tone="neutral" variant="outline">{scopeLabel}</Badge>
             <Badge tone={canManage ? "success" : "neutral"} variant="outline">
               {canManage ? "Edición habilitada" : "Solo consulta"}
@@ -108,7 +109,7 @@ export default function ElementosGestion({ onBack: _onBack }: Props) {
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void load()}
             disabled={loading}

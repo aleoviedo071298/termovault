@@ -193,13 +193,14 @@ export default function AdminUsuariosPage({ onBack: _onBack }: Props) {
             Perfiles, empresas contratistas y yacimientos habilitados.
           </p>
           <div className="tv-page-head__chips">
+            <Badge tone="primary" variant="outline">Admin</Badge>
             <Badge tone="neutral" variant="outline">{meta?.empresas.length ?? 0} empresas · {allYacimientos.length} yacimientos</Badge>
           </div>
         </div>
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void loadAll()}
             disabled={loading}
