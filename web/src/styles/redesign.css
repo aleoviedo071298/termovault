@@ -596,6 +596,23 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
 }
 
+/* Date inputs: override legacy index.css `input[type="date"]` (cream bg, taller
+   height) which beats `.tv-input` on specificity. */
+input[type="date"].tv-input,
+.tv-input[type="date"] {
+  height: 40px;
+  background: var(--tv-surface);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"].tv-input:focus,
+.tv-input[type="date"]:focus {
+  border-color: var(--tv-primary);
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.12);
+}
+
 /* Input con icono en el lado izquierdo */
 .tv-input-wrapper {
   position: relative;
@@ -1940,8 +1957,7 @@
     gap: 12px;
     padding: 0 16px;
     height: 52px;
-    background: var(--tv-surface);
-    border-bottom: 1px solid var(--tv-border);
+    background: var(--tv-sidebar-bg);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -1949,21 +1965,29 @@
   .tv-mobile-header__burger {
     background: transparent;
     border: 0;
-    color: var(--tv-text);
+    color: #FFFFFF;
     cursor: pointer;
     padding: 6px;
     border-radius: var(--tv-radius-sm);
     display: flex;
     align-items: center;
   }
-  .tv-mobile-header__burger:hover { background: var(--tv-surface-muted); }
+  .tv-mobile-header__burger:hover { background: rgba(255, 255, 255, 0.08); }
   .tv-mobile-header__brand {
     flex: 1;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     font-size: 15px;
     font-weight: 600;
-    color: var(--tv-text);
+    color: #FFFFFF;
     letter-spacing: -0.02em;
+  }
+  .tv-mobile-header__logo {
+    width: 22px;
+    height: 22px;
+    display: block;
   }
   .tv-mobile-header__spacer { width: 34px; }
 
@@ -2008,11 +2032,11 @@
     font-size: 13.5px;
   }
   .tv-page-head__actions {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
   }
   .tv-page-head__actions .tv-btn {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
 
   /* ---- KPI grid ---- */
@@ -2030,14 +2054,19 @@
   }
 
   /* ---- Table → Cards ---- */
+  .tv-table-wrap {
+    overflow: visible;
+  }
   .tv-table-head {
     padding: 14px 16px;
   }
   .tv-table-scroll {
+    overflow: visible;
     padding: 0 12px 12px;
   }
   .tv-table {
     display: block;
+    width: 100%;
   }
   .tv-table thead {
     display: none;
@@ -2046,32 +2075,39 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 100%;
   }
   .tv-table tbody tr {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
     background: var(--tv-surface);
     border: 1px solid var(--tv-border);
     border-radius: var(--tv-radius-md);
     padding: 14px 16px;
-    gap: 8px;
+    gap: 9px;
     cursor: pointer;
     transition: border-color 0.15s ease;
   }
   .tv-table tbody tr:hover {
     border-color: var(--tv-border-strong);
   }
-  .tv-table tbody tr:last-child td {
-    border-bottom: 0;
-  }
   .tv-table tbody td {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
+    gap: 12px;
     padding: 0;
     border-bottom: 0;
+    min-width: 0;
     font-size: 13px;
-    gap: 8px;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .tv-table tbody td > * {
+    min-width: 0;
   }
   .tv-table tbody td::before {
     content: attr(data-label);
@@ -2081,20 +2117,29 @@
     letter-spacing: 0.04em;
     color: var(--tv-text-muted);
     flex-shrink: 0;
-    min-width: 80px;
+    min-width: 72px;
+    text-align: left;
   }
   .tv-table tbody td[data-label=""]::before,
   .tv-table tbody td:not([data-label])::before {
     display: none;
   }
-  /* Main cell (first column) spans full width */
+  /* Main cell (first column) spans full width, no label */
   .tv-table tbody td.tv-table__main {
     flex-direction: column;
     align-items: flex-start;
+    text-align: left;
     gap: 2px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--tv-border);
   }
   .tv-table tbody td.tv-table__main::before {
     display: none;
+  }
+  /* The "Operación" stack (técnico + yacimiento) reads better left-aligned */
+  .tv-table tbody td .tv-table__stack {
+    align-items: flex-end;
+    text-align: right;
   }
   /* Hide the "Ver"/"Editar" action button on mobile — tap the card instead */
   .tv-table tbody td:has(.tv-table__action) {
@@ -2102,6 +2147,8 @@
   }
   .tv-table__empty {
     text-align: center;
+    display: block;
+    padding: 24px 16px;
   }
 
   /* ---- Modal → bottom sheet ---- */

@@ -19,7 +19,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu size={22} strokeWidth={1.8} />
           </button>
-          <span className="tv-mobile-header__brand">TermoVault</span>
+          <span className="tv-mobile-header__brand">
+            <img src="/logo.svg" alt="" className="tv-mobile-header__logo" />
+            TermoVault
+          </span>
           <span className="tv-mobile-header__spacer" />
         </header>
 
