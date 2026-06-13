@@ -174,20 +174,18 @@ export default function Dashboard({ onOpenElementosGestion, onOpenAdminUsuarios 
       {/* ─── Header de página ─────────────────────────────────────────── */}
       <div className="tv-page-head">
         <div className="tv-page-head__left">
+          <span className="tv-page-head__eyebrow">{roleText[role].eyebrow}</span>
+          <h1 className="tv-page-head__title">{roleText[role].title}</h1>
+          <p className="tv-page-head__subtitle">{roleText[role].subtitle}</p>
           <div className="tv-page-head__chips">
             <Badge tone="neutral" variant="outline">{empresaText}</Badge>
             <Badge tone="neutral" variant="outline">{yacimientoText}</Badge>
-            <span style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {roleLabel}
-            </span>
           </div>
-          <h1 className="tv-page-head__title">{roleText[role].title}</h1>
-          <p className="tv-page-head__subtitle">{roleText[role].subtitle}</p>
         </div>
         <div className="tv-page-head__actions">
           <Button
             variant="secondary"
-            size="md"
+            size="sm"
             leftIcon={<RefreshCw size={14} strokeWidth={2} />}
             onClick={() => void loadDashboard()}
             disabled={loading}
