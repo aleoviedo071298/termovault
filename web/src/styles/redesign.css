@@ -1948,6 +1948,7 @@ input[type="date"].tv-input:focus,
   /* ---- Shell ---- */
   .tv-shell {
     grid-template-columns: 1fr;
+    overflow-x: clip; /* corta overflow horizontal sin romper position:sticky */
   }
 
   /* ---- Mobile header ---- */
@@ -2054,14 +2055,11 @@ input[type="date"].tv-input:focus,
   }
 
   /* ---- Table → Cards ---- */
-  .tv-table-wrap {
-    overflow: visible;
-  }
   .tv-table-head {
     padding: 14px 16px;
   }
   .tv-table-scroll {
-    overflow: visible;
+    overflow-x: hidden;
     padding: 0 12px 12px;
   }
   .tv-table {
@@ -2136,10 +2134,15 @@ input[type="date"].tv-input:focus,
   .tv-table tbody td.tv-table__main::before {
     display: none;
   }
-  /* The "Operación" stack (técnico + yacimiento) reads better left-aligned */
+  /* The "Operación" stack (técnico + yacimiento) reads better right-aligned;
+     override desktop min-width:180px so it doesn't force the card wider. */
   .tv-table tbody td .tv-table__stack {
     align-items: flex-end;
     text-align: right;
+    min-width: 0;
+  }
+  .tv-table tbody td .tv-table__stack span {
+    white-space: normal;
   }
   /* Hide the "Ver"/"Editar" action button on mobile — tap the card instead */
   .tv-table tbody td:has(.tv-table__action) {
@@ -2184,5 +2187,11 @@ input[type="date"].tv-input:focus,
   /* ---- Step grid ---- */
   .tv-step__grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* ---- Detail modal meta grid → single column ---- */
+  .tv-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
