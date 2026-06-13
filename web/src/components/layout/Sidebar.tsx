@@ -66,7 +66,7 @@ export function Sidebar() {
     <aside className="tv-sidebar" aria-label="Navegación principal">
       <div className="tv-sidebar__brand">
         <div className="tv-sidebar__brand-mark" aria-hidden="true">
-          TV
+          <img src="/logo.svg" alt="" />
         </div>
         <div className="tv-sidebar__brand-text">
           <span className="tv-sidebar__brand-name">TermoVault</span>

@@ -72,7 +72,9 @@ export const Login: React.FC = () => {
       {/* ─── Panel verde izquierdo (branding) ─── */}
       <aside className="tv-login__panel">
         <div className="tv-login__brand">
-          <div className="tv-login__brand-mark" aria-hidden="true">TV</div>
+          <div className="tv-login__brand-mark" aria-hidden="true">
+            <img src="/logo.svg" alt="" />
+          </div>
           <div className="tv-login__brand-text">
             <span className="tv-login__brand-name">TermoVault</span>
             <span className="tv-login__brand-sub">Inspecciones termográficas</span>
@@ -178,10 +180,6 @@ export const Login: React.FC = () => {
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
                 />
-                {/* Link visual — la funcionalidad de recuperación no está
-                    implementada todavía en backend; queda como anchor sin
-                    impacto funcional. */}
-                <span className="tv-login__link" aria-disabled="true">¿Olvidaste tu contraseña?</span>
               </div>
             )}
 

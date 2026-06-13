@@ -118,16 +118,15 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 60%, #15803D 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: -0.02em;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  background: var(--tv-sidebar-bg-soft);
+}
+.tv-sidebar__brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .tv-sidebar__brand-text {
@@ -799,17 +798,17 @@
   gap: 12px;
 }
 .tv-login__brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.10) inset, 0 2px 4px rgba(0, 0, 0, 0.18);
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+.tv-login__brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .tv-login__brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .tv-login__brand-name {
@@ -1692,3 +1691,80 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ====================================================================
+   Drawer action bar (botones rápidos arriba del drawer)
+   ==================================================================== */
+.tv-actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 14px;
+  border-bottom: 1px solid var(--tv-border);
+  margin-bottom: 16px;
+}
+
+/* ====================================================================
+   Timeline (historial de inspecciones)
+   ==================================================================== */
+.tv-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tv-timeline__item {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-radius-lg);
+  background: var(--tv-surface);
+}
+.tv-timeline__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.tv-timeline__date {
+  font-weight: 600;
+  color: var(--tv-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tv-timeline__date svg { color: var(--tv-text-muted); }
+.tv-timeline__head-right { margin-left: auto; display: inline-flex; gap: 6px; }
+.tv-timeline__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--tv-text-secondary);
+  margin-bottom: 8px;
+}
+.tv-timeline__meta strong { color: var(--tv-text); font-weight: 500; }
+.tv-timeline__quote {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--tv-text-muted);
+  background: var(--tv-surface-muted);
+  border-left: 2px solid var(--tv-border-strong);
+  padding: 8px 10px;
+  border-radius: 0 var(--tv-radius-sm) var(--tv-radius-sm) 0;
+  margin: 8px 0;
+}
+
+.tv-empty-timeline {
+  padding: 32px 18px;
+  text-align: center;
+  border: 1px dashed var(--tv-border-strong);
+  border-radius: var(--tv-radius-lg);
+  color: var(--tv-text-muted);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.tv-empty-timeline svg { color: var(--tv-text-disabled); }
