@@ -1,45 +1,17 @@
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Boxes, Users, LogOut } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
+import { useAppScope, canSeeInventory, canSeeUsers } from "../../auth/AppScope";
 
 /**
  * Sidebar de navegación principal.
  *
- * IMPORTANTE: las condiciones de visibilidad de cada item replican
- * EXACTAMENTE los guards de App.tsx (ElementosGestionRoute y
- * AdminUsuariosRoute). No introducimos lógica nueva: si un usuario sin
- * permiso consigue clickear de alguna forma, el guard de ruta sigue
- * siendo la fuente de verdad y lo redirige a `/`.
+ * Visibilidad por rol REAL (no por claim del JWT). Para distinguir
+ * supervisor-owner vs supervisor-contratista usamos el AppScope context.
+ * Mientras el scope no esté cargado, los items "ambiguos" (Inventario)
+ * se ocultan (fail-closed) para evitar mostrar opciones que el backend
+ * después rechazaría.
  */
-type NavItem = {
-  label: string;
-  to: string;
-  icon: typeof LayoutDashboard;
-  end?: boolean;
-  visible: (groups: string[]) => boolean;
-};
-
-const NAV_ITEMS: NavItem[] = [
-  {
-    label: "Dashboard",
-    to: "/",
-    icon: LayoutDashboard,
-    end: true,
-    visible: () => true,
-  },
-  {
-    label: "Inventario",
-    to: "/elementos/gestion",
-    icon: Boxes,
-    visible: (g) => g.includes("admin") || g.includes("supervisor"),
-  },
-  {
-    label: "Usuarios",
-    to: "/admin/usuarios",
-    icon: Users,
-    visible: (g) => g.includes("admin"),
-  },
-];
 
 function pickRole(groups: string[]): string {
   if (groups.includes("admin")) return "Administrador";
@@ -57,10 +29,22 @@ function pickInitials(email: string): string {
 
 export function Sidebar() {
   const { user, logout } = useAuth();
+  const scope = useAppScope();
   const groups = user?.groups ?? [];
   const email = user?.email ?? "";
   const role = pickRole(groups);
   const initials = pickInitials(email);
+
+  // Items visibles según rol real + scope. El array se construye en runtime
+  // para que reaccione a la carga del scope (HMR-friendly, no hardcoded).
+  const items: { label: string; to: string; icon: typeof LayoutDashboard; end?: boolean }[] = [];
+  items.push({ label: "Dashboard", to: "/", icon: LayoutDashboard, end: true });
+  if (canSeeInventory(groups, scope)) {
+    items.push({ label: "Inventario", to: "/elementos/gestion", icon: Boxes });
+  }
+  if (canSeeUsers(groups)) {
+    items.push({ label: "Usuarios", to: "/admin/usuarios", icon: Users });
+  }
 
   return (
     <aside className="tv-sidebar" aria-label="Navegación principal">
@@ -78,7 +62,7 @@ export function Sidebar() {
 
       <nav className="tv-sidebar__nav">
         <div className="tv-sidebar__section">General</div>
-        {NAV_ITEMS.filter((item) => item.visible(groups)).map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { useAuth } from "./auth/useAuth";
+import { useAppScope, canSeeInventory } from "./auth/AppScope";
 import { Login } from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ElementosGestion from "./pages/ElementosGestion";
@@ -20,10 +21,21 @@ function DashboardRoute() {
 
 function ElementosGestionRoute() {
   const { user } = useAuth();
+  const scope = useAppScope();
   const navigate = useNavigate();
   const groups = user?.groups ?? [];
 
-  if (!groups.includes("admin") && !groups.includes("supervisor")) {
+  // Espera a que el scope cargue antes de decidir (fail-closed durante carga).
+  if (scope.loading && !scope.loaded) {
+    return (
+      <div style={{ padding: 24, color: "var(--tv-text-muted)", fontSize: 13 }}>
+        Cargando alcance…
+      </div>
+    );
+  }
+
+  // Admin: siempre. Supervisor: solo si es owner. El resto: redirigir.
+  if (!canSeeInventory(groups, scope)) {
     return <Navigate to="/" replace />;
   }
 
