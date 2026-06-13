@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TermoVault">
+  <defs>
+    <linearGradient id="tvBg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0d3b2f"/>
+      <stop offset="1" stop-color="#165845"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tvBg)"/>
+  <g fill="none" stroke="#d9f4cf" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+    <path d="M33 15v20.5a9 9 0 1 1-6 0V15a3 3 0 1 1 6 0z"/>
+    <path d="M30 26v12"/>
+    <circle cx="30" cy="44" r="4" fill="#d9f4cf" stroke="none"/>
+    <path d="M18 28h4"/>
+    <path d="M16 34h5"/>
+    <path d="M18 40h4"/>
+    <path d="M42 19l2.2 2.2"/>
+    <path d="M46 24h3"/>
+    <path d="M42 28l2.2-2.2"/>
+  </g>
+</svg>

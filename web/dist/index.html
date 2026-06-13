@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      La Content-Security-Policy se entrega por header HTTP, no por <meta>:
+        - Desarrollo: Vite dev server (ver server.headers en vite.config.ts).
+        - Producción: Nginx/Cloudflare (CSP estricta de prod).
+      Así se evita duplicar la política y enviar orígenes de dev en el build.
+    -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/logo.svg" />
+    <title>TermoVault</title>
+    <script type="module" crossorigin src="/assets/index-gPYIT1nW.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cxf2DiHY.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
