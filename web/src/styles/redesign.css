@@ -566,6 +566,33 @@
   padding-right: 32px;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
 }
+
+/* Input con icono en el lado izquierdo */
+.tv-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.tv-input-icon {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tv-text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.tv-input-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+}
+.tv-input--with-icon {
+  padding-left: 40px;
+}
+
 .tv-field--error .tv-input,
 .tv-field--error .tv-select,
 .tv-field--error .tv-textarea { border-color: var(--tv-danger); }

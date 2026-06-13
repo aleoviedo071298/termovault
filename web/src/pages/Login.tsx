@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, ArrowRight, Mail, Lock } from "lucide-react";
 import React, { useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { Field, Input } from "../components/ui/Field";
@@ -128,6 +128,7 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting}
+                  leftIcon={<Mail size={18} strokeWidth={1.8} />}
                   required
                 />
               )}
@@ -143,6 +144,7 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting}
+                  leftIcon={<Lock size={18} strokeWidth={1.8} />}
                   required
                 />
               )}

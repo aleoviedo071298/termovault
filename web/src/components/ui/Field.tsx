@@ -37,8 +37,20 @@ export function Field({ label, hint, error, required, children }: FieldProps) {
   );
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  const { className, ...rest } = props;
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  leftIcon?: ReactNode;
+}
+
+export function Input(props: InputProps) {
+  const { className, leftIcon, ...rest } = props;
+  if (leftIcon) {
+    return (
+      <div className="tv-input-wrapper">
+        <div className="tv-input-icon">{leftIcon}</div>
+        <input className={`tv-input tv-input--with-icon ${className ?? ""}`} {...rest} />
+      </div>
+    );
+  }
   return <input className={`tv-input ${className ?? ""}`} {...rest} />;
 }
 
