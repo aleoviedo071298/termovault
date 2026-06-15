@@ -58,7 +58,7 @@
   --tv-shadow-lg: 0 6px 12px -3px rgba(16, 24, 40, 0.08), 0 3px 5px -3px rgba(16, 24, 40, 0.04);
 
   /* Typography */
-  --tv-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --tv-font-sans: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Layout */
   --tv-sidebar-width: 240px;
@@ -136,10 +136,10 @@
 }
 
 .tv-sidebar__brand-name {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14.5px;
   color: white;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .tv-sidebar__brand-subtitle {
@@ -164,7 +164,7 @@
 .tv-sidebar__section {
   padding: 16px 10px 8px;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tv-sidebar-fg-muted);
@@ -197,7 +197,7 @@
 .tv-sidebar__item.is-active {
   background: var(--tv-sidebar-active-bg);
   color: var(--tv-sidebar-active-fg);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tv-sidebar__item.is-active::before {
@@ -373,7 +373,7 @@
   justify-content: center;
   gap: 8px;
   font-family: inherit;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 13.5px;
   line-height: 1.3;
   border: 1px solid transparent;
@@ -438,7 +438,7 @@
   justify-content: space-between;
   gap: 12px;
 }
-.tv-card__title { font-size: 14px; font-weight: 500; color: var(--tv-text); letter-spacing: -0.01em; }
+.tv-card__title { font-size: 14px; font-weight: 600; color: var(--tv-text); letter-spacing: -0.01em; }
 .tv-card__subtitle { margin-top: 3px; font-size: 12px; color: var(--tv-text-muted); }
 .tv-card__actions { display: flex; gap: 8px; align-items: center; }
 .tv-card__body { padding: 20px; }
@@ -489,7 +489,7 @@
 .tv-kpi__value {
   margin-top: 12px;
   font-size: 32px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--tv-text);
   letter-spacing: -0.03em;
   line-height: 1;
@@ -555,7 +555,7 @@
 .tv-field { display: flex; flex-direction: column; gap: 6px; }
 .tv-label {
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tv-text-secondary);
   display: inline-flex;
   align-items: center;
@@ -679,7 +679,7 @@ input[type="date"].tv-input:focus,
   color: var(--tv-text-muted);
 }
 .tv-empty__icon svg { width: 24px; height: 24px; }
-.tv-empty__title { font-size: 14.5px; font-weight: 600; color: var(--tv-text); }
+.tv-empty__title { font-size: 14.5px; font-weight: 700; color: var(--tv-text); }
 .tv-empty__desc { font-size: 13px; max-width: 360px; }
 .tv-empty__action { margin-top: 8px; }
 
@@ -726,7 +726,7 @@ input[type="date"].tv-input:focus,
   gap: 16px;
 }
 .tv-modal__header-text { flex: 1; min-width: 0; }
-.tv-modal__title { font-size: 15.5px; font-weight: 600; color: var(--tv-text); letter-spacing: -0.01em; }
+.tv-modal__title { font-size: 16px; font-weight: 700; color: var(--tv-text); letter-spacing: -0.015em; }
 .tv-modal__subtitle { margin-top: 4px; font-size: 12.5px; color: var(--tv-text-muted); }
 .tv-modal__close {
   background: transparent;
@@ -778,7 +778,7 @@ input[type="date"].tv-input:focus,
   gap: 16px;
 }
 .tv-drawer__header-text { flex: 1; min-width: 0; }
-.tv-drawer__title { font-size: 15.5px; font-weight: 600; color: var(--tv-text); letter-spacing: -0.01em; }
+.tv-drawer__title { font-size: 16px; font-weight: 700; color: var(--tv-text); letter-spacing: -0.015em; }
 .tv-drawer__subtitle { margin-top: 4px; font-size: 12.5px; color: var(--tv-text-muted); }
 .tv-drawer__close {
   background: transparent;
@@ -884,7 +884,7 @@ input[type="date"].tv-input:focus,
 .tv-login__brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .tv-login__brand-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: white;
   letter-spacing: -0.01em;
 }
@@ -963,8 +963,8 @@ input[type="date"].tv-input:focus,
 }
 .tv-login__h2 {
   font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--tv-text);
   margin: 6px 0 6px;
 }
@@ -1054,7 +1054,7 @@ input[type="date"].tv-input:focus,
 .tv-page-head__eyebrow {
   display: block;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tv-primary);
@@ -1063,7 +1063,7 @@ input[type="date"].tv-input:focus,
 .tv-page-head__title {
   margin: 0;
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--tv-text);
   letter-spacing: -0.025em;
   line-height: 1.15;
@@ -1122,7 +1122,7 @@ input[type="date"].tv-input:focus,
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tv-text);
 }
 .tv-filterbar__count {
@@ -1179,7 +1179,7 @@ input[type="date"].tv-input:focus,
 }
 .tv-table-head__title {
   font-size: 14.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tv-text);
   letter-spacing: -0.01em;
 }
@@ -1190,7 +1190,7 @@ input[type="date"].tv-input:focus,
 }
 .tv-table-head__count {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tv-text-muted);
   background: var(--tv-surface-muted);
   padding: 4px 10px;
@@ -1209,9 +1209,9 @@ input[type="date"].tv-input:focus,
 .tv-table thead th {
   text-align: left;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--tv-text-muted);
   padding: 11px 18px;
   background: var(--tv-surface-muted);
@@ -1285,7 +1285,7 @@ input[type="date"].tv-input:focus,
   cursor: pointer;
   color: var(--tv-primary);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 5px 12px;
   border-radius: 999px;
   transition: background 0.15s ease, border-color 0.15s ease;
