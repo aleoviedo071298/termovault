@@ -2197,3 +2197,69 @@ input[type="date"].tv-input:focus,
     gap: 10px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SEARCHABLE SELECT (combobox con filtro)
+   ═══════════════════════════════════════════════════════════════ */
+.tv-searchable-select {
+  position: relative;
+  width: 100%;
+}
+.tv-searchable-select__clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--tv-text-muted);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--tv-radius-sm);
+}
+.tv-searchable-select__clear:hover {
+  color: var(--tv-text-primary);
+  background: var(--tv-bg-hover);
+}
+.tv-searchable-select__dropdown {
+  position: absolute;
+  z-index: 200;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--tv-bg-card);
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-radius-md);
+  box-shadow: var(--tv-shadow-lg);
+  padding: 4px 0;
+  margin: 0;
+  list-style: none;
+}
+.tv-searchable-select__option {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tv-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-searchable-select__option--active {
+  background: var(--tv-bg-hover);
+}
+.tv-searchable-select__option--selected {
+  font-weight: 600;
+  color: var(--tv-accent);
+}
+.tv-searchable-select__empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--tv-text-muted);
+  text-align: center;
+  font-style: italic;
+}

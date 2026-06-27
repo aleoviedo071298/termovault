@@ -23,6 +23,7 @@ import { createInspeccion } from "../api/inspecciones";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Field, Input, Select, Textarea } from "./ui/Field";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import { Stepper, type Step } from "./ui/Stepper";
 
 interface FindingTemp {
@@ -417,19 +418,17 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
               <div className="tv-step__grid">
                 <Field label="Elemento inspeccionado" required>
                   {(id) => (
-                    <Select
+                    <SearchableSelect
                       id={id}
+                      options={elementosList.map((el) => ({
+                        value: el.id,
+                        label: `${el.codigo} — ${el.nombre}`,
+                      }))}
                       value={elementoId}
-                      onChange={(e) => setElementoId(e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(v) => setElementoId(v === "" ? "" : Number(v))}
+                      placeholder="Buscar por código o nombre…"
                       required
-                    >
-                      <option value="">Seleccionar elemento</option>
-                      {elementosList.map((el) => (
-                        <option key={el.id} value={el.id}>
-                          {el.codigo} — {el.nombre}
-                        </option>
-                      ))}
-                    </Select>
+                    />
                   )}
                 </Field>
 

@@ -12,15 +12,21 @@ import {
   FileText,
   Download,
   Flame,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { apiDownload } from "../api/client";
-import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado } from "../api/inspecciones";
+import { getInspeccion, type InspeccionDetalle, updateInspeccionEstado, updateInspeccion } from "../api/inspecciones";
+import { listElementos } from "../api/elementos";
+import type { Elemento } from "../types/elemento";
 
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Badge, badgeToneForEstado } from "./ui/Badge";
-import { Textarea } from "./ui/Field";
+import { Input, Textarea, Select } from "./ui/Field";
+import { SearchableSelect } from "./ui/SearchableSelect";
 
 interface Props {
   inspeccionId: number | null;
@@ -68,8 +74,64 @@ export function InspectionDetailModal({
       ? canReviewOverride
       : userGroups.includes("admin") || userGroups.includes("supervisor");
 
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editElementoId, setEditElementoId] = useState<number | "">(0);
+  const [editFecha, setEditFecha] = useState("");
+  const [editIntegrantes, setEditIntegrantes] = useState("");
+  const [editEmpresa, setEditEmpresa] = useState("");
+  const [editClima, setEditClima] = useState("");
+  const [editResumen, setEditResumen] = useState("");
+  const [elementosList, setElementosList] = useState<Elemento[]>([]);
+
+  const canEdit = canReview && data?.estado === "enviada";
+
+  function startEditing() {
+    if (!data) return;
+    setEditElementoId(data.elemento?.id ?? "");
+    setEditFecha(data.fecha_inspeccion ?? "");
+    setEditIntegrantes(data.integrantes ?? "");
+    setEditEmpresa(data.empresa_contratista ?? "");
+    setEditClima(data.condiciones_clima ?? "");
+    setEditResumen(data.resumen ?? "");
+    setEditing(true);
+    if (elementosList.length === 0) {
+      void listElementos().then(setElementosList).catch(() => {});
+    }
+  }
+
+  function cancelEditing() {
+    setEditing(false);
+    setError(null);
+  }
+
+  async function saveEdits() {
+    if (!inspeccionId || !data) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await updateInspeccion(inspeccionId, {
+        elemento_id: editElementoId === "" ? undefined : Number(editElementoId),
+        fecha_inspeccion: editFecha,
+        integrantes: editIntegrantes || null,
+        empresa_contratista: editEmpresa || null,
+        condiciones_clima: editClima || null,
+        resumen: editResumen || null,
+      });
+      const refreshed = await getInspeccion(inspeccionId);
+      setData(refreshed);
+      setEditing(false);
+      onStatusChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar los cambios.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   useEffect(() => {
     if (!isOpen || !inspeccionId) return;
+    setEditing(false);
     void (async () => {
       try {
         setLoading(true);
@@ -144,15 +206,40 @@ export function InspectionDetailModal({
 
       {!loading && !error && data && (
         <>
+          {/* ─── Edit button ─── */}
+          {canEdit && !editing && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <Button variant="ghost" size="sm" leftIcon={<Pencil size={14} />} onClick={startEditing}>
+                Editar
+              </Button>
+            </div>
+          )}
+
+          {/* ─── Edit mode actions ─── */}
+          {editing && (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}>
+              <Button variant="ghost" size="sm" leftIcon={<X size={14} />} onClick={cancelEditing} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button variant="primary" size="sm" leftIcon={<Save size={14} />} onClick={() => void saveEdits()} disabled={saving}>
+                {saving ? "Guardando…" : "Guardar"}
+              </Button>
+            </div>
+          )}
+
           {/* ─── Metadata grid ─── */}
           <div className="tv-meta-grid">
             <div className="tv-meta-grid__row">
               <span className="tv-meta-grid__icon"><Calendar /></span>
               <span className="tv-meta-grid__label">Fecha:</span>
               <span className="tv-meta-grid__value">
-                {new Date(data.fecha_inspeccion).toLocaleDateString("es-AR", {
-                  day: "2-digit", month: "2-digit", year: "numeric",
-                })}
+                {editing ? (
+                  <Input type="date" value={editFecha} onChange={(e) => setEditFecha(e.target.value)} />
+                ) : (
+                  new Date(data.fecha_inspeccion).toLocaleDateString("es-AR", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                  })
+                )}
               </span>
             </div>
 
@@ -173,13 +260,25 @@ export function InspectionDetailModal({
             <div className="tv-meta-grid__row">
               <span className="tv-meta-grid__icon"><Building2 /></span>
               <span className="tv-meta-grid__label">Empresa:</span>
-              <span className="tv-meta-grid__value">{data.empresa_contratista ?? "—"}</span>
+              <span className="tv-meta-grid__value">
+                {editing ? (
+                  <Input value={editEmpresa} onChange={(e) => setEditEmpresa(e.target.value)} />
+                ) : (
+                  data.empresa_contratista ?? "—"
+                )}
+              </span>
             </div>
 
             <div className="tv-meta-grid__row">
               <span className="tv-meta-grid__icon"><Users /></span>
               <span className="tv-meta-grid__label">Integrantes:</span>
-              <span className="tv-meta-grid__value">{data.integrantes ?? "—"}</span>
+              <span className="tv-meta-grid__value">
+                {editing ? (
+                  <Input value={editIntegrantes} onChange={(e) => setEditIntegrantes(e.target.value)} />
+                ) : (
+                  data.integrantes ?? "—"
+                )}
+              </span>
             </div>
 
             <div className="tv-meta-grid__row">
@@ -192,7 +291,19 @@ export function InspectionDetailModal({
               <span className="tv-meta-grid__icon"><Hash /></span>
               <span className="tv-meta-grid__label">Subestación / elemento:</span>
               <span className="tv-meta-grid__value">
-                {data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "—"}
+                {editing ? (
+                  <SearchableSelect
+                    options={elementosList.map((el) => ({
+                      value: el.id,
+                      label: `${el.codigo} — ${el.nombre}`,
+                    }))}
+                    value={editElementoId}
+                    onChange={(v) => setEditElementoId(v === "" ? "" : Number(v))}
+                    placeholder="Buscar elemento…"
+                  />
+                ) : (
+                  data.elemento ? `${data.elemento.nombre} (${data.elemento.codigo})` : "—"
+                )}
               </span>
             </div>
 
@@ -209,13 +320,36 @@ export function InspectionDetailModal({
                 <span className="tv-meta-grid__value">{data.cerrada_por.nombre}</span>
               </div>
             )}
+
+            {editing && (
+              <div className="tv-meta-grid__row">
+                <span className="tv-meta-grid__icon"><Activity /></span>
+                <span className="tv-meta-grid__label">Clima:</span>
+                <span className="tv-meta-grid__value">
+                  <Select value={editClima} onChange={(e) => setEditClima(e.target.value)}>
+                    <option value="Despejado">Despejado</option>
+                    <option value="Nublado">Nublado</option>
+                    <option value="Parcialmente nublado">Parcialmente nublado</option>
+                    <option value="Lluvia">Lluvia</option>
+                    <option value="Viento">Viento</option>
+                  </Select>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* ─── Descripción / Resumen ─── */}
           <section className="tv-section">
             <div className="tv-section__title">Descripción / resumen</div>
             <div className="tv-section__body">
-              {data.resumen ? (
+              {editing ? (
+                <Textarea
+                  rows={3}
+                  value={editResumen}
+                  onChange={(e) => setEditResumen(e.target.value)}
+                  placeholder="Contexto general de la inspección (opcional)."
+                />
+              ) : data.resumen ? (
                 <p className="tv-section__paragraph">{data.resumen}</p>
               ) : (
                 <span className="tv-section__empty">Sin descripción.</span>

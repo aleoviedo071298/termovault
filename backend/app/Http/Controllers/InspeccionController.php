@@ -326,6 +326,96 @@ class InspeccionController extends Controller
         ]);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $scope = $this->scopeResolver->resolve($request);
+
+        if (! $scope['is_admin'] && ! ($scope['is_owner_supervisor'] ?? false)) {
+            Log::notice('authz.denied.inspeccion.update', [
+                'user_id' => $scope['user_id'] ?? null,
+                'inspeccion_id' => $id,
+                'roles' => $scope['roles'] ?? [],
+            ]);
+            return response()->json(['message' => 'No tenes permisos para editar informes'], 403);
+        }
+
+        $query = Inspeccion::query()
+            ->join('elementos as e', 'e.id', '=', 'inspecciones.elemento_id')
+            ->join('yacimientos as y', 'y.id', '=', 'e.yacimiento_id')
+            ->select('inspecciones.*');
+
+        if ($scope['is_admin']) {
+            // full access
+        } elseif ($scope['is_supervisor']) {
+            if (($scope['is_owner_supervisor'] ?? false) && $scope['assigned_yacimiento_ids'] !== []) {
+                $query->whereIn('e.yacimiento_id', $scope['assigned_yacimiento_ids']);
+            } else {
+                return response()->json(['message' => 'No tenes permisos para editar informes'], 403);
+            }
+        }
+
+        $inspeccion = $query->find($id);
+        if (! $inspeccion) {
+            return response()->json(['message' => 'Inspección no encontrada'], 404);
+        }
+
+        if ($inspeccion->estado !== Inspeccion::ESTADO_ENVIADA) {
+            return response()->json([
+                'message' => 'Solo se pueden editar informes en estado "enviada"',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'elemento_id' => 'sometimes|exists:elementos,id',
+            'fecha_inspeccion' => 'sometimes|date',
+            'integrantes' => 'nullable|string',
+            'empresa_contratista' => 'nullable|string|max:150',
+            'condiciones_clima' => 'nullable|string|max:50',
+            'resumen' => 'nullable|string',
+        ]);
+
+        if (isset($data['elemento_id']) && (int) $data['elemento_id'] !== (int) $inspeccion->elemento_id) {
+            if (! $this->scopeResolver->canCreateInspectionForElement($scope, (int) $data['elemento_id'])) {
+                Log::notice('authz.denied.inspeccion.update.elemento_scope', [
+                    'user_id' => $scope['user_id'] ?? null,
+                    'inspeccion_id' => $id,
+                    'target_elemento_id' => (int) $data['elemento_id'],
+                ]);
+                return response()->json(['message' => 'El elemento seleccionado está fuera de tu alcance'], 422);
+            }
+        }
+
+        $before = [];
+        $after = [];
+        foreach ($data as $key => $val) {
+            $oldVal = $inspeccion->getAttribute($key);
+            if ((string) $oldVal !== (string) $val) {
+                $before[$key] = $oldVal;
+                $after[$key] = $val;
+            }
+        }
+
+        if ($after === []) {
+            return response()->json(['message' => 'Sin cambios', 'id' => $inspeccion->id]);
+        }
+
+        $inspeccion->fill($after);
+        $inspeccion->updated_by = $scope['user_id'];
+        $inspeccion->save();
+
+        $this->auditTrail->record('inspeccion.updated', [
+            'actor_user_id' => $scope['user_id'] ?? null,
+            'inspeccion_id' => $inspeccion->id,
+            'before' => $before,
+            'after' => $after,
+        ]);
+
+        return response()->json([
+            'message' => 'Inspección actualizada correctamente',
+            'id' => $inspeccion->id,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $scope = $this->scopeResolver->resolve($request);

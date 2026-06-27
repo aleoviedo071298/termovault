@@ -41,3 +41,16 @@ export function getInspeccion(id: number): Promise<InspeccionDetalle> {
 export function updateInspeccionEstado(id: number, payload: { estado: "enviada" | "revisada" | "cerrada"; observaciones_revisor?: string }): Promise<{ id: number; estado: string }> {
   return apiPatch<{ id: number; estado: string }>(`/inspecciones/${id}/estado`, payload);
 }
+
+export interface UpdateInspeccionPayload {
+  elemento_id?: number;
+  fecha_inspeccion?: string;
+  integrantes?: string | null;
+  empresa_contratista?: string | null;
+  condiciones_clima?: string | null;
+  resumen?: string | null;
+}
+
+export function updateInspeccion(id: number, payload: UpdateInspeccionPayload): Promise<{ id: number; message: string }> {
+  return apiPatch<{ id: number; message: string }>(`/inspecciones/${id}`, payload);
+}

@@ -61,6 +61,7 @@ Route::middleware('api')->group(function () {
             Route::put('/elementos/{id}', [ElementoController::class, 'update']);
             Route::delete('/elementos/{id}', [ElementoController::class, 'destroy']);
             Route::patch('/inspecciones/{id}/estado', [\App\Http\Controllers\InspeccionController::class, 'updateEstado']);
+            Route::patch('/inspecciones/{id}', [\App\Http\Controllers\InspeccionController::class, 'update'])->middleware('throttle:admin-write');
         });
 
         // FIX [N-07]: endpoints admin de escritura con cuota estricta
