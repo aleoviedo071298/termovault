@@ -7,6 +7,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 ## [Unreleased]
 
 ### Added
+- Optimización de rendimiento y caching (Etapa 6): índices clave en PostgreSQL (`idx_usuarios_rol`, `idx_elementos_criticidad`, `idx_inspecciones_estado`, `idx_inspecciones_revisada_por`, `idx_inspecciones_cerrada_por`, `idx_archivos_subido_por`); eager loading selectivo (`with`) para evitar N+1; cache global de catálogos estáticos (1h, invalidación inmediata); cache del dashboard por versión (5 min, invalidación atómica O(1)). Validado con `backend/tests/Feature/PerformanceTest.php`.
+- Hardening de seguridad del frontend (Etapa 7): Content Security Policy estricta (meta-tags + headers Laravel); tokens JWT en memoria RAM (`web/src/auth/TokenManager.ts`, sin `localStorage`, logout automático al refrescar); sanitización XSS con DOMPurify (`<SanitizedInput>`, `<SafeHtmlContent>`); CORS manual con whitelist de origen y `OPTIONS` 204; tests de seguridad con Vitest/JSDOM en `web/src/__tests__/security/`.
 - Carga de múltiples archivos térmicos por inspección (`.is2` y/o `.zip`), con drag & drop y lista de archivos seleccionados (nombre, tamaño y quitar).
 - Toggle "Incluir informe formal" en la carga de inspección: el informe (PDF / Word / Excel) ahora es opcional; el caso de campo (seccionadores, transformadores) puede guardarse solo con termografías y hallazgos.
 - Nombre de descarga normalizado y legible, calculado desde la DB: `{id}_{elemento}_{dd-mm-aaaa}_{tipo}.{ext}` (aplica también a archivos ya cargados, sin renombrar nada en MinIO).
