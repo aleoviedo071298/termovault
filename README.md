@@ -1,161 +1,72 @@
 # TermoVault
 
-Internal multi-tenant platform for managing thermographic inspection reports in the
-Oil & Gas industry.
+> Multi-tenant platform for managing thermographic inspection reports in the Oil & Gas industry.
 
-## Status
+![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)
 
-Active development. Core workflow is live: technicians submit inspection reports,
-supervisors review and close them, with full role-based access control and audit
-trails.
+## About
 
-- **Roles**: `admin`, `supervisor` (contractor), `supervisor PAE` (site owner), `tecnico`.
-- **Operational flow**: technician submits a report (`enviada`) → supervisor reviews
-  it (`revisada`) → supervisor or admin closes it (`cerrada`).
-- **Traceability**: every review/close action records `revisada_por` + `fecha_revision`
-  and `cerrada_por` + `fecha_cierre`. File downloads are logged with user, IP, and
-  user agent.
-- Inactive users (`usuarios.activo = false`) are blocked at the API level.
+TermoVault allows thermographic inspection companies to manage their entire report workflow: upload infrared images, document findings, generate PDF reports, and share results with clients — all with strict tenant isolation so each company only sees its own data.
 
 ## Tech Stack
 
-| Layer | Stack |
+| Layer | Detail |
 |---|---|
-| Backend | Laravel 12, PHP 8.2+ |
-| Frontend | React 19 + Vite 8 + TypeScript |
-| Database | PostgreSQL 16 |
-| Storage | MinIO / S3 (`league/flysystem-aws-s3-v3`) |
-| Auth | AWS Cognito (JWT) |
-| Local infra | Docker Compose (Postgres, MinIO, Adminer) |
+| **Backend** | Laravel 12 (API) |
+| **Frontend** | React 19 + TypeScript, Vite 8 |
+| **Database** | PostgreSQL 16 |
+| **Auth** | AWS Cognito |
+| **Infrastructure** | Docker Compose |
+
+## Features
+
+- **Multi-tenancy** — strict data isolation per organization.
+- **Report management** — create, edit, and version thermographic inspection reports.
+- **Role-based access** — Admin, Inspector, Viewer roles with scoped permissions.
+- **PDF export** — generate client-ready inspection reports.
+- **Image storage** — infrared image upload and association to findings.
+- **AWS Cognito auth** — token-based authentication with role claims.
 
 ## Project Structure
 
 ```
 termovault/
-├── backend/        Laravel API
-├── web/            React + Vite frontend
-├── database/       SQL schema baseline + reference seeds
-├── docker-compose.yml
-├── .githooks/
-├── CHANGELOG.md
-└── README.md
+├── backend/         Laravel 12 API
+│   ├── app/         Models, Controllers, Middleware, Policies
+│   ├── routes/      api.php (all REST endpoints)
+│   └── .env.example Environment config template
+├── frontend/        React 19 + TypeScript + Vite 8
+│   ├── src/
+│   │   ├── features/    Feature modules
+│   │   ├── components/  Shared UI components
+│   │   └── api/         Axios client + typed hooks
+│   └── vite.config.ts
+└── docker-compose.yml
 ```
 
-> **Note on `database/schema.sql`**: the source of truth for the schema is the root
-> `database/` folder. `backend/database/` is kept for Laravel migrations/testing
-> support, but operational decisions follow the root `database/` state.
-
-## Local Setup
-
-### 1) Infra
+## Setup
 
 ```bash
-docker compose up -d
-```
+# Full stack via Docker
+docker compose up --build
 
-| Service | URL |
-|---|---|
-| Postgres | `localhost:5433` |
-| Adminer | `http://localhost:8080` |
-| MinIO API | `http://localhost:9000` |
-| MinIO Console | `http://localhost:9001` |
-
-### 2) Backend
-
-```bash
+# Backend only
 cd backend
 composer install
-cp .env.example .env
-php artisan key:generate
-php artisan serve --host=0.0.0.0 --port=8000
-```
+cp .env.example .env   # fill in DB and Cognito credentials
+php artisan migrate
 
-Inspection attachments are stored in MinIO/S3 — `php artisan storage:link` is not
-needed for the main flow.
-
-### 3) Frontend
-
-```bash
-cd web
+# Frontend only
+cd frontend
 npm install
 npm run dev
 ```
 
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:8000/api`
+---
 
-### Restore & backup
-
-```powershell
-.\scripts\db-restore.ps1 -Mode sql-base     # restore from the root SQL baseline
-.\scripts\db-restore.ps1 -Mode migrations   # restore via Laravel migrations/seeds
-.\scripts\db-backup.ps1                     # back up before risky changes
-```
-
-Details in [`scripts/DB_RESTORE.md`](./scripts/DB_RESTORE.md).
-
-### Syncing the schema after migrations
-
-Whenever a migration changes structure (tables, FKs, indexes, constraints), refresh
-the operational snapshot:
-
-```bash
-cd backend && php artisan migrate --force && cd ..
-docker compose exec -T postgres pg_dump --schema-only --no-owner --no-privileges \
-  -U termovault -d termovault > database/schema.sql
-```
-
-Do not hand-edit `database/schema.sql`.
-
-## Role-Based Access (backend)
-
-- **Admin** — full read/write access; manages users, companies, sites, and elements.
-- **Tecnico** — sees only their own reports; submits new reports for elements within their assigned scope.
-- **Supervisor (contractor)** — sees reports from technicians at their own company; cannot review/close reports outside their scope or manage site elements.
-- **Supervisor PAE (site owner)** — sees reports for their assigned site (via `usuario_yacimientos`); can review/close reports and manage that site's elements.
-
-All critical restrictions are enforced server-side; the frontend only reflects permissions.
-
-## Key API Endpoints
-
-```
-POST   /api/auth/login
-GET    /api/auth/me
-GET    /api/dashboard/overview
-GET    /api/elementos
-POST   /api/elementos
-PUT    /api/elementos/{id}
-DELETE /api/elementos/{id}
-POST   /api/inspecciones
-GET    /api/inspecciones/{id}
-PATCH  /api/inspecciones/{id}/estado
-GET    /api/admin/usuarios
-POST   /api/admin/usuarios
-PATCH  /api/admin/usuarios/{id}
-POST   /api/admin/empresas
-POST   /api/admin/yacimientos
-```
-
-## Frontend UX
-
-- **Role-based dashboard**: relevant KPIs, recent reports table, text/status/date filters, permission-gated quick actions.
-- **Report detail view**: operational metadata, findings ("novedades"), files/photos with download, review/close actions gated by role and status.
-- **Element management**: a dedicated page, not embedded in the dashboard.
-
-## Pre-merge Checks
-
-```bash
-cd web && npm run build
-cd backend && php artisan test
-```
-
-Minimum functional checks:
-- Cognito login with a new user and an active role.
-- Technician creates a report.
-- Site-owner supervisor reviews and closes it.
-- Contractor supervisor only sees their own company's reports.
-- Admin sees everything and manages users/organizations.
-
-## Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for the full history of changes.
+**Alejandro Oviedo** · [LinkedIn](https://www.linkedin.com/in/aleoviedo071298/) · [GitHub](https://github.com/aleoviedo071298)
