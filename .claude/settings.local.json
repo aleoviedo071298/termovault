@@ -3,7 +3,8 @@
     "allow": [
       "Bash(python *)",
       "Bash(docker-compose config *)",
-      "Bash(wsl *)"
+      "Bash(wsl *)",
+      "PowerShell(Start-Sleep -Seconds 6; try { $r = Invoke-WebRequest -Uri \"http://localhost:8123\" -UseBasicParsing -TimeoutSec 3; \"OK: $\\($r.StatusCode\\)\" } catch { $_.Exception.Message })"
     ]
   }
 }
