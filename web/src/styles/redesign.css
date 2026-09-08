@@ -2231,10 +2231,10 @@ input[type="date"].tv-input:focus,
   right: 0;
   max-height: 240px;
   overflow-y: auto;
-  background: var(--tv-bg-card);
+  background: #ffffff;
   border: 1px solid var(--tv-border);
   border-radius: var(--tv-radius-md);
-  box-shadow: var(--tv-shadow-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 4px 0;
   margin: 0;
   list-style: none;

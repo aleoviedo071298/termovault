@@ -80,7 +80,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   const [elementoId, setElementoId] = useState<number | "">("");
   const [fechaInspeccion, setFechaInspeccion] = useState("");
   const [integrantes, setIntegrantes] = useState("");
-  const [empresaContratista, setEmpresaContratista] = useState("PECOM S.A.");
+  const [empresaContratista] = useState("");
   const [condicionesClima, setCondicionesClima] = useState("Despejado");
   const [resumen, setResumen] = useState("");
 
@@ -132,7 +132,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         }
 
         // Reset other states
-        setEmpresaContratista("PECOM");
+
         setIntegrantes("");
         setCondicionesClima("Despejado");
         setResumen("");
@@ -257,7 +257,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       formData.append("elemento_id", String(elementoId));
       formData.append("fecha_inspeccion", fechaInspeccion);
       formData.append("integrantes", integrantes.trim());
-      formData.append("empresa_contratista", empresaContratista.trim());
+      // empresa_contratista se resuelve automáticamente en el backend desde el usuario logueado
       formData.append("condiciones_clima", condicionesClima);
       formData.append("resumen", resumen.trim());
 
@@ -451,16 +451,6 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                       placeholder="Nombres separados por coma"
                       value={integrantes}
                       onChange={(e) => setIntegrantes(e.target.value)}
-                    />
-                  )}
-                </Field>
-
-                <Field label="Empresa contratista">
-                  {(id) => (
-                    <Input
-                      id={id}
-                      value={empresaContratista}
-                      onChange={(e) => setEmpresaContratista(e.target.value)}
                     />
                   )}
                 </Field>
@@ -857,7 +847,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                     <dt>Integrantes</dt>
                     <dd>{integrantes || <span className="tv-review__empty">—</span>}</dd>
                     <dt>Contratista</dt>
-                    <dd>{empresaContratista || <span className="tv-review__empty">—</span>}</dd>
+                    <dd><span style={{ color: "var(--tv-text-muted)", fontStyle: "italic" }}>Se asigna automáticamente</span></dd>
                     <dt>Clima</dt>
                     <dd>{condicionesClima}</dd>
                     {resumen && (
