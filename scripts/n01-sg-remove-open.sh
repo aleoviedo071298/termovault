@@ -10,7 +10,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-SG="sg-0c0bcdc8a4a831df1"
+SG="${SG:?Set SG env var to the EC2 security group id, e.g. SG=sg-xxxxxxxx}"
 PROFILE="termovault-sg-ops"
 REGION="us-east-2"
 

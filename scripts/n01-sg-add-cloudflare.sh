@@ -6,14 +6,14 @@
 # siguen ahí; se eliminan en un script separado (n01-sg-remove-open.sh) tras
 # verificar que el sitio sigue OK.
 #
-# Profile esperado: termovault-sg-ops (policy mínima sobre sg-0c0bcdc8a4a831df1).
+# Profile esperado: termovault-sg-ops (policy mínima sobre el SG pasado en $SG).
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-SG="sg-0c0bcdc8a4a831df1"
+SG="${SG:?Set SG env var to the EC2 security group id, e.g. SG=sg-xxxxxxxx}"
 PROFILE="termovault-sg-ops"
 REGION="us-east-2"
-ADMIN_IP="200.24.249.119/32"
+ADMIN_IP="${ADMIN_IP:?Set ADMIN_IP env var, e.g. ADMIN_IP=1.2.3.4/32 ./scripts/n01-sg-add-cloudflare.sh}"
 
 CF_V4=(
   173.245.48.0/20  103.21.244.0/22  103.22.200.0/22  103.31.4.0/22
@@ -35,7 +35,7 @@ build_permissions () {
     ip_ranges+="{\"CidrIp\":\"$cidr\",\"Description\":\"Cloudflare IPv4 ${i}/15\"},"
     ((i++))
   done
-  ip_ranges+="{\"CidrIp\":\"$ADMIN_IP\",\"Description\":\"Admin debug (Alejandro)\"}"
+  ip_ranges+="{\"CidrIp\":\"$ADMIN_IP\",\"Description\":\"Admin debug\"}"
 
   local ipv6_ranges=""
   i=1

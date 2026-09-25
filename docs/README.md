@@ -11,20 +11,20 @@ Indice de documentacion interna del proyecto.
 | [`03-api.md`](./03-api.md) | Endpoints y contratos API. |
 | [`04-decisiones.md`](./04-decisiones.md) | ADRs y decisiones tecnicas. |
 | [`05-roadmap.md`](./05-roadmap.md) | Estado y plan de trabajo. |
-| [`06-seguridad.md`](./06-seguridad.md) | Auth, roles y hardening. |
+| [`06-seguridad.md`](./06-seguridad.md) | Auth, roles, hardening, rate limiting, CSRF, headers. |
 | [`07-deploy-aws.md`](./07-deploy-aws.md) | Guia AWS vigente: EC2 unica + Postgres local + S3 + Cognito. |
 | [`08-multitenant.md`](./08-multitenant.md) | Aislamiento de datos por tenant. |
-| [`SECURITY.md`](./SECURITY.md) | Resumen operativo de controles de seguridad API. |
 | [`THREAT_MODEL.md`](./THREAT_MODEL.md) | Modelo de amenazas y riesgos residuales. |
 | [`INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md) | Playbook de respuesta a incidentes. |
 | [`FRONTEND_SECURITY.md`](./FRONTEND_SECURITY.md) | Medidas de seguridad y CSP del frontend React. |
+| [`ENV_SECRETS_HARDENING.md`](./ENV_SECRETS_HARDENING.md) | Permisos y manejo de `.env`/secrets. |
 | [`PERFORMANCE.md`](./PERFORMANCE.md) | Estrategia de optimización de performance y caching. |
 | [`diagrama-er.md`](./diagrama-er.md) | Diagrama ER y estados. |
 
 ## Archivos clave en raiz
 
 - [`../README.md`](../README.md) - setup rapido y comandos.
-- [`../NEXT_SESSION.md`](../NEXT_SESSION.md) - contexto para continuar trabajo.
+- [`../SECURITY.md`](../SECURITY.md) - politica de reporte de vulnerabilidades.
 - [`../CHANGELOG.md`](../CHANGELOG.md) - historial de cambios.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) - convenciones de colaboracion.
 

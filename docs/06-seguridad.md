@@ -90,7 +90,31 @@ Implementado en `App\Services\Auth\AccessScopeResolver`.
 - Bucket privado compatible con descargas desde plataforma.
 - Auditoria de descargas en DB (`auditoria_descargas_archivos`) con `archivo_id`, `usuario_id`, `ip_address`, `user_agent` y `descargado_en`.
 - CORS configurable por entorno.
-- Rate limit en `/api/auth/login`.
+- Rate limit en `/api/auth/login` (throttle, 10 req/min).
+
+## Rate limiting
+
+- `POST /api/auth/login` usa middleware throttle (`10 req/min`).
+- Eventos de abuso se deben monitorear tambien a nivel app y reverse-proxy.
+
+## CSRF model
+
+- La API es JWT-based y stateless.
+- No se usan tokens CSRF para llamadas JSON autenticadas por bearer token.
+- Los clientes browser deben mantener controles estrictos de origin/CORS.
+
+## Headers hardening
+
+- Headers de seguridad globales aplicados via middleware.
+- Respuestas de API usan `Cache-Control: no-store, ...`, `Pragma: no-cache`, `Expires: 0`.
+- Respuestas no-API del backend pueden usar cache policy publica estatica.
+
+## Logging y auditoria
+
+- Intentos de auth fallidos se loguean con metadata del request.
+- Violaciones de scope se loguean como eventos estructurados.
+- Operaciones que cambian estado se loguean via `AuditTrail`.
+- Secrets: `.env` es local-only y gitignored; en produccion se gestionan fuera del repo (ver `../SECURITY.md` para el detalle operativo).
 
 ## Riesgos conocidos / pendientes
 

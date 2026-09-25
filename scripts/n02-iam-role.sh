@@ -24,11 +24,11 @@ set -euo pipefail
 AWS_PROFILE="${AWS_PROFILE:-default}"   # cambiá si usás otro perfil
 AWS_REGION="us-east-2"                  # confirmado en el recon
 INSTANCE_ID=""                          # se autodetecta abajo por IP pública
-INSTANCE_PUBLIC_IP="3.14.90.37"
-BUCKET="termovault-prod"
-ROLE_NAME="termovault-prod-ec2"
-POLICY_NAME="termovault-prod-s3-access"
-PROFILE_NAME="termovault-prod-ec2"      # mismo nombre por convención
+INSTANCE_PUBLIC_IP="${INSTANCE_PUBLIC_IP:?Set INSTANCE_PUBLIC_IP env var to the EC2's public IP}"
+BUCKET="${BUCKET:?Set BUCKET env var to the target S3 bucket name}"
+ROLE_NAME="${ROLE_NAME:?Set ROLE_NAME env var, e.g. ROLE_NAME=myapp-prod-ec2}"
+POLICY_NAME="${POLICY_NAME:?Set POLICY_NAME env var, e.g. POLICY_NAME=myapp-prod-s3-access}"
+PROFILE_NAME="${PROFILE_NAME:-$ROLE_NAME}"  # mismo nombre que el role por convención
 # ───────────────────────────────────────────────────────────────────────────
 
 echo "▶ AWS profile: $AWS_PROFILE | región: $AWS_REGION"
@@ -128,7 +128,7 @@ else
     --profile "$AWS_PROFILE" \
     --policy-name "$POLICY_NAME" \
     --policy-document file:///tmp/policy-s3.json \
-    --description "S3 RW solo en el bucket termovault-prod" \
+    --description "S3 RW solo en el bucket ${BUCKET}" \
     > /dev/null
   echo "   ✅ policy creada: $POLICY_ARN"
 fi
